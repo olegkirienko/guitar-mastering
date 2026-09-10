@@ -57,3 +57,7 @@ Avoid long passive theory blocks.
 - Use Tailwind CSS.
 - Do not add dependencies unless necessary.
 - Run pnpm build after meaningful changes.
+
+## Review
+ - Implementation reviews should be saved under docs/reviews/.
+ - Treat review files as durable handoff artifacts between review and implementation sessions.

@@ -12,8 +12,8 @@ export const lessons: Lesson[] = [
   {
     id: '01',
     number: '01',
-    title: 'Що таке музика?',
-    description: 'Звук, коливання, частота, висота звуку та перші експерименти.',
+    title: 'Що таке звук?',
+    description: 'Від щипка струни до того, як ми сприймаємо звук.',
     status: 'available',
   },
   {
