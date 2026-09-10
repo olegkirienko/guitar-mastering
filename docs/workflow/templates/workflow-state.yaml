@@ -1,0 +1,34 @@
+version: 1
+lesson_id: <lesson-id>
+title: "<lesson title>"
+phase: design
+status: ready
+gate: none
+
+spec:
+  path: docs/lesson-designs/<lesson-spec>.md
+  status: draft
+
+course_map:
+  stage: docs/course-map/<stage>.md
+  index: docs/course-map/README.md
+
+completed_slices: []
+
+current_slice:
+  id: <slice-id>
+  name: "<slice name>"
+  status: ready
+
+latest_review:
+  path: null
+  verdict: null
+
+blocking_findings: []
+
+next:
+  phase: design
+  action: create-or-revise-design
+  human_approval_required: false
+
+notes: []

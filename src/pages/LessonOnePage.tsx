@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { LessonShell } from '@/components/lesson/LessonShell';
 import { LessonStep } from '@/components/lesson/LessonStep';
 import { RealWorldExperiment } from '@/components/lesson/RealWorldExperiment';
+import { VirtualGuitarString } from '@/components/lesson/VirtualGuitarString';
 import { lessonOneContent, type LessonOneStepId } from '@/data/lessons/stage-01-lesson-01';
 
 type LessonOneProgress = { currentStepId: LessonOneStepId; completedStepIds: LessonOneStepId[]; };
@@ -47,7 +48,7 @@ export function LessonOnePage() {
       <p className="mt-4 text-sm text-gray-600">Аудіо не запускається автоматично й не потрібне, щоб пройти урок.</p>
     </LessonStep> : <div className="space-y-5">
       <LessonStep title={lessonOneContent.string.title} intro={lessonOneContent.string.instruction} shouldFocus={shouldFocusString}>
-        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center"><p className="font-semibold text-gray-950">{lessonOneContent.string.placeholderTitle}</p><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-600">{lessonOneContent.string.placeholderDescription}</p></div>
+        <VirtualGuitarString observationChoices={lessonOneContent.string.observationChoices} predictionChoices={lessonOneContent.string.predictionChoices} onExperimentComplete={() => setProgress((current) => ({ ...current, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'string'])) }))} />
       </LessonStep>
       <RealWorldExperiment title={lessonOneContent.experiment.title} withGuitar={lessonOneContent.experiment.guitar} withoutGuitar={lessonOneContent.experiment.alternative} safetyNote={lessonOneContent.experiment.safety} />
       <button type="button" onClick={() => { setShouldFocusString(false); setShouldFocusIntro(true); setProgress((current) => ({ ...current, currentStepId: 'intro' })); }} className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-semibold text-gray-700 outline-none hover:text-gray-950 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><ArrowLeft className="size-4" />До вступу</button>
