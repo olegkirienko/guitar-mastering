@@ -24,14 +24,18 @@ completed_slices:
     name: VirtualGuitarString
     status: approved
     final_review: docs/reviews/stage-01-lesson-01/fix-rereview-05-step-04.md
+  - id: step-05
+    name: OptionalAudio
+    status: approved
+    final_review: docs/reviews/stage-01-lesson-01/fix-rereview-08-step-05.md
 
 current_slice:
-  id: step-05
-  name: OptionalAudio
+  id: step-06
+  name: SoundPropagationLab
   status: approved
 
 latest_review:
-  path: docs/reviews/stage-01-lesson-01/fix-rereview-08-step-05.md
+  path: docs/reviews/stage-01-lesson-01/fix-rereview-10-step-06.md
   verdict: APPROVED
 
 blocking_findings: []
@@ -46,3 +50,7 @@ notes:
   - "Step 4 is approved after targeted re-review of HIGH-01, HIGH-02, MEDIUM-07, and MEDIUM-08."
   - "Step 5 is limited to optional audio; do not include step 6 propagation or later checkpoint/completion work."
   - "Step 5 is approved after targeted re-review of HIGH-03, MEDIUM-09, MEDIUM-10, MEDIUM-11, and MEDIUM-12."
+  - "Step 6 is limited to SoundPropagationLab; do not include step 7 accessibility extensions or later checkpoint/completion work."
+  - "Step 6 implementation review requires targeted fixes for HIGH-04, MEDIUM-13, and MEDIUM-14."
+  - "Step 6 targeted fixes for HIGH-04, MEDIUM-13, and MEDIUM-14 are ready for re-review."
+  - "Step 6 is approved after targeted re-review of HIGH-04, MEDIUM-13, and MEDIUM-14."
