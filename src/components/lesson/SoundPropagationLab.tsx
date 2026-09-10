@@ -13,6 +13,7 @@ export interface SoundPropagationLabContent {
 
 interface SoundPropagationLabProps {
   content: SoundPropagationLabContent;
+  staticMode: boolean;
   onComplete: () => void;
 }
 
@@ -28,6 +29,7 @@ const markerOffsets = [
 ] as const;
 const wavefrontPositions = [111, 163, 217, 302] as const;
 const rarefactionPositions = [135, 187, 195] as const;
+const staticFrameMap = [1, 2, 4, 6] as const;
 
 function PredictionMiniScheme({ model }: { model: 'same-air' | 'change' }) {
   return <svg viewBox="0 0 180 42" className="mt-3 h-auto w-full max-w-52" aria-hidden="true">
@@ -57,7 +59,7 @@ function frameDescription(frame: number, sourceStopped: boolean) {
     : 'Один короткий прогін завершено: ділянки повітря повернулися до своїх середніх положень.';
 }
 
-export function SoundPropagationLab({ content, onComplete }: SoundPropagationLabProps) {
+export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPropagationLabProps) {
   const predictionGroupId = useId();
   const [predictionId, setPredictionId] = useState<string>();
   const [predictionChecked, setPredictionChecked] = useState(false);
@@ -68,9 +70,10 @@ export function SoundPropagationLab({ content, onComplete }: SoundPropagationLab
   const [observationAnswered, setObservationAnswered] = useState(false);
   const [observationAttempts, setObservationAttempts] = useState(0);
   const [staticReviewed, setStaticReviewed] = useState(false);
+  const [staticFrameIndex, setStaticFrameIndex] = useState(0);
 
   useEffect(() => {
-    if (playback !== 'playing') return undefined;
+    if (playback !== 'playing' || staticMode) return undefined;
     const timer = window.setTimeout(() => {
       setFrame((current) => {
         if (current >= lastFrame - 1) {
@@ -82,7 +85,11 @@ export function SoundPropagationLab({ content, onComplete }: SoundPropagationLab
       });
     }, 650);
     return () => window.clearTimeout(timer);
-  }, [frame, onComplete, playback]);
+  }, [frame, onComplete, playback, staticMode]);
+
+  useEffect(() => {
+    if (staticMode) setPlayback((current) => current === 'playing' ? 'paused' : current);
+  }, [staticMode]);
 
   useEffect(() => {
     const pauseWhenHidden = () => {
@@ -92,13 +99,14 @@ export function SoundPropagationLab({ content, onComplete }: SoundPropagationLab
     return () => document.removeEventListener('visibilitychange', pauseWhenHidden);
   }, []);
 
-  const frontIndex = frame >= 3 && frame <= 6 ? frame - 3 : -1;
+  const displayedFrame = staticMode ? staticFrameMap[staticFrameIndex] : frame;
+  const frontIndex = displayedFrame >= 3 && displayedFrame <= 6 ? displayedFrame - 3 : -1;
   const wavefrontX = frontIndex < 0 ? -20 : wavefrontPositions[frontIndex];
   const activeMarkerOffsets = frontIndex < 0 ? undefined : markerOffsets[frontIndex];
   const rarefactionX = frontIndex >= 0 && frontIndex < rarefactionPositions.length ? rarefactionPositions[frontIndex] : undefined;
-  const stringOffset = sourceStopped || frame === 0 || frame >= lastFrame ? 0 : frame % 2 === 0 ? -11 : 11;
-  const eardrumOffset = frame === 6 ? -4 : 0;
-  const status = frameDescription(frame, sourceStopped);
+  const stringOffset = sourceStopped || displayedFrame === 0 || displayedFrame >= lastFrame ? 0 : displayedFrame % 2 === 0 ? -11 : 11;
+  const eardrumOffset = displayedFrame === 6 ? -4 : 0;
+  const status = frameDescription(displayedFrame, sourceStopped);
   const selectedPrediction = content.predictionChoices.find((choice) => choice.id === predictionId);
   const modelObserved = playback === 'finished' || staticReviewed;
 
@@ -128,6 +136,14 @@ export function SoundPropagationLab({ content, onComplete }: SoundPropagationLab
     onComplete();
   }
 
+  function nextStaticFrame() {
+    if (staticFrameIndex === staticFrameMap.length - 1) {
+      finishStaticReview();
+      return;
+    }
+    setStaticFrameIndex((current) => current + 1);
+  }
+
   return <div className="space-y-7">
     <fieldset className="space-y-4" aria-describedby={predictionChecked ? `${predictionGroupId}-feedback` : undefined}>
       <legend className="text-lg font-semibold text-gray-950">{content.predictionQuestion}</legend>
@@ -147,19 +163,23 @@ export function SoundPropagationLab({ content, onComplete }: SoundPropagationLab
           <p className="font-semibold text-gray-950">Лабораторія поширення звуку</p>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600">Рух сильно сповільнено й збільшено, щоб його було видно. Стеж за смугастою ділянкою повітря та за контуром зміни.</p>
         </div>
-        <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-800">якісна модель</span>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-800">якісна модель</span>
+          {staticMode && <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700">покадровий режим</span>}
+        </div>
       </div>
 
       <div className="mt-5 overflow-x-auto rounded-lg border border-brand-200 bg-white">
-        <svg viewBox="0 0 360 190" className="h-auto min-w-[560px] w-full" role="img" aria-labelledby="propagation-title propagation-description">
+        <svg viewBox="0 0 360 190" className="h-auto min-w-[560px] w-full" role="img" focusable="false" aria-labelledby="propagation-title propagation-description">
           <title id="propagation-title">Струна, корпус гітари, ділянки повітря та вухо</title>
           <desc id="propagation-description">{status}</desc>
+          <g aria-hidden="true">
           <rect x="0" y="0" width="360" height="190" fill="#fff" />
           <text x="42" y="24" textAnchor="middle" fill="#475467" fontSize="11">струна й корпус</text>
           <text x="178" y="24" textAnchor="middle" fill="#475467" fontSize="11">малі ділянки повітря</text>
           <text x="323" y="24" textAnchor="middle" fill="#475467" fontSize="11">вухо</text>
 
-          <path d="M 61 52 Q 87 95 61 138 L 42 138 L 42 52 Z" transform={frame === 2 && !sourceStopped ? 'translate(3 0)' : undefined} fill="#f0ddd2" stroke="#783923" strokeWidth="3" />
+          <path d="M 61 52 Q 87 95 61 138 L 42 138 L 42 52 Z" transform={displayedFrame === 2 && !sourceStopped ? 'translate(3 0)' : undefined} fill="#f0ddd2" stroke="#783923" strokeWidth="3" />
           <line x1="25" y1="95" x2="62" y2={95 + stringOffset} stroke="#91472c" strokeWidth="4" strokeLinecap="round" />
           <line x1="25" y1="95" x2="62" y2="95" stroke="#98A2B3" strokeDasharray="3 3" />
 
@@ -186,26 +206,35 @@ export function SoundPropagationLab({ content, onComplete }: SoundPropagationLab
 
           <path d="M 314 72 C 337 66 348 81 337 94 C 329 103 330 117 315 124 C 300 119 299 79 314 72 Z" fill="#fcf9f7" stroke="#783923" strokeWidth="3" />
           <line x1={319 + eardrumOffset} y1="84" x2={319 + eardrumOffset} y2="113" stroke="#91472c" strokeWidth="4" strokeLinecap="round" />
-          {frame === 6 && <text x="319" y="146" textAnchor="middle" fill="#783923" fontSize="9">вухо отримало зміну</text>}
+          {displayedFrame === 6 && <text x="319" y="146" textAnchor="middle" fill="#783923" fontSize="9">вухо отримало зміну</text>}
+          </g>
         </svg>
-        <div className="border-t border-gray-200 px-4 py-3 text-sm leading-6 text-gray-700" aria-live="polite">{status}</div>
+        <div className="border-t border-gray-200 px-4 py-3 text-sm leading-6 text-gray-700" role="status" aria-live="polite" aria-atomic="true">
+          {staticMode && <span className="font-semibold text-gray-950">Кадр {staticFrameIndex + 1} із {staticFrameMap.length}. </span>}{status}
+        </div>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">
-        <button type="button" onClick={() => playback === 'playing' ? setPlayback('paused') : play()} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-          {playback === 'playing' ? <PauseCircle className="size-4" /> : <Play className="size-4" />}{playback === 'playing' ? 'Пауза' : playback === 'paused' ? 'Продовжити' : 'Відтворити'}
-        </button>
-        <button type="button" onClick={replay} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />Повторити</button>
-        <button type="button" disabled={frame < 3 || sourceStopped || playback === 'finished'} onClick={stopSource} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><StopCircle className="size-4" />Зупинити струну</button>
+        {staticMode ? <>
+          <button type="button" disabled={staticFrameIndex === 0} onClick={() => setStaticFrameIndex((current) => Math.max(0, current - 1))} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Назад</button>
+          <button type="button" disabled={staticReviewed} onClick={nextStaticFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-default disabled:bg-success-600 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{staticReviewed ? 'Кадри переглянуто' : staticFrameIndex === staticFrameMap.length - 1 ? 'Завершити перегляд' : 'Далі'}</button>
+        </> : <>
+          <button type="button" onClick={() => playback === 'playing' ? setPlayback('paused') : play()} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
+            {playback === 'playing' ? <PauseCircle className="size-4" /> : <Play className="size-4" />}{playback === 'playing' ? 'Пауза' : playback === 'paused' ? 'Продовжити' : 'Відтворити'}
+          </button>
+          <button type="button" onClick={replay} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />Повторити</button>
+          <button type="button" disabled={frame < 3 || sourceStopped || playback === 'finished'} onClick={stopSource} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><StopCircle className="size-4" />Зупинити струну</button>
+        </>}
       </div>
       {sourceStopped && playback !== 'finished' && <p className="mt-3 text-sm leading-6 text-gray-600">Нові зміни більше не виникають, але вже створена зміна продовжує шлях до вуха.</p>}
 
-      <details className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
-        <summary className="cursor-pointer font-semibold text-gray-950">Переглянути чотири нерухомі кадри</summary>
+      <details className="mt-6 rounded-lg border border-gray-200 bg-white p-4" open={staticMode}>
+        <summary className="cursor-pointer font-semibold text-gray-950">Текстова транскрипція: чотири фази моделі</summary>
+        <p className="mt-3 text-sm leading-6 text-gray-600">Цей опис передає весь причинний шлях без анімації та без аудіо.</p>
         <ol className="mt-4 grid gap-3 sm:grid-cols-2">
           {content.staticFrames.map((item, index) => <li key={item.title} className="rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-700"><p className="font-semibold text-gray-950">{index + 1}. {item.title}</p><p className="mt-1">{item.description}</p></li>)}
         </ol>
-        <button type="button" disabled={staticReviewed} onClick={finishStaticReview} className="mt-4 min-h-11 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-default disabled:bg-success-600 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{staticReviewed ? 'Кадри переглянуто' : 'Я переглянув/ла всі кадри'}</button>
+        {!staticMode && <button type="button" disabled={staticReviewed} onClick={finishStaticReview} className="mt-4 min-h-11 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-default disabled:bg-success-600 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{staticReviewed ? 'Транскрипцію переглянуто' : 'Я прочитав/ла транскрипцію'}</button>}
       </details>
     </div>}
 

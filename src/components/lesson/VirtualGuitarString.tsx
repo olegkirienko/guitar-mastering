@@ -9,18 +9,18 @@ interface VirtualGuitarStringProps {
   observationChoices: readonly ChoiceQuestionChoice[];
   predictionChoices: readonly ChoiceQuestionChoice[];
   audioEnabled: boolean;
+  staticMode: boolean;
   onAudioEnabledChange: (enabled: boolean) => void;
   onExperimentComplete: () => void;
 }
 
 const motionFrames = [
-  { offset: 0, label: 'Струна в середині, у звичному положенні.' },
   { offset: -30, label: 'Струна відхилилася в один бік.' },
   { offset: 0, label: 'Струна знову проходить через середину.' },
   { offset: 30, label: 'Струна відхилилася в інший бік.' },
 ] as const;
 
-export function VirtualGuitarString({ observationChoices, predictionChoices, audioEnabled, onAudioEnabledChange, onExperimentComplete }: VirtualGuitarStringProps) {
+export function VirtualGuitarString({ observationChoices, predictionChoices, audioEnabled, staticMode, onAudioEnabledChange, onExperimentComplete }: VirtualGuitarStringProps) {
   const [stringState, setStringState] = useState<StringState>('rest');
   const [elapsed, setElapsed] = useState(0);
   const [hasPlucked, setHasPlucked] = useState(false);
@@ -28,9 +28,7 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
   const [predictionId, setPredictionId] = useState<string>();
   const [experimentStarted, setExperimentStarted] = useState(false);
   const [slow, setSlow] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [showFrames, setShowFrames] = useState(false);
-  const [frameIndex, setFrameIndex] = useState(0);
+  const [frameIndex, setFrameIndex] = useState(motionFrames.length - 1);
   const [observationAttempts, setObservationAttempts] = useState(0);
   const [audioStatus, setAudioStatus] = useState<AudioStatus>('idle');
   const animationStart = useRef<number | undefined>(undefined);
@@ -41,7 +39,6 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
   const activeGain = useRef<GainNode | undefined>(undefined);
   const audioRun = useRef(0);
 
-  const staticMode = prefersReducedMotion || showFrames;
   const isMoving = stringState === 'playing' && !staticMode;
   const frame = motionFrames[frameIndex];
   const cycleDuration = slow ? 6400 : 3200;
@@ -80,12 +77,8 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
           : staticMode ? 'Покажи наступний кадр, щоб повторити дослід.' : 'Смикни струну ще раз, щоб зупинити її під час руху.';
 
   useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const updatePreference = () => setPrefersReducedMotion(query.matches);
-    updatePreference();
-    query.addEventListener('change', updatePreference);
-    return () => query.removeEventListener('change', updatePreference);
-  }, []);
+    if (staticMode) setStringState((current) => current === 'playing' ? 'paused' : current);
+  }, [staticMode]);
 
   useEffect(() => () => {
     audioRun.current += 1;
@@ -275,6 +268,12 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
     if (startsStaticExperiment) void startAudio();
   }
 
+  function previousFrame() {
+    setHasPlucked(true);
+    setFrameIndex((current) => (current - 1 + motionFrames.length) % motionFrames.length);
+    setStringState('paused');
+  }
+
   return <div className="space-y-7">
     <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -282,9 +281,7 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
           <p className="font-semibold text-gray-950">Віртуальна струна</p>
           <p className="mt-1 text-sm leading-6 text-gray-600">Потягни її пальцем на сцені або скористайся кнопкою. Аудіо для цього досліду не потрібне.</p>
         </div>
-        <button type="button" disabled={prefersReducedMotion} onClick={() => setShowFrames((current) => !current)} className="min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-          {prefersReducedMotion ? 'Покадровий режим: системне налаштування' : staticMode ? 'Показувати рух' : 'Показувати покадрово'}
-        </button>
+        {staticMode && <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-800">покадровий режим</span>}
       </div>
 
       <div className="mt-5 overflow-hidden rounded-lg border border-brand-200 bg-white">
@@ -294,18 +291,20 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
           onPointerUp={() => { if (gestureStarted.current) { pluck(); gestureStarted.current = false; } }}
           onPointerCancel={() => { gestureStarted.current = false; }}
         >
-          <svg viewBox="0 0 320 160" className="h-auto w-full" role="img" aria-labelledby="string-visual-title string-visual-description">
+          <svg viewBox="0 0 320 160" className="h-auto w-full" role="img" focusable="false" aria-labelledby="string-visual-title string-visual-description">
             <title id="string-visual-title">Струна між двома опорами</title>
             <desc id="string-visual-description">{visualDescription}</desc>
-            <rect x="20" y="66" width="16" height="28" rx="4" fill="#783923" />
-            <rect x="284" y="66" width="16" height="28" rx="4" fill="#783923" />
-            <line x1="36" y1="80" x2="284" y2="80" stroke="#98A2B3" strokeDasharray="5 5" strokeWidth="2" />
-            <path d={`M 36 80 Q 160 ${80 + offset} 284 80`} fill="none" stroke="#91472c" strokeWidth="5" strokeLinecap="round" />
-            <text x="160" y="138" textAnchor="middle" fill="#475467" fontSize="13">пунктир — звичне положення струни</text>
+            <g aria-hidden="true">
+              <rect x="20" y="66" width="16" height="28" rx="4" fill="#783923" />
+              <rect x="284" y="66" width="16" height="28" rx="4" fill="#783923" />
+              <line x1="36" y1="80" x2="284" y2="80" stroke="#98A2B3" strokeDasharray="5 5" strokeWidth="2" />
+              <path d={`M 36 80 Q 160 ${80 + offset} 284 80`} fill="none" stroke="#91472c" strokeWidth="5" strokeLinecap="round" />
+              <text x="160" y="138" textAnchor="middle" fill="#475467" fontSize="13">пунктир — звичне положення струни</text>
+            </g>
           </svg>
         </div>
-        <div className="border-t border-gray-200 px-4 py-3 text-sm text-gray-700" aria-live="polite">
-          {statusText}
+        <div className="border-t border-gray-200 px-4 py-3 text-sm text-gray-700" role="status" aria-live="polite" aria-atomic="true">
+          {staticMode && hasPlucked && <span className="font-semibold text-gray-950">Кадр {frameIndex + 1} із {motionFrames.length}. </span>}{statusText}
         </div>
       </div>
 
@@ -325,11 +324,14 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">
-        {staticMode ? <button type="button" onClick={nextFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><Play className="size-4" />Показати наступний кадр</button> : <>
+        {staticMode ? <>
+          <button type="button" disabled={!hasPlucked} onClick={previousFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Попередній кадр</button>
+          <button type="button" onClick={nextFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><Play className="size-4" />Наступний кадр</button>
+        </> : <>
           <button type="button" onClick={pluck} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><Play className="size-4" />Смикнути</button>
           <button type="button" disabled={stringState !== 'playing' && stringState !== 'paused'} onClick={togglePlayback} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{stringState === 'playing' ? <PauseCircle className="size-4" /> : <Play className="size-4" />}{stringState === 'playing' ? 'Пауза' : 'Продовжити'}</button>
         </>}
-        <button type="button" onClick={toggleSpeed} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />{slow ? 'Швидкість: повільно' : 'Швидкість: 1×'}</button>
+        {!staticMode && <button type="button" onClick={toggleSpeed} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />{slow ? 'Швидкість: повільно' : 'Швидкість: 1×'}</button>}
         <button type="button" disabled={!isStopAvailable} aria-describedby={!isStopAvailable ? 'stop-string-guidance' : undefined} onClick={stop} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><StopCircle className="size-4" />Зупинити струну</button>
       </div>
       {!isStopAvailable && <p id="stop-string-guidance" className="mt-2 text-sm text-gray-600">{stopGuidance}</p>}
