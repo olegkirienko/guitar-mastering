@@ -20,14 +20,18 @@ completed_slices:
     steps: "1-3"
     status: approved
     final_review: docs/reviews/stage-01-lesson-01/review-03-foundation-final.md
+  - id: step-04
+    name: VirtualGuitarString
+    status: approved
+    final_review: docs/reviews/stage-01-lesson-01/fix-rereview-05-step-04.md
 
 current_slice:
-  id: step-04
-  name: VirtualGuitarString
+  id: step-05
+  name: OptionalAudio
   status: approved
 
 latest_review:
-  path: docs/reviews/stage-01-lesson-01/fix-rereview-05-step-04.md
+  path: docs/reviews/stage-01-lesson-01/fix-rereview-08-step-05.md
   verdict: APPROVED
 
 blocking_findings: []
@@ -39,5 +43,6 @@ next:
 
 notes:
   - "Foundation implementation steps 1-3 are approved."
-  - "Step 4 must not include step 5 audio or later propagation/checkpoint/completion work."
   - "Step 4 is approved after targeted re-review of HIGH-01, HIGH-02, MEDIUM-07, and MEDIUM-08."
+  - "Step 5 is limited to optional audio; do not include step 6 propagation or later checkpoint/completion work."
+  - "Step 5 is approved after targeted re-review of HIGH-03, MEDIUM-09, MEDIUM-10, MEDIUM-11, and MEDIUM-12."

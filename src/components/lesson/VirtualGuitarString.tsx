@@ -3,10 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import { ChoiceQuestion, type ChoiceQuestionChoice } from '@/components/lesson/ChoiceQuestion';
 
 type StringState = 'rest' | 'playing' | 'paused' | 'stopped';
+type AudioStatus = 'idle' | 'ready' | 'blocked' | 'unavailable';
 
 interface VirtualGuitarStringProps {
   observationChoices: readonly ChoiceQuestionChoice[];
   predictionChoices: readonly ChoiceQuestionChoice[];
+  audioEnabled: boolean;
+  onAudioEnabledChange: (enabled: boolean) => void;
   onExperimentComplete: () => void;
 }
 
@@ -17,7 +20,7 @@ const motionFrames = [
   { offset: 30, label: 'Струна відхилилася в інший бік.' },
 ] as const;
 
-export function VirtualGuitarString({ observationChoices, predictionChoices, onExperimentComplete }: VirtualGuitarStringProps) {
+export function VirtualGuitarString({ observationChoices, predictionChoices, audioEnabled, onAudioEnabledChange, onExperimentComplete }: VirtualGuitarStringProps) {
   const [stringState, setStringState] = useState<StringState>('rest');
   const [elapsed, setElapsed] = useState(0);
   const [hasPlucked, setHasPlucked] = useState(false);
@@ -29,9 +32,14 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, onE
   const [showFrames, setShowFrames] = useState(false);
   const [frameIndex, setFrameIndex] = useState(0);
   const [observationAttempts, setObservationAttempts] = useState(0);
+  const [audioStatus, setAudioStatus] = useState<AudioStatus>('idle');
   const animationStart = useRef<number | undefined>(undefined);
   const animationFrame = useRef<number | undefined>(undefined);
   const gestureStarted = useRef(false);
+  const audioContext = useRef<AudioContext | undefined>(undefined);
+  const activeSource = useRef<AudioBufferSourceNode | undefined>(undefined);
+  const activeGain = useRef<GainNode | undefined>(undefined);
+  const audioRun = useRef(0);
 
   const staticMode = prefersReducedMotion || showFrames;
   const isMoving = stringState === 'playing' && !staticMode;
@@ -79,6 +87,23 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, onE
     return () => query.removeEventListener('change', updatePreference);
   }, []);
 
+  useEffect(() => () => {
+    audioRun.current += 1;
+    activeSource.current?.stop();
+    void audioContext.current?.close();
+  }, []);
+
+  useEffect(() => {
+    const pauseForHiddenDocument = () => {
+      if (document.hidden) {
+        if (stringState === 'playing') setStringState('paused');
+        stopAudio();
+      }
+    };
+    document.addEventListener('visibilitychange', pauseForHiddenDocument);
+    return () => document.removeEventListener('visibilitychange', pauseForHiddenDocument);
+  }, [stringState]);
+
   useEffect(() => {
     if (!isMoving) return undefined;
     animationStart.current = performance.now() - elapsed;
@@ -96,25 +121,158 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, onE
     return () => { if (animationFrame.current) cancelAnimationFrame(animationFrame.current); };
   }, [cycleDuration, elapsed, isMoving]);
 
+  function stopAudio(fadeDuration = 0.08) {
+    audioRun.current += 1;
+    const gain = activeGain.current;
+    const source = activeSource.current;
+    const context = audioContext.current;
+    if (!gain || !source || !context) return;
+
+    const now = context.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setTargetAtTime(0.0001, now, fadeDuration / 3);
+    source.stop(now + fadeDuration * 6);
+    activeGain.current = undefined;
+    activeSource.current = undefined;
+  }
+
+  function getAudioContext() {
+    if (audioContext.current && audioContext.current.state !== 'closed') return audioContext.current;
+    if (!window.AudioContext) {
+      setAudioStatus('unavailable');
+      return undefined;
+    }
+    try {
+      audioContext.current = new window.AudioContext();
+      return audioContext.current;
+    } catch {
+      setAudioStatus('unavailable');
+      return undefined;
+    }
+  }
+
+  async function enableAudio() {
+    const context = getAudioContext();
+    if (!context) return;
+    try {
+      await context.resume();
+      onAudioEnabledChange(true);
+      setAudioStatus('ready');
+    } catch {
+      onAudioEnabledChange(false);
+      setAudioStatus('blocked');
+    }
+  }
+
+  function createPluckedStringBuffer(context: AudioContext) {
+    const duration = 1.25;
+    const length = Math.floor(context.sampleRate * duration);
+    const buffer = context.createBuffer(1, length, context.sampleRate);
+    const samples = buffer.getChannelData(0);
+    const delayLength = Math.max(2, Math.round(context.sampleRate / 110));
+    const delay = new Float32Array(delayLength);
+    let seed = 0x5f3759df;
+    for (let index = 0; index < delayLength; index += 1) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      delay[index] = ((seed / 0xffffffff) * 2 - 1) * (1 - index / delayLength * 0.35);
+    }
+    let cursor = 0;
+    let previous = 0;
+    for (let index = 0; index < length; index += 1) {
+      const current = delay[cursor];
+      const next = (current + previous) * 0.498;
+      delay[cursor] = next;
+      previous = current;
+      cursor = (cursor + 1) % delayLength;
+      samples[index] = current * Math.exp(-index / context.sampleRate * 2.3);
+    }
+    return buffer;
+  }
+
+  async function startAudio() {
+    if (!audioEnabled) return;
+    stopAudio(0.03);
+    const run = audioRun.current;
+    const context = getAudioContext();
+    if (!context) return;
+    try {
+      if (context.state === 'suspended') await context.resume();
+      if (audioRun.current !== run) return;
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      const now = context.currentTime;
+      source.buffer = createPluckedStringBuffer(context);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.012);
+      gain.gain.setTargetAtTime(0.0001, now + 0.18, 0.22);
+      source.connect(gain).connect(context.destination);
+      source.onended = () => {
+        source.disconnect();
+        gain.disconnect();
+        if (activeSource.current === source) {
+          activeSource.current = undefined;
+          activeGain.current = undefined;
+        }
+      };
+      activeSource.current = source;
+      activeGain.current = gain;
+      source.start(now);
+      source.stop(now + 1.25);
+    } catch {
+      onAudioEnabledChange(false);
+      setAudioStatus('blocked');
+    }
+  }
+
+  function toggleAudio() {
+    if (!audioEnabled) {
+      void enableAudio();
+      return;
+    }
+    onAudioEnabledChange(false);
+    stopAudio();
+  }
+
   function pluck() {
     setHasPlucked(true);
     setElapsed(0);
     setFrameIndex(1);
     setStringState(staticMode ? 'paused' : 'playing');
     if (predictionMade) setExperimentStarted(true);
+    void startAudio();
   }
 
   function stop() {
     if (!isStopAvailable) return;
     setStringState('stopped');
+    stopAudio();
     onExperimentComplete();
   }
 
+  function togglePlayback() {
+    if (stringState === 'playing') {
+      setStringState('paused');
+      stopAudio();
+      return;
+    }
+    setStringState('playing');
+    void startAudio();
+  }
+
+  function toggleSpeed() {
+    const nextSlow = !slow;
+    setSlow(nextSlow);
+    setElapsed(0);
+    if (stringState === 'playing') void startAudio();
+  }
+
   function nextFrame() {
+    const startsStaticExperiment = stringState !== 'paused';
     setHasPlucked(true);
     setFrameIndex((current) => (current + 1) % motionFrames.length);
     setStringState('paused');
     if (predictionMade) setExperimentStarted(true);
+    if (startsStaticExperiment) void startAudio();
   }
 
   return <div className="space-y-7">
@@ -151,12 +309,27 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, onE
         </div>
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+        <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600" aria-live="polite">
+          {audioStatus === 'unavailable'
+            ? 'Аудіо недоступне в цьому браузері. Візуальна модель працює повністю самостійно.'
+            : audioStatus === 'blocked'
+              ? 'Браузер не дозволив увімкнути аудіо. Спробуй ще раз або продовжуй із візуальною моделлю.'
+              : audioEnabled
+                ? 'Звук увімкнено. Він почнеться лише після щипка струни.'
+                : 'Звук необов’язковий: візуальна модель і текст показують весь результат.'}
+        </div>
+        <button type="button" onClick={toggleAudio} aria-pressed={audioEnabled} className="min-h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
+          {audioEnabled ? 'Вимкнути звук' : audioStatus === 'blocked' ? 'Спробувати ввімкнути звук' : 'Увімкнути звук'}
+        </button>
+      </div>
+
       <div className="mt-5 flex flex-wrap gap-3">
         {staticMode ? <button type="button" onClick={nextFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><Play className="size-4" />Показати наступний кадр</button> : <>
           <button type="button" onClick={pluck} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><Play className="size-4" />Смикнути</button>
-          <button type="button" disabled={stringState !== 'playing' && stringState !== 'paused'} onClick={() => setStringState((current) => current === 'playing' ? 'paused' : 'playing')} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{stringState === 'playing' ? <PauseCircle className="size-4" /> : <Play className="size-4" />}{stringState === 'playing' ? 'Пауза' : 'Продовжити'}</button>
+          <button type="button" disabled={stringState !== 'playing' && stringState !== 'paused'} onClick={togglePlayback} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{stringState === 'playing' ? <PauseCircle className="size-4" /> : <Play className="size-4" />}{stringState === 'playing' ? 'Пауза' : 'Продовжити'}</button>
         </>}
-        <button type="button" onClick={() => { setSlow((current) => !current); setElapsed(0); }} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />{slow ? 'Швидкість: повільно' : 'Швидкість: 1×'}</button>
+        <button type="button" onClick={toggleSpeed} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />{slow ? 'Швидкість: повільно' : 'Швидкість: 1×'}</button>
         <button type="button" disabled={!isStopAvailable} aria-describedby={!isStopAvailable ? 'stop-string-guidance' : undefined} onClick={stop} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><StopCircle className="size-4" />Зупинити струну</button>
       </div>
       {!isStopAvailable && <p id="stop-string-guidance" className="mt-2 text-sm text-gray-600">{stopGuidance}</p>}
