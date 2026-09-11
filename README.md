@@ -50,28 +50,13 @@ src/
 └── main.tsx
 ```
 
-# Codex Orchestration Layer v1
+# Codex Orchestration Layer v1.2
 
-Repo-local workflow for repeatable lesson development:
+The repository contains a deterministic, repo-local workflow for lesson development.
 
-`design/planning → plan review → implementation → implementation review → fixes → fix re-review`
+The repository is the durable source of truth; Codex sessions do not need to carry previous chat history forward.
 
-The repository is the durable source of truth. Chat history is not required for handoff between phases.
-
-## Principles
-
-1. `AGENTS.md` contains project-wide invariants.
-2. `.codex/agents/` defines phase-specific custom agent profiles.
-3. `.codex/skills/` defines reusable phase workflows and artifact contracts.
-4. `docs/course-map/` is curriculum truth.
-5. `docs/lesson-designs/` is lesson design/specification truth.
-6. `docs/reviews/` contains immutable review artifacts.
-7. `docs/workflow/` records the current workflow state and gate status.
-8. Review agents do not modify application code.
-9. Fix agents address finding IDs only.
-10. Human approval remains a gate after design review and before starting a new implementation slice.
-
-## v1 workflow
+## Workflow
 
 ```text
 DESIGN
@@ -83,73 +68,122 @@ HUMAN GATE
 IMPLEMENTATION
   ↓
 IMPLEMENTATION REVIEW
-  ├── APPROVED ──────────────→ HUMAN GATE / NEXT SLICE
-  └── CHANGES REQUIRED
+  ├── CHANGES REQUIRED
+  │        ↓
+  │      FIXES
+  │        ↓
+  │   FIX RE-REVIEW
+  │        ├── CHANGES REQUIRED → FIXES
+  │        └── APPROVED
+  │
+  └── APPROVED
            ↓
-          FIXES
+       HUMAN GATE
            ↓
-       FIX RE-REVIEW
-           ├── APPROVED ─────→ HUMAN GATE / NEXT SLICE
-           └── CHANGES REQUIRED ─→ FIXES
+    NEXT SLICE OR COMPLETE
 ```
+
+For the final approved slice, the workflow uses a `lesson_completion` human gate and then transitions to `phase: complete`.
+
+## Sources of truth
+
+- `AGENTS.md` — project-wide rules and orchestration invariants
+- `.codex/agents/` — role-specific agent profiles and model/reasoning policy
+- `.codex/skills/` — reusable phase workflows
+- `docs/course-map/` — curriculum/stage truth
+- `docs/lesson-designs/` — approved lesson specifications
+- `docs/reviews/` — immutable review artifacts
+- `docs/workflow/` — current deterministic workflow state
 
 ## Invocation
 
-Start Codex in the repository root and ask it to run the `lesson-orchestrator` skill for the current workflow state.
+For a normal phase, a minimal launcher prompt is sufficient:
 
 ```text
-Use the lesson-orchestrator workflow.
-Read docs/workflow/stage-01-lesson-01.yaml and execute the next allowed phase.
-Stop at human gates.
+Use the lesson-orchestrator workflow for stage-01-lesson-01.
+
+Read and validate the current workflow state, then execute the next allowed phase.
 ```
+
+At a human gate, approval must be explicit:
+
+```text
+Use the lesson-orchestrator workflow for stage-01-lesson-01.
+
+Approve the current human gate, then read and validate the workflow state and execute the next allowed phase.
+```
+
+The orchestrator executes one allowed phase at a time and stops at the next phase or human gate.
 
 ## Model policy
 
-The repo-local agent profiles declare the intended model and reasoning effort:
+Repo-local agent profiles declare the intended model and reasoning effort:
 
-- design: Sol / medium
-- plan review: Sol / high
-- implementation: Terra / medium
-- implementation review: Sol / high
-- targeted fixes: Terra / low
-- fix re-review: Sol / high
+- design/planning — Sol / medium
+- design review — Sol / high
+- implementation — Terra / medium
+- implementation review — Sol / high
+- targeted fixes — Terra / low
+- targeted re-review — Sol / high
 
-Verify the effective child model/effort in your installed Codex runtime before relying on model pinning for cost or quality guarantees.
+A fresh Codex session per workflow phase is recommended. The top-level orchestrator session can use Sol / medium; the phase-specific profile is the intended source of truth for delegated model/effort.
 
-## Artifact policy
+## Deterministic workflow state
 
-Review artifacts are immutable snapshots. Never edit an old review to mark findings fixed; create a new review artifact.
+Top-level `phase` in `docs/workflow/*.yaml` is the canonical routing field.
 
-## v1 scope
+Before executing any phase, the orchestrator validates workflow-state consistency. If the state is contradictory, it fails closed with:
 
-v1 does not automate Git commits, PR creation, issue tracking, releases, or arbitrary parallel fan-out. It automates repeated instructions and handoffs while retaining explicit human gates.
+```text
+WORKFLOW STATE INCONSISTENT
+```
 
-# Codex Orchestration v1.1 Patch
-Fixes the routing inconsistency discovered during the first live implementation/review cycle.
-
-## Core rule
-
-Top-level `phase` is the canonical routing field.
-
-`next.phase` is not a second source of truth. After a completed transition it must match `phase`, except at a human gate, where it names the phase that becomes legal only after explicit approval.
-
-Before executing a phase, the orchestrator must validate workflow-state consistency. If fields conflict, it must fail closed with:
-
-`WORKFLOW STATE INCONSISTENT`
-
-and must not modify application code or infer the intended phase.
+It must not infer the intended phase or modify application code.
 
 Each successful phase owns a complete state transition.
 
-## Apply
+## Review and fix policy
 
-Replace the included skill files and `docs/workflow/README.md`.
+Review artifacts are immutable snapshots. New review/re-review cycles create new files rather than rewriting previous reviews.
 
-Merge `AGENTS.v1.1-snippet.md` into the existing root `AGENTS.md`.
+Actionable findings receive stable IDs such as:
 
-The current Step 04 state after implementation review is already expected to be:
+```text
+HIGH-01
+MEDIUM-03
+```
 
-- phase: `fixes`
-- status: `changes_required`
-- blocking findings: `HIGH-01`, `HIGH-02`, `MEDIUM-07`, `MEDIUM-08`
-- next action: `fix-step-04`
+Targeted fixes operate only on active blocking finding IDs, and targeted re-review verifies those findings plus direct regressions.
+
+## Terminal lesson state
+
+When the final approved implementation slice has no successor in the lesson specification, the workflow transitions through:
+
+```text
+human_gate / lesson_completion
+→ explicit human approval
+→ complete
+```
+
+Canonical terminal state:
+
+```yaml
+phase: complete
+status: complete
+gate: none
+
+blocking_findings: []
+
+next:
+  phase: complete
+  action: none
+  human_approval_required: false
+```
+
+`complete` means the current lesson workflow is complete, not the entire course.
+
+## Current orchestration scope
+
+The orchestration layer automates phase routing, artifact handoff, validation contracts, review/fix loops, and deterministic state transitions.
+
+It intentionally does not automate Git commits, pushes, pull requests, releases, or arbitrary parallel agent fan-out.

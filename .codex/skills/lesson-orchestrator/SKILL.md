@@ -1,38 +1,28 @@
 ---
 name: lesson-orchestrator
-description: Coordinate the lesson engineering workflow deterministically by validating workflow state, routing from canonical phase, and stopping at human gates.
+description: Deterministically coordinate lesson workflow, including final lesson completion.
 ---
 
 # Lesson Orchestrator
 
-## Canonical routing
-
 Top-level `phase` is canonical.
 
-`next.phase` must match `phase` after a completed transition, except when `phase: human_gate`; then `next.phase` names the post-approval phase.
-
-Do not choose a phase from `next.phase`, `current_slice.status`, review verdicts, filenames, or user wording when they conflict with `phase`.
-
-## Preflight validation
-
-Before executing any phase, verify:
-
-1. `phase` is supported;
-2. `next.phase` is compatible with `phase`;
-3. `gate` is compatible with `phase`;
-4. `current_slice.status` is compatible with `phase`;
-5. `blocking_findings` is compatible with review/fix state;
-6. referenced required artifacts exist;
-7. `latest_review.verdict`, when it drives state, is compatible with `phase/status`.
+Before execution validate:
+1. supported phase;
+2. `next.phase` compatibility;
+3. gate compatibility;
+4. current slice status compatibility;
+5. blocking findings compatibility;
+6. required artifacts exist;
+7. latest review verdict compatibility;
+8. `begin-next-approved-slice` is used only when a later slice actually exists;
+9. `lesson_completion` is used only when current slice is final.
 
 If inconsistent:
-
-- stop immediately;
-- report exactly `WORKFLOW STATE INCONSISTENT`;
-- list conflicting fields and expected values;
+- stop with `WORKFLOW STATE INCONSISTENT`;
+- list conflicts and expected values;
 - do not modify application code;
-- do not execute the requested phase;
-- do not silently repair state unless explicitly asked for a state-only repair.
+- do not infer or silently repair.
 
 ## Routing
 
@@ -42,47 +32,53 @@ If inconsistent:
 - `implementation_review` → `implementation-review`
 - `fixes` → `targeted-fix`
 - `fix_rereview` → `targeted-rereview`
-- `human_gate` → stop
-- `complete` → stop
-
-## Outcome routing
-
-Design review:
-- APPROVED → human gate / design approval
-- CHANGES REQUIRED → design
-
-Implementation review:
-- APPROVED → human gate / next-slice approval
-- CHANGES REQUIRED → fixes with exact blocking IDs
-
-Fix re-review:
-- APPROVED → human gate / next-slice approval
-- CHANGES REQUIRED → fixes with remaining blocking IDs
-
-For `APPROVED WITH MINOR FIXES`, follow explicit blocking/non-blocking classification.
-
-## Complete-transition rule
-
-A phase is not complete until both its work and workflow-state transition are complete.
-
-Update all relevant fields together:
-`phase`, `status`, `gate`, `current_slice.status`, `latest_review`,
-`blocking_findings`, `next.phase`, `next.action`, `next.human_approval_required`.
+- `human_gate` → stop unless explicit approval is supplied
+- `complete` → stop and report lesson completion
 
 ## Human gates
 
-Do not cross:
-- reviewed design → implementation;
-- approved implementation slice → next slice.
+### `design_approval`
+On explicit approval, transition to first approved implementation slice.
 
-## Completion report
+### `next_slice_approval`
+On explicit approval:
+- verify a later approved slice exists;
+- add previous approved slice to `completed_slices` if needed;
+- set next slice as `current_slice`;
+- transition fully to `phase: implementation`.
 
-Report:
-- preflight validation result;
-- phase executed;
-- agent/skill used;
-- artifacts created/modified;
-- validation;
-- resulting canonical `phase`;
-- gate/status;
-- next allowed action.
+Never invent the next slice.
+
+### `lesson_completion`
+On explicit approval:
+- verify current slice is final;
+- ensure it is recorded in `completed_slices`;
+- keep it in `current_slice` for auditability;
+- transition fully to:
+
+```yaml
+phase: complete
+status: complete
+gate: none
+blocking_findings: []
+next:
+  phase: complete
+  action: none
+  human_approval_required: false
+```
+
+Do not start another lesson.
+
+## Approved slice decision
+
+Whenever implementation review or targeted re-review returns `APPROVED`, inspect the approved lesson specification.
+
+- Later slice exists → `human_gate / next_slice_approval`
+- No later slice → `human_gate / lesson_completion`
+
+## Complete transition rule
+
+Update all relevant fields together:
+`phase`, `status`, `gate`, `current_slice`, `completed_slices`,
+`latest_review`, `blocking_findings`, `next.phase`, `next.action`,
+`next.human_approval_required`.

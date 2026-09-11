@@ -58,7 +58,7 @@ blocking_findings: []
 
 next:
   phase: complete
-  action: no-further-lesson-implementation
+  action: none
   human_approval_required: false
 
 notes:

@@ -1,6 +1,8 @@
 version: 1
+
 lesson_id: <lesson-id>
 title: "<lesson title>"
+
 phase: design
 status: ready
 gate: none
@@ -31,4 +33,5 @@ next:
   action: create-or-revise-design
   human_approval_required: false
 
-notes: []
+notes:
+  - "When the final slice is approved, route through lesson_completion before complete."

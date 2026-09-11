@@ -32,12 +32,14 @@ Lesson flow should generally follow:
 
 experience
 → question
+→ prediction
+→ experiment
 → observation
 → pattern
 → concept/name
-→ guitar experiment
-→ application
-→ next question
+→ guitar application
+→ checkpoint
+→ bridge / next question
 
 Every lesson should combine:
 
@@ -56,7 +58,7 @@ Avoid long passive theory blocks.
 - Use @/* imports for src.
 - Use Tailwind CSS.
 - Do not add dependencies unless necessary.
-- Run pnpm build after meaningful changes.
+- Run `pnpm lint` and `pnpm build` after meaningful changes; run `git diff --check` for implementation/fix workflow phases.
 
 ## Engineering workflow
 
@@ -98,7 +100,8 @@ Fix tasks must reference finding IDs and remain limited to those findings.
 
 Human approval is required:
 1. after a design/plan is reviewed and before implementation begins;
-2. after an implementation slice is approved and before the next slice begins.
+2. after an implementation slice is approved and before the next slice begins;
+3. after the final implementation slice is approved and before the lesson transitions to `complete`.
 
 The orchestrator must stop at these gates.
 
@@ -163,3 +166,51 @@ Update all relevant fields together:
 - `next.human_approval_required`
 
 Never leave `phase` pointing at a phase that has already completed.
+
+## Terminal lesson transitions
+
+Before routing an approved implementation slice to `next_slice_approval`, verify that the approved lesson specification defines another implementation slice after the current one.
+
+If another slice exists:
+
+```yaml
+phase: human_gate
+status: approved
+gate: next_slice_approval
+next:
+  phase: implementation
+  action: begin-next-approved-slice
+  human_approval_required: true
+```
+
+If the current slice is final:
+
+```yaml
+phase: human_gate
+status: approved
+gate: lesson_completion
+next:
+  phase: complete
+  action: complete-lesson
+  human_approval_required: true
+```
+
+After explicit approval of `lesson_completion`:
+
+```yaml
+phase: complete
+status: complete
+gate: none
+blocking_findings: []
+next:
+  phase: complete
+  action: none
+  human_approval_required: false
+```
+
+Rules:
+- Never invent a slice not present in the approved lesson specification.
+- Record the final approved slice in `completed_slices`.
+- Keep the final slice in `current_slice` for auditability.
+- `complete` means this lesson is complete, not the entire course.
+- Do not automatically start another lesson.
