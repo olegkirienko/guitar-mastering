@@ -11,6 +11,7 @@
 - Untitled UI React ecosystem / React Aria
 - pnpm
 - GitHub Pages
+- Cloudflare Workers + D1 (preview runtime)
 
 ## Local development
 
@@ -22,8 +23,21 @@ pnpm dev
 Build:
 
 ```bash
-pnpm build
+pnpm build:pages
 ```
+
+Worker preview build and local runtime:
+
+```bash
+pnpm build:worker
+pnpm db:migrate:local
+pnpm exec wrangler dev
+```
+
+The deployment target fails closed to `pages`: only an explicit
+`VITE_DEPLOY_TARGET=worker` enables the root-base Worker build and future account
+capabilities. Local API probes are available at `/api/v1/health` and
+`/api/v1/readiness`.
 
 Preview production build:
 
@@ -31,11 +45,28 @@ Preview production build:
 pnpm preview
 ```
 
+Repository validation:
+
+```bash
+pnpm lint
+pnpm test
+pnpm build:pages
+pnpm build:worker
+```
+
+`pnpm test` includes the runtime/schema acceptance suite. It builds both
+deployment targets through the real Vite configuration, exercises the client
+account-capability gate, and applies the checked-in migrations to fresh,
+isolated local D1 state. Run only that boundary with
+`pnpm test:runtime-schema`.
+
 ## GitHub Pages
 
 Проєкт використовує `HashRouter`, тому він коректно працює як статичний сайт на GitHub Pages без server-side routing.
 
-Vite налаштований з `base: './'`, тому збірка використовує відносні asset paths.
+Pages-збірка використовує `base: '/guitar-mastering/'`. Наявний workflow завжди
+передає явний target `pages`, тому майбутні account/profile/sync entry points не
+можуть випадково потрапити на origin без API.
 
 ## Structure
 

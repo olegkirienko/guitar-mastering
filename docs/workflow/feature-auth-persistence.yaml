@@ -6,7 +6,7 @@ title: "Authentication and persistence foundation"
 
 phase: human_gate
 status: approved
-gate: design_approval
+gate: next_slice_approval
 
 design:
   path: docs/technical-designs/feature-auth-persistence.md
@@ -23,19 +23,19 @@ context:
 completed_slices: []
 
 current_slice:
-  id: design
-  name: "Technical architecture design"
+  id: cloudflare-runtime-schema
+  name: "Runtime and persistence skeleton"
   status: approved
 
 latest_review:
-  path: docs/reviews/feature-auth-persistence/design-review-02.md
+  path: docs/reviews/feature-auth-persistence/fix-rereview-02-cloudflare-runtime-schema.md
   verdict: APPROVED
 
 blocking_findings: []
 
 next:
   phase: implementation
-  action: begin-approved-slice-cloudflare-runtime-schema
+  action: begin-approved-slice-auth-session-api
   human_approval_required: true
 
 notes:
@@ -50,3 +50,8 @@ notes:
   - "Design review 01 requires revision for HIGH-01, HIGH-02, MEDIUM-01, and MEDIUM-02 before the design approval gate."
   - "The revised design addresses HIGH-01, HIGH-02, MEDIUM-01, and MEDIUM-02 and is ready for a new immutable design review."
   - "Design review 02 approves the revised design; explicit design approval is required before the cloudflare-runtime-schema slice."
+  - "Human approved the design gate; implementation of cloudflare-runtime-schema is authorized."
+  - "The cloudflare-runtime-schema slice is implemented and validated; implementation review is next."
+  - "Implementation review 01 requires a targeted fix for MEDIUM-03 before the slice can be approved."
+  - "The targeted fix for MEDIUM-03 adds automated build, capability-gate, and isolated local D1 schema acceptance coverage and is ready for re-review."
+  - "Targeted re-review 02 verifies MEDIUM-03 as fixed and approves cloudflare-runtime-schema; explicit next-slice approval is required before auth-session-api."

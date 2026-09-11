@@ -1,0 +1,29 @@
+name = "guitar-mastering"
+main = "worker/index.ts"
+compatibility_date = "2026-09-11"
+
+# The Paid Workers plan is the intended production baseline. Slice 2 must still
+# benchmark the prescribed PBKDF2 policy in preview before production launch.
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "guitar-mastering-local"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[env.preview]
+name = "guitar-mastering-preview"
+workers_dev = true
+preview_urls = false
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "guitar-mastering-preview"
+database_id = "c70af9e6-73e0-4baa-8023-af8679cba410"
+migrations_dir = "migrations"
