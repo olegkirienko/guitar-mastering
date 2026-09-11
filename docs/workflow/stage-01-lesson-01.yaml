@@ -36,14 +36,18 @@ completed_slices:
     name: ReducedMotionAndScreenReader
     status: approved
     final_review: docs/reviews/stage-01-lesson-01/implementation-review-11-step-07.md
+  - id: step-08
+    name: Checkpoint
+    status: approved
+    final_review: docs/reviews/stage-01-lesson-01/implementation-review-12-step-08.md
 
 current_slice:
-  id: step-08
-  name: Checkpoint
+  id: step-09
+  name: LessonCompletionAndBridge
   status: approved
 
 latest_review:
-  path: docs/reviews/stage-01-lesson-01/implementation-review-12-step-08.md
+  path: docs/reviews/stage-01-lesson-01/fix-rereview-14-step-09.md
   verdict: APPROVED
 
 blocking_findings: []
@@ -68,3 +72,8 @@ notes:
   - "Step 8 is limited to the checkpoint sequence, concrete hints, control question, and checkpoint completion rules; do not include the lesson completion or bridge screen."
   - "Step 8 checkpoint is implemented and ready for implementation review."
   - "Step 8 is approved after implementation review; stop at the human gate before beginning step 9 lesson completion and bridge work."
+  - "Step 9 is limited to lesson completion, optional reflection, persisted completion time, and the bridge to high and low sounds; do not implement the next lesson's explanation or interaction."
+  - "Step 9 lesson completion and bridge are implemented and ready for implementation review."
+  - "Step 9 implementation review requires a targeted fix for MEDIUM-15."
+  - "Step 9 targeted fix for MEDIUM-15 is ready for re-review."
+  - "Step 9 is approved after targeted re-review of MEDIUM-15; stop at the human gate before beginning another slice."
