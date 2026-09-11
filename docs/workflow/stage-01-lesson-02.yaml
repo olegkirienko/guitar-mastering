@@ -1,0 +1,51 @@
+version: 1
+
+lesson_id: stage-01-lesson-02
+title: "Етап I · Урок 2 — Чому звуки бувають високими й низькими?"
+
+phase: human_gate
+status: approved
+gate: design_approval
+
+spec:
+  path: docs/lesson-designs/stage-01-lesson-02-frequency-pitch.md
+  status: approved
+
+course_map:
+  stage: docs/course-map/stage-01-sound.md
+  index: docs/course-map/README.md
+
+previous_lesson:
+  lesson_id: stage-01-lesson-01
+  spec: docs/lesson-designs/stage-01-lesson-01-sound.md
+  workflow: docs/workflow/stage-01-lesson-01.yaml
+  status: complete
+
+completed_slices: []
+
+current_slice:
+  id: design
+  name: "Lesson design"
+  status: approved
+
+latest_review:
+  path: docs/reviews/stage-01-lesson-02/design-review-02.md
+  verdict: APPROVED
+
+blocking_findings: []
+
+next:
+  phase: implementation
+  action: begin-approved-implementation
+  human_approval_required: true
+
+notes:
+  - "Lesson 2 belongs to Stage I — Sound."
+  - "The pedagogical focus is frequency and perceived pitch, introduced only after observation/experiment."
+  - "Do not introduce harmonics, timbre, scales, note naming, intervals, or later-stage concepts unless explicitly required as a teaser."
+  - "Use Lesson 1 only for continuity and prerequisite context; do not reopen or redesign the completed Lesson 1 workflow."
+  - "The initial workflow phase is design; the first durable output should be the Lesson 2 specification under docs/lesson-designs/."
+  - "The Lesson 2 design specification is ready for design review."
+  - "Design review 01 requires revision for HIGH-01 and MEDIUM-01 before the design approval gate."
+  - "The design revision addresses HIGH-01 and MEDIUM-01 and clarifies LOW-01; findings remain pending design re-review."
+  - "Design review 02 approves the revised specification; explicit design approval is required before the foundation slice."
