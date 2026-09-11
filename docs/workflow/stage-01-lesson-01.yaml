@@ -3,9 +3,9 @@ version: 1
 lesson_id: stage-01-lesson-01
 title: "Етап I · Урок 1 — Що таке звук?"
 
-phase: human_gate
-status: approved
-gate: next_slice_approval
+phase: complete
+status: complete
+gate: none
 
 spec:
   path: docs/lesson-designs/stage-01-lesson-01-sound.md
@@ -40,6 +40,10 @@ completed_slices:
     name: Checkpoint
     status: approved
     final_review: docs/reviews/stage-01-lesson-01/implementation-review-12-step-08.md
+  - id: step-09
+    name: LessonCompletionAndBridge
+    status: approved
+    final_review: docs/reviews/stage-01-lesson-01/fix-rereview-14-step-09.md
 
 current_slice:
   id: step-09
@@ -53,9 +57,9 @@ latest_review:
 blocking_findings: []
 
 next:
-  phase: implementation
-  action: begin-next-approved-slice
-  human_approval_required: true
+  phase: complete
+  action: no-further-lesson-implementation
+  human_approval_required: false
 
 notes:
   - "Foundation implementation steps 1-3 are approved."
