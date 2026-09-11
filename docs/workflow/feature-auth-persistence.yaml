@@ -4,13 +4,13 @@ work_item_id: feature-auth-persistence
 work_item_type: technical_feature
 title: "Authentication and persistence foundation"
 
-phase: design
-status: ready
-gate: none
+phase: human_gate
+status: approved
+gate: design_approval
 
 design:
   path: docs/technical-designs/feature-auth-persistence.md
-  status: draft
+  status: approved
 
 context:
   - AGENTS.md
@@ -25,18 +25,18 @@ completed_slices: []
 current_slice:
   id: design
   name: "Technical architecture design"
-  status: ready
+  status: approved
 
 latest_review:
-  path: null
-  verdict: null
+  path: docs/reviews/feature-auth-persistence/design-review-02.md
+  verdict: APPROVED
 
 blocking_findings: []
 
 next:
-  phase: design
-  action: create-or-revise-design
-  human_approval_required: false
+  phase: implementation
+  action: begin-approved-slice-cloudflare-runtime-schema
+  human_approval_required: true
 
 notes:
   - "Design authentication, profile, server-side persistence, and hosting/runtime architecture before implementation."
@@ -46,3 +46,7 @@ notes:
   - "Persist users, sessions, and lesson progress."
   - "Evaluate Cloudflare Workers + D1 as the preferred deployment direction, but the design phase should justify or revise that choice."
   - "Do not continue Lesson 2 implementation until this technical foundation work item is complete."
+  - "The technical design is ready for design review and defines six ordered implementation slices."
+  - "Design review 01 requires revision for HIGH-01, HIGH-02, MEDIUM-01, and MEDIUM-02 before the design approval gate."
+  - "The revised design addresses HIGH-01, HIGH-02, MEDIUM-01, and MEDIUM-02 and is ready for a new immutable design review."
+  - "Design review 02 approves the revised design; explicit design approval is required before the cloudflare-runtime-schema slice."
