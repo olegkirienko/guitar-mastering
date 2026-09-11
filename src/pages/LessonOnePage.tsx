@@ -4,13 +4,14 @@ import { LessonShell } from '@/components/lesson/LessonShell';
 import { LessonStep } from '@/components/lesson/LessonStep';
 import { RealWorldExperiment } from '@/components/lesson/RealWorldExperiment';
 import { SoundPropagationLab } from '@/components/lesson/SoundPropagationLab';
+import { SoundPathCheckpoint } from '@/components/lesson/SoundPathCheckpoint';
 import { VirtualGuitarString } from '@/components/lesson/VirtualGuitarString';
 import { lessonOneContent, type LessonOneStepId } from '@/data/lessons/stage-01-lesson-01';
 
-type LessonOneProgress = { currentStepId: LessonOneStepId; completedStepIds: LessonOneStepId[]; audioEnabled: boolean; prefersStatic: boolean; };
+type LessonOneProgress = { currentStepId: LessonOneStepId; completedStepIds: LessonOneStepId[]; audioEnabled: boolean; prefersStatic: boolean; checkpointPassed: boolean; };
 type StoredProgress = { progress: LessonOneProgress; storageAvailable: boolean; };
 const storageKey = 'guitar-mastering:stage-01-lesson-01';
-const defaultProgress: LessonOneProgress = { currentStepId: 'intro', completedStepIds: [], audioEnabled: false, prefersStatic: false };
+const defaultProgress: LessonOneProgress = { currentStepId: 'intro', completedStepIds: [], audioEnabled: false, prefersStatic: false, checkpointPassed: false };
 
 function readProgress(): StoredProgress {
   let stored: string | null;
@@ -23,10 +24,11 @@ function readProgress(): StoredProgress {
     if (!value || typeof value !== 'object') return { progress: defaultProgress, storageAvailable: true };
     const progress = value as Partial<LessonOneProgress>;
     return { progress: {
-      currentStepId: progress.currentStepId === 'air' ? 'air' : progress.currentStepId === 'string' ? 'string' : 'intro',
-      completedStepIds: Array.isArray(progress.completedStepIds) ? progress.completedStepIds.filter((id): id is LessonOneStepId => id === 'intro' || id === 'string' || id === 'air') : [],
+      currentStepId: progress.currentStepId === 'checkpoint' ? 'checkpoint' : progress.currentStepId === 'air' ? 'air' : progress.currentStepId === 'string' ? 'string' : 'intro',
+      completedStepIds: Array.isArray(progress.completedStepIds) ? progress.completedStepIds.filter((id): id is LessonOneStepId => id === 'intro' || id === 'string' || id === 'air' || id === 'checkpoint') : [],
       audioEnabled: progress.audioEnabled === true,
       prefersStatic: progress.prefersStatic === true,
+      checkpointPassed: progress.checkpointPassed === true,
     }, storageAvailable: true };
   } catch { return { progress: defaultProgress, storageAvailable: true }; }
 }
@@ -38,9 +40,11 @@ export function LessonOnePage() {
   const [shouldFocusIntro, setShouldFocusIntro] = useState(false);
   const [shouldFocusString, setShouldFocusString] = useState(false);
   const [shouldFocusAir, setShouldFocusAir] = useState(false);
+  const [shouldFocusCheckpoint, setShouldFocusCheckpoint] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const isStringStep = progress.currentStepId === 'string';
   const isAirStep = progress.currentStepId === 'air';
+  const isCheckpointStep = progress.currentStepId === 'checkpoint';
   const staticMode = prefersReducedMotion || progress.prefersStatic;
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(progress)); } catch { setStorageAvailable(false); } }, [progress]);
   useEffect(() => {
@@ -53,8 +57,9 @@ export function LessonOnePage() {
   const begin = () => { setShouldFocusIntro(false); setShouldFocusString(true); setProgress((current) => ({ ...current, currentStepId: 'string', completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'intro'])) })); };
 
   const openAirLab = () => { setShouldFocusString(false); setShouldFocusAir(true); setProgress((current) => ({ ...current, currentStepId: 'air' })); };
+  const openCheckpoint = () => { setShouldFocusAir(false); setShouldFocusCheckpoint(true); setProgress((current) => ({ ...current, currentStepId: 'checkpoint' })); };
 
-  return <LessonShell {...lessonOneContent} currentStop={isAirStep ? 4 : 1} backTo="/">
+  return <LessonShell {...lessonOneContent} currentStop={isCheckpointStep ? 5 : isAirStep ? 4 : 1} backTo="/">
     <div className="mb-4 text-sm text-gray-600" aria-live="polite">
       {storageAvailable ? 'Прогрес зберігається на цьому пристрої.' : 'Збереження недоступне — прогрес доступний лише протягом цього сеансу.'}
     </div>
@@ -67,7 +72,7 @@ export function LessonOnePage() {
         {prefersReducedMotion ? 'Покадрово: системне' : staticMode ? 'Показувати рух' : 'Показувати покадрово'}
       </button>
     </div>
-    {!isStringStep && !isAirStep ? <LessonStep title={lessonOneContent.intro.title} intro={lessonOneContent.intro.invitation} shouldFocus={shouldFocusIntro}>
+    {!isStringStep && !isAirStep && !isCheckpointStep ? <LessonStep title={lessonOneContent.intro.title} intro={lessonOneContent.intro.invitation} shouldFocus={shouldFocusIntro}>
       <div className="rounded-lg border border-brand-200 bg-brand-25 p-5"><p className="text-lg font-medium text-gray-950">{lessonOneContent.intro.question}</p><p className="mt-3 text-sm leading-6 text-gray-700">{lessonOneContent.intro.reassurance}</p></div>
       <button type="button" onClick={() => setProgress((current) => ({ ...current, audioEnabled: !current.audioEnabled }))} aria-pressed={progress.audioEnabled} className="mt-4 min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
         {progress.audioEnabled ? 'Звук: увімкнено' : 'Звук: вимкнено'}
@@ -81,12 +86,18 @@ export function LessonOnePage() {
       <RealWorldExperiment title={lessonOneContent.experiment.title} withGuitar={lessonOneContent.experiment.guitar} withoutGuitar={lessonOneContent.experiment.alternative} safetyNote={lessonOneContent.experiment.safety} />
       {progress.completedStepIds.includes('string') && <button type="button" onClick={openAirLab} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Дослідити рух у повітрі<ArrowRight className="size-4" /></button>}
       <button type="button" onClick={() => { setShouldFocusString(false); setShouldFocusIntro(true); setProgress((current) => ({ ...current, currentStepId: 'intro' })); }} className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-semibold text-gray-700 outline-none hover:text-gray-950 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><ArrowLeft className="size-4" />До вступу</button>
-    </div> : <div className="space-y-5">
+    </div> : isAirStep ? <div className="space-y-5">
       <LessonStep title={lessonOneContent.air.title} intro={lessonOneContent.air.instruction} shouldFocus={shouldFocusAir}>
         <SoundPropagationLab content={lessonOneContent.air} staticMode={staticMode} onComplete={() => setProgress((current) => ({ ...current, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'air'])) }))} />
       </LessonStep>
       <RealWorldExperiment title={lessonOneContent.air.experiment.title} withGuitar={lessonOneContent.air.experiment.guitar} withoutGuitar={lessonOneContent.air.experiment.alternative} safetyNote={lessonOneContent.air.experiment.safety} />
+      {progress.completedStepIds.includes('air') && <button type="button" onClick={openCheckpoint} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Зібрати шлях звуку<ArrowRight className="size-4" /></button>}
       <button type="button" onClick={() => { setShouldFocusAir(false); setShouldFocusString(true); setProgress((current) => ({ ...current, currentStepId: 'string' })); }} className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-semibold text-gray-700 outline-none hover:text-gray-950 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><ArrowLeft className="size-4" />До досліду зі струною</button>
+    </div> : <div className="space-y-5">
+      <LessonStep title={lessonOneContent.checkpoint.title} intro={lessonOneContent.checkpoint.instruction} shouldFocus={shouldFocusCheckpoint}>
+        <SoundPathCheckpoint content={lessonOneContent.checkpoint} initiallyPassed={progress.checkpointPassed} onComplete={() => setProgress((current) => ({ ...current, checkpointPassed: true, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'checkpoint'])) }))} />
+      </LessonStep>
+      <button type="button" onClick={() => { setShouldFocusCheckpoint(false); setShouldFocusAir(true); setProgress((current) => ({ ...current, currentStepId: 'air' })); }} className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-semibold text-gray-700 outline-none hover:text-gray-950 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><ArrowLeft className="size-4" />До досліду з повітрям</button>
     </div>}
   </LessonShell>;
 }

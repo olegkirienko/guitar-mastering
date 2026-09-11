@@ -32,14 +32,18 @@ completed_slices:
     name: SoundPropagationLab
     status: approved
     final_review: docs/reviews/stage-01-lesson-01/fix-rereview-10-step-06.md
+  - id: step-07
+    name: ReducedMotionAndScreenReader
+    status: approved
+    final_review: docs/reviews/stage-01-lesson-01/implementation-review-11-step-07.md
 
 current_slice:
-  id: step-07
-  name: ReducedMotionAndScreenReader
+  id: step-08
+  name: Checkpoint
   status: approved
 
 latest_review:
-  path: docs/reviews/stage-01-lesson-01/implementation-review-11-step-07.md
+  path: docs/reviews/stage-01-lesson-01/implementation-review-12-step-08.md
   verdict: APPROVED
 
 blocking_findings: []
@@ -61,3 +65,6 @@ notes:
   - "Step 7 is limited to reduced-motion and screen-reader behavior; do not include checkpoint or completion work."
   - "Step 7 reduced-motion and screen-reader behavior is implemented and ready for implementation review."
   - "Step 7 is approved after implementation review; stop at the human gate before beginning step 8 checkpoint work."
+  - "Step 8 is limited to the checkpoint sequence, concrete hints, control question, and checkpoint completion rules; do not include the lesson completion or bridge screen."
+  - "Step 8 checkpoint is implemented and ready for implementation review."
+  - "Step 8 is approved after implementation review; stop at the human gate before beginning step 9 lesson completion and bridge work."
