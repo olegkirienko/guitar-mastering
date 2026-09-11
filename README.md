@@ -50,74 +50,56 @@ src/
 └── main.tsx
 ```
 
-# Codex Orchestration Layer v1.2
+# Codex Orchestration Layer v2.0
 
-The repository contains a deterministic, repo-local workflow for lesson development.
+The repository uses a deterministic, repo-local workflow for both lesson development and technical work.
 
-The repository is the durable source of truth; Codex sessions do not need to carry previous chat history forward.
+The orchestration unit is a **work item**.
+
+Examples:
+
+- `stage-01-lesson-02`
+- `feature-auth-persistence`
+- `feature-profile`
+- `refactor-progress-storage`
+- `infra-cloudflare-migration`
+
+Historical `lesson_id` workflows remain supported.
 
 ## Workflow
 
-```text
-DESIGN
-  ↓
-DESIGN REVIEW
-  ↓
-HUMAN GATE
-  ↓
-IMPLEMENTATION
-  ↓
-IMPLEMENTATION REVIEW
-  ├── CHANGES REQUIRED
-  │        ↓
-  │      FIXES
-  │        ↓
-  │   FIX RE-REVIEW
-  │        ├── CHANGES REQUIRED → FIXES
-  │        └── APPROVED
-  │
-  └── APPROVED
-           ↓
-       HUMAN GATE
-           ↓
-    NEXT SLICE OR COMPLETE
-```
-
-For the final approved slice, the workflow uses a `lesson_completion` human gate and then transitions to `phase: complete`.
+`design → design review → human gate → implementation → implementation review → fixes ↔ fix re-review → human gate → next slice or complete`
 
 ## Sources of truth
 
-- `AGENTS.md` — project-wide rules and orchestration invariants
-- `.codex/agents/` — role-specific agent profiles and model/reasoning policy
-- `.codex/skills/` — reusable phase workflows
+- `AGENTS.md` — project rules and orchestration invariants
+- `.codex/agents/` — role-specific agent profiles
+- `.codex/skills/` — reusable workflow phases
 - `docs/course-map/` — curriculum/stage truth
-- `docs/lesson-designs/` — approved lesson specifications
+- `docs/lesson-designs/` — lesson specifications
+- `docs/technical-designs/` — technical architecture/design artifacts
 - `docs/reviews/` — immutable review artifacts
-- `docs/workflow/` — current deterministic workflow state
+- `docs/workflow/` — deterministic work-item state
 
-## Invocation
+## Standard launcher
 
-For a normal phase, a minimal launcher prompt is sufficient:
+For a normal phase:
 
 ```text
-Use the lesson-orchestrator workflow for stage-01-lesson-01.
+Use the work-orchestrator workflow for <work-item-id>.
 
 Read and validate the current workflow state, then execute the next allowed phase.
 ```
 
-At a human gate, approval must be explicit:
+At a human gate:
 
 ```text
-Use the lesson-orchestrator workflow for stage-01-lesson-01.
+Use the work-orchestrator workflow for <work-item-id>.
 
 Approve the current human gate, then read and validate the workflow state and execute the next allowed phase.
 ```
 
-The orchestrator executes one allowed phase at a time and stops at the next phase or human gate.
-
 ## Model policy
-
-Repo-local agent profiles declare the intended model and reasoning effort:
 
 - design/planning — Sol / medium
 - design review — Sol / high
@@ -126,44 +108,35 @@ Repo-local agent profiles declare the intended model and reasoning effort:
 - targeted fixes — Terra / low
 - targeted re-review — Sol / high
 
-A fresh Codex session per workflow phase is recommended. The top-level orchestrator session can use Sol / medium; the phase-specific profile is the intended source of truth for delegated model/effort.
+A fresh Codex session per workflow phase is recommended.
 
-## Deterministic workflow state
+## Deterministic state
 
-Top-level `phase` in `docs/workflow/*.yaml` is the canonical routing field.
+Top-level `phase` in `docs/workflow/*.yaml` is canonical.
 
-Before executing any phase, the orchestrator validates workflow-state consistency. If the state is contradictory, it fails closed with:
+Contradictory state fails closed with:
 
 ```text
 WORKFLOW STATE INCONSISTENT
 ```
 
-It must not infer the intended phase or modify application code.
+The orchestrator must not guess the intended phase or silently repair the state.
 
-Each successful phase owns a complete state transition.
+## Reviews and fixes
 
-## Review and fix policy
+Review artifacts are immutable snapshots. Actionable findings use stable IDs such as `HIGH-01` or `MEDIUM-03`.
 
-Review artifacts are immutable snapshots. New review/re-review cycles create new files rather than rewriting previous reviews.
+Targeted fixes operate only on active blocking IDs. Targeted re-review verifies those findings plus direct regressions.
 
-Actionable findings receive stable IDs such as:
+## Completion
 
-```text
-HIGH-01
-MEDIUM-03
-```
+Before starting another slice, the orchestrator verifies that the authoritative design actually defines one.
 
-Targeted fixes operate only on active blocking finding IDs, and targeted re-review verifies those findings plus direct regressions.
+If the approved slice is final:
 
-## Terminal lesson state
+`human_gate / work_item_completion → explicit human approval → complete`
 
-When the final approved implementation slice has no successor in the lesson specification, the workflow transitions through:
-
-```text
-human_gate / lesson_completion
-→ explicit human approval
-→ complete
-```
+Existing historical lesson workflows may retain legacy `lesson_completion`.
 
 Canonical terminal state:
 
@@ -171,19 +144,11 @@ Canonical terminal state:
 phase: complete
 status: complete
 gate: none
-
 blocking_findings: []
-
 next:
   phase: complete
   action: none
   human_approval_required: false
 ```
 
-`complete` means the current lesson workflow is complete, not the entire course.
-
-## Current orchestration scope
-
-The orchestration layer automates phase routing, artifact handoff, validation contracts, review/fix loops, and deterministic state transitions.
-
-It intentionally does not automate Git commits, pushes, pull requests, releases, or arbitrary parallel agent fan-out.
+`complete` means the current work item is complete only.

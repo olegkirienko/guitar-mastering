@@ -1,36 +1,36 @@
 ---
 name: targeted-fix
-description: Fix only active blocking finding IDs, validate, and transition completely to targeted re-review.
+description: Apply only active blocking finding fixes for any work-item type.
 ---
 
 # Targeted Fix
 
-Read `AGENTS.md`, workflow state, approved spec, latest review containing active findings, and source files named by findings.
+Read:
+- AGENTS.md
+- workflow state
+- authoritative design
+- context
+- owning review artifact
+- named source files
 
-Use `blocking_findings` from workflow state unless the user explicitly narrows the set.
+Fix only active blocking IDs unless explicitly narrowed.
 
-Fix only selected findings. Do not add unrelated cleanup, future lesson work, speculative abstractions, or review/spec rewrites.
+Do not implement future slices or unrelated improvements.
 
-Run existing lint/typecheck, build, tests if present, and `git diff --check`.
+Run required validation.
 
-## Required successful transition
+After success:
 
 ```yaml
 phase: fix_rereview
 status: ready
 gate: none
-
 current_slice:
   status: fixed
-
 blocking_findings:
-  - <same target IDs pending verification>
-
+  - <same IDs pending verification>
 next:
   phase: fix_rereview
   action: rereview-<slice-id>
   human_approval_required: false
 ```
-
-Do not clear blocking findings before re-review verifies them.
-Do not create a review verdict.

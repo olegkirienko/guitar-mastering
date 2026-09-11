@@ -1,56 +1,37 @@
 ---
 name: design-review
-description: Review a lesson design artifact, write an immutable review, and transition completely to human gate or design revision.
+description: Critically review the current work-item design and write an immutable review artifact.
 ---
 
 # Design Review
 
-Do not modify application code or silently rewrite the design.
+Review only.
 
-Use stable finding IDs and verdict exactly:
+Always assess:
+- goal clarity;
+- scope/non-goals;
+- correctness;
+- implementation feasibility;
+- risks;
+- validation strategy;
+- slice boundaries;
+- unnecessary abstraction.
+
+Additional dimensions:
+- lesson → pedagogy, theory, accessibility, cognitive load;
+- technical_feature → architecture, security, auth/authz where relevant, data integrity, API contracts, migrations, deployment, privacy;
+- refactor → preserved behavior and regression/migration risk;
+- infrastructure → security, operations, recovery, deployment/rollback.
+
+Use stable finding IDs.
+
+Verdict:
 - `APPROVED`
 - `APPROVED WITH MINOR FIXES`
 - `CHANGES REQUIRED`
 
-Create `docs/reviews/<lesson-id>/design-review-XX.md`.
+Write:
 
-## APPROVED
+`docs/reviews/<work-item-id>/design-review-XX.md`
 
-```yaml
-phase: human_gate
-status: approved
-gate: design_approval
-
-latest_review:
-  path: <new review path>
-  verdict: APPROVED
-
-blocking_findings: []
-
-next:
-  phase: implementation
-  action: begin-approved-implementation
-  human_approval_required: true
-```
-
-## CHANGES REQUIRED
-
-```yaml
-phase: design
-status: changes_required
-gate: none
-
-latest_review:
-  path: <new review path>
-  verdict: CHANGES REQUIRED
-
-blocking_findings:
-  - <blocking IDs>
-
-next:
-  phase: design
-  action: revise-design
-  human_approval_required: false
-```
-
-For minor-fix verdicts, route by explicit blocking classification.
+Transition deterministically from verdict.

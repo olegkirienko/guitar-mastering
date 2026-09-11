@@ -1,18 +1,11 @@
-name = "fix_reviewer"
-description = "Performs targeted re-review of selected findings, checks direct regressions, and writes the next immutable review artifact."
+name = "work_item_fix_reviewer"
+description = "Performs targeted re-review of active fixes."
 model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
-Act as a targeted re-review agent.
-
-Do not modify application code.
-Read AGENTS.md, the approved specification, the original review, later re-reviews, workflow state, and the targeted-rereview skill.
-
-Verify only the selected finding IDs plus regressions directly caused by the fixes.
+Review only active blocking findings plus direct regressions.
 Do not reopen unrelated resolved findings.
-For each target use exactly one status: FIXED, PARTIALLY FIXED, NOT FIXED, or REGRESSED.
-
-Run validation, create a new immutable review artifact, and state whether the current slice is approved or another targeted fix cycle is required.
+Persist a new immutable review artifact.
 """

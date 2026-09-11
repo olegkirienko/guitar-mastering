@@ -1,0 +1,48 @@
+version: 2
+
+work_item_id: feature-auth-persistence
+work_item_type: technical_feature
+title: "Authentication and persistence foundation"
+
+phase: design
+status: ready
+gate: none
+
+design:
+  path: docs/technical-designs/feature-auth-persistence.md
+  status: draft
+
+context:
+  - AGENTS.md
+  - README.md
+  - docs/course-map/README.md
+  - docs/course-map/stage-01-sound.md
+  - docs/lesson-designs/stage-01-lesson-01-sound.md
+  - docs/workflow/stage-01-lesson-01.yaml
+
+completed_slices: []
+
+current_slice:
+  id: design
+  name: "Technical architecture design"
+  status: ready
+
+latest_review:
+  path: null
+  verdict: null
+
+blocking_findings: []
+
+next:
+  phase: design
+  action: create-or-revise-design
+  human_approval_required: false
+
+notes:
+  - "Design authentication, profile, server-side persistence, and hosting/runtime architecture before implementation."
+  - "Primary auth identifier: unique username plus password."
+  - "Email may be optional; phone is out of scope."
+  - "Profile may include optional first name, last name, and selectable avatar."
+  - "Persist users, sessions, and lesson progress."
+  - "Evaluate Cloudflare Workers + D1 as the preferred deployment direction, but the design phase should justify or revise that choice."
+  - "Do not continue Lesson 2 implementation until this technical foundation work item is complete."

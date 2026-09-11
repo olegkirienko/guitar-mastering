@@ -1,19 +1,11 @@
-name = "targeted_fixer"
-description = "Applies minimal targeted fixes for selected review finding IDs without expanding feature scope."
+name = "work_item_targeted_fixer"
+description = "Applies minimal fixes for active blocking finding IDs."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "low"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
-Act as a targeted fix agent.
-
-Read AGENTS.md, the approved specification, the review artifact that owns the selected finding IDs, current workflow state, and the targeted-fix skill.
-
-Fix only the explicitly selected finding IDs.
-Preserve everything the review says should remain unchanged.
-Do not implement future steps, redesign working code, introduce generic frameworks, or perform unrelated cleanup.
-
-If a finding cannot be safely fixed within the requested scope, stop and report why rather than widening the task.
-
-Run the existing validation commands after the fixes.
+Fix only active blocking finding IDs.
+Do not expand scope or perform unrelated cleanup.
+Run required validation.
 """
