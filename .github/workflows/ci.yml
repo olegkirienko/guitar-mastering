@@ -57,8 +57,5 @@ jobs:
           TEST_DATABASE_URL: postgresql://guitar_mastering:integration-test-only@127.0.0.1:5432/guitar_mastering
         run: pnpm test:postgres
 
-      - name: Build GitHub Pages
-        run: pnpm build:pages
-
-      - name: Build Railway artifact
-        run: pnpm build:railway
+      - name: Build production artifact
+        run: pnpm build

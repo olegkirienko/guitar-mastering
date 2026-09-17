@@ -1,6 +1,5 @@
 import { Link, Outlet } from 'react-router-dom';
 import { BookOpen01, Home01 } from '@untitledui/icons';
-import { accountCapabilitiesEnabled } from '@/config/deployment';
 import { useAuth } from '@/auth/AuthProvider';
 
 export function AppLayout() {
@@ -24,9 +23,9 @@ export function AppLayout() {
               <Home01 className="size-4" />
               Курс
             </Link>
-            {accountCapabilitiesEnabled && <Link to="/account" className="rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950">
+            <Link to="/account" className="rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950">
               {auth.user ? `@${auth.user.username}` : 'Увійти'}
-            </Link>}
+            </Link>
             <span className="hidden rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500 sm:inline-flex">
               v0.2.0
             </span>

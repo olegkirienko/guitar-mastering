@@ -1,7 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-const railway = "http://127.0.0.1:4173";
-const pages = "http://127.0.0.1:4174/guitar-mastering/";
+const applicationOrigin = "http://127.0.0.1:4173";
 const profile = { firstName: null, lastName: null, avatarId: null };
 const user = { id: "user-1", username: "Player.One", profile };
 
@@ -26,7 +25,7 @@ test("restores an authenticated session and updates profile and avatar accessibl
     return json(route, 200, { profile: submitted });
   });
 
-  await page.goto(`${railway}/#/account`);
+  await page.goto(`${applicationOrigin}/#/account`);
   await expect(page.getByRole("heading", { name: "Профіль @Player.One" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Приватність і резервні копії" })).toBeVisible();
   const cedarAvatar = page.getByRole("radio", { name: "Кедр" });
@@ -52,7 +51,7 @@ test("supports guest registration, logout, and login", async ({ page }) => {
   await page.route("**/api/v1/auth/logout", (route) => route.fulfill({ status: 204 }));
   await page.route("**/api/v1/auth/login", (route) => json(route, 200, { user }));
 
-  await page.goto(`${railway}/#/account`);
+  await page.goto(`${applicationOrigin}/#/account`);
   await page.getByRole("button", { name: "Реєстрація" }).click();
   await page.getByLabel("Ім’я користувача").fill("Player.One");
   await page.getByLabel("Пароль").fill("correct horse guitar");
@@ -77,7 +76,7 @@ test("requires confirmed deletion and keeps failure recoverable", async ({ page 
     return route.fulfill({ status: 204 });
   });
 
-  await page.goto(`${railway}/#/account`);
+  await page.goto(`${applicationOrigin}/#/account`);
   await page.getByRole("button", { name: "Видалити акаунт" }).click();
   const confirm = page.getByRole("button", { name: "Підтвердити видалення" });
   await expect(confirm).toBeDisabled();
@@ -92,20 +91,16 @@ test("requires confirmed deletion and keeps failure recoverable", async ({ page 
 
 test("distinguishes API outage from guest state while lesson access continues", async ({ page }) => {
   await page.route("**/api/v1/session", (route) => route.abort("connectionfailed"));
-  await page.goto(`${railway}/#/account`);
+  await page.goto(`${applicationOrigin}/#/account`);
   await expect(page.getByText("Сервер тимчасово недоступний")).toBeVisible();
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByText("Що таке звук?", { exact: false }).first()).toBeVisible();
 });
 
-test("shows account entry only in the Railway target", async ({ page }) => {
+test("shows the account entry on the application origin", async ({ page }) => {
   await mockSession(page, null);
-  await page.goto(`${railway}/#/`);
+  await page.goto(`${applicationOrigin}/#/`);
   await expect(page.getByRole("link", { name: "Увійти" })).toBeVisible();
-  await page.goto(`${pages}#/account`);
-  await expect(page).toHaveURL(/#\/$/);
-  await expect(page.getByRole("link", { name: "Увійти" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: /Музика/ })).toBeVisible();
 });
 
 test("confirms guest progress import, merges it, and reports account sync", async ({ page }) => {
@@ -139,7 +134,7 @@ test("confirms guest progress import, merges it, and reports account sync", asyn
     } });
   });
 
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByRole("heading", { name: "Додати прогрес гостя до акаунта?" })).toBeVisible();
   const mergeButton = page.getByRole("button", { name: "Об’єднати прогрес" });
   await mergeButton.focus();
@@ -191,7 +186,7 @@ test("merges an optimistic conflict before retrying queued Lesson 1 progress", a
     } });
   });
 
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByText("Прогрес збережено на цьому пристрої та в акаунті.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Збери шлях звуку" })).toBeVisible();
   expect(writes).toBe(2);
@@ -212,7 +207,7 @@ test("preserves completed guest progress offline when preference storage is corr
   });
   await page.route("**/api/v1/session", (route) => route.abort("connectionfailed"));
 
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByRole("heading", { name: "Урок завершено" })).toBeVisible();
   await page.getByRole("button", { name: "Показувати покадрово" }).click();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("guitar-mastering:stage-01-lesson-01") ?? "{}"))).toMatchObject({
@@ -251,7 +246,7 @@ test("shows pending and error states and retries the latest local account progre
     } });
   });
 
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByText("Прогрес збережено на цьому пристрої та в акаунті.")).toBeVisible();
   await page.getByRole("button", { name: "Почати дослід" }).click();
   await expect(page.getByText("Збережено на цьому пристрої. Синхронізуємо з акаунтом…")).toBeVisible();
@@ -290,7 +285,7 @@ test("clears only the confirmed current-user cache and isolates guest and later 
     } });
   });
 
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByRole("heading", { name: "Як рух доходить до вуха?" })).toBeVisible();
   await page.getByRole("button", { name: "Очистити локальну копію" }).click();
   await expect(page.getByText("Очистити локальну копію прогресу цього акаунта?")).toBeVisible();
@@ -303,14 +298,14 @@ test("clears only the confirmed current-user cache and isolates guest and later 
     second: localStorage.getItem("guitar-mastering:user:user-2:stage-01-lesson-01"),
   }))).toMatchObject({ first: null, firstDecision: null, guest: expect.any(String), second: expect.any(String) });
 
-  await page.goto(`${railway}/#/account`);
+  await page.goto(`${applicationOrigin}/#/account`);
   await page.getByRole("button", { name: "Вийти" }).click();
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByRole("heading", { name: "Зустріч зі струною" })).toBeVisible();
-  await page.goto(`${railway}/#/account`);
+  await page.goto(`${applicationOrigin}/#/account`);
   await page.getByLabel("Ім’я користувача").fill("Player.Two");
   await page.getByLabel("Пароль").fill("correct horse guitar");
   await page.locator("form").getByRole("button", { name: "Увійти", exact: true }).click();
-  await page.goto(`${railway}/#/lessons/01`);
+  await page.goto(`${applicationOrigin}/#/lessons/01`);
   await expect(page.getByRole("heading", { name: "Урок завершено" })).toBeVisible();
 });

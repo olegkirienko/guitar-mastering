@@ -4,8 +4,8 @@ work_item_id: feature-auth-persistence
 work_item_type: technical_feature
 title: "Authentication and persistence foundation"
 
-phase: implementation_review
-status: ready
+phase: complete
+status: complete
 gate: none
 
 design:
@@ -33,6 +33,10 @@ amendments:
     path: docs/reviews/feature-auth-persistence/design-amendment-05-production-backup-policy.md
     status: approved
     supersedes_assumption: "Production cutover requires native scheduled Railway volume backups in addition to PITR and provider-independent logical dumps"
+  - id: legacy-platform-retirement-handoff-06
+    path: docs/reviews/feature-auth-persistence/design-amendment-06-legacy-retirement-handoff.md
+    status: approved
+    supersedes_assumption: "feature-auth-persistence retains ownership of remaining GitHub Pages, Cloudflare Worker, D1, and associated binding, secret, and configuration retirement"
 
 context:
   - AGENTS.md
@@ -68,21 +72,25 @@ completed_slices:
     name: "Lesson 1 progress migration"
     status: approved
     final_review: docs/reviews/feature-auth-persistence/fix-rereview-13-lesson-one-progress-migration.md
+  - id: production-cutover-operations
+    name: "Production cutover and operations"
+    status: approved
+    final_review: docs/reviews/feature-auth-persistence/implementation-review-14-production-cutover-operations.md
 
 current_slice:
   id: production-cutover-operations
   name: "Production cutover and operations"
-  status: implemented
+  status: approved
 
 latest_review:
-  path: docs/reviews/feature-auth-persistence/design-review-09.md
+  path: docs/reviews/feature-auth-persistence/implementation-review-14-production-cutover-operations.md
   verdict: APPROVED
 
 blocking_findings: []
 
 next:
-  phase: implementation_review
-  action: review-production-cutover-operations
+  phase: complete
+  action: none
   human_approval_required: false
 
 notes:
@@ -173,3 +181,6 @@ notes:
   - "Design Review 09 resolves HIGH-04 and approves the revised PITR-only continuously maintained recovery posture with no blocking findings. Explicit design approval is required before production-cutover-operations may resume."
   - "Human approved the amended design gate; production-cutover-operations is authorized to resume under the approved PITR-only continuously maintained recovery posture."
   - "The immutable Pages fallback tag and manual-only Pages workflow are published; exact reviewed commit 67be1d6 is deployed to Railway production, the corrected deployment-version redeploy is healthy, final smoke/PITR/log/resource checks pass, and production-cutover-operations is ready for implementation review."
+  - "Implementation Review 14 approves the final production-cutover-operations slice with no blocking findings after full local validation and fresh read-only Railway production verification. Explicit work-item completion approval is required before transitioning to complete."
+  - "Human approved the work-item completion gate; production-cutover-operations remains visible as the final current slice, is archived in completed_slices, and feature-auth-persistence is complete."
+  - "Post-completion Ownership Amendment 06 records that Railway production is the active canonical runtime and delegates all remaining GitHub Pages, Cloudflare Worker, D1, and associated binding, secret, and configuration retirement to infra-legacy-platform-retirement. The parent remains complete and must not be reopened for cleanup implementation; destructive cleanup requires the receiving work item's own explicit gate."

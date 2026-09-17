@@ -10,8 +10,7 @@
 - Tailwind CSS v4
 - Untitled UI React ecosystem / React Aria
 - pnpm
-- GitHub Pages
-- Railway Node.js + PostgreSQL (target runtime)
+- Railway Node.js + PostgreSQL
 
 ## Local development
 
@@ -28,27 +27,18 @@ Vite serves the frontend and proxies `/api` to the local Node service on port
 3000. The checked-in Compose service owns only PostgreSQL; the API stays a
 normal debuggable Node process.
 
-Build:
+Production build and server:
 
 ```bash
-pnpm build:pages
-```
-
-Railway preview build and production server:
-
-```bash
-pnpm build:railway
+pnpm build
 pnpm start
 ```
 
-The deployment target fails closed to `pages`: only an explicit
-`VITE_DEPLOY_TARGET=railway` enables the root-base Railway build and future
-account capabilities. The Railway service exposes health/readiness plus
+The application has one root-based production artifact. The Railway service
+serves the Vite SPA and exposes health/readiness plus
 registration, login, logout, session restoration, and password-confirmed
 account deletion under `/api/v1`. It also exposes authenticated profile and
-versioned lesson-progress routes with optimistic revision conflicts. Lesson 1
-still uses its existing device-local adapter until its dedicated migration
-slice connects that UI to the reusable sync core.
+versioned lesson-progress routes with optimistic revision conflicts.
 
 Preview production build:
 
@@ -61,22 +51,13 @@ Repository validation:
 ```bash
 pnpm lint
 pnpm test
-pnpm build:pages
-pnpm build:railway
+pnpm build
 TEST_DATABASE_URL=postgresql://guitar_mastering:local-development-only@127.0.0.1:5432/guitar_mastering pnpm test:postgres
 ```
 
-`pnpm test` includes Node routing/configuration/shutdown tests and builds both
-deployment targets through the real Vite configuration. `pnpm test:postgres`
+`pnpm test` includes Node routing/configuration/shutdown tests and builds the
+production artifact through the real Vite configuration. `pnpm test:postgres`
 is the explicit fresh-PostgreSQL migration, rollback, and concurrency gate.
-
-## GitHub Pages
-
-Проєкт використовує `HashRouter`, тому він коректно працює як статичний сайт на GitHub Pages без server-side routing.
-
-Pages-збірка використовує `base: '/guitar-mastering/'`. Наявний workflow завжди
-передає явний target `pages`, тому майбутні account/profile/sync entry points не
-можуть випадково потрапити на origin без API.
 
 ## Railway
 
@@ -86,8 +67,8 @@ before shifting traffic. Configure
 the key-only variables listed in `.env.example` in each Railway environment and
 reference the private PostgreSQL `DATABASE_URL`; do not commit their values.
 
-Production release, rollback, backup/restore, monitoring, cost, and Pages
-fallback procedures are recorded in
+Production release, rollback, backup/restore, monitoring, and cost procedures
+are recorded in
 [`docs/operations/production-cutover.md`](docs/operations/production-cutover.md).
 The data-handling and backup-retention disclosure is in
 [`docs/operations/privacy-and-retention.md`](docs/operations/privacy-and-retention.md).

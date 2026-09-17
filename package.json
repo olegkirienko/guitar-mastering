@@ -13,8 +13,6 @@
     "build": "corepack pnpm lint && corepack pnpm build:client && corepack pnpm build:server",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.build.json",
-    "build:pages": "VITE_DEPLOY_TARGET=pages corepack pnpm build",
-    "build:railway": "VITE_DEPLOY_TARGET=railway corepack pnpm build",
     "start": "node dist-server/main.js",
     "preview": "vite preview",
     "lint": "tsc -b --pretty false",

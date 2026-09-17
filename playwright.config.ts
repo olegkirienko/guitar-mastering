@@ -11,13 +11,8 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "VITE_DEPLOY_TARGET=railway corepack pnpm vite --host 127.0.0.1 --port 4173",
+      command: "corepack pnpm vite --host 127.0.0.1 --port 4173",
       url: "http://127.0.0.1:4173",
-      reuseExistingServer: false,
-    },
-    {
-      command: "VITE_DEPLOY_TARGET=pages corepack pnpm vite --host 127.0.0.1 --port 4174",
-      url: "http://127.0.0.1:4174/guitar-mastering/",
       reuseExistingServer: false,
     },
   ],

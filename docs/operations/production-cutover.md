@@ -1,4 +1,4 @@
-# Production cutover and rollback
+# Railway production operations and rollback
 
 ## Fixed production topology
 
@@ -36,38 +36,36 @@ Amendment 05 passes review and explicit approval.
 
 ## Release gate
 
-1. Record the last known-good Pages commit with an immutable
-   `pages-fallback-YYYY-MM-DD` tag.
-2. Pass `pnpm lint`, `pnpm test`, `pnpm test:postgres`, `pnpm test:browser`,
-   `pnpm build:pages`, `pnpm build:railway`, and `git diff --check` on Node
+1. Pass `pnpm lint`, `pnpm test`, `pnpm test:postgres`, `pnpm test:browser`,
+   `pnpm build`, and `git diff --check` on Node
    `24.7.x`.
-3. Confirm production variables match `.env.example`, use `APP_ENV=production`,
+2. Confirm production variables match `.env.example`, use `APP_ENV=production`,
    `NODE_ENV=production`, secure cookies, an HTTPS `PUBLIC_ORIGIN`, a private
    PostgreSQL reference, and a secret HMAC key of at least 32 bytes.
-4. Confirm the PostgreSQL service has no public TCP proxy. Verify PITR is
+3. Confirm the PostgreSQL service has no public TCP proxy. Verify PITR is
    enabled, bucket-wired, and archiver-healthy. Confirm the recorded isolated
    PITR restore drill succeeded.
-5. Confirm provider-independent logical export capability and the recorded
+4. Confirm provider-independent logical export capability and the recorded
    isolated logical-dump restore drill, including migrations, tables,
    constraints, indexes, and row counts. Do not repeat already verified drills
    solely for this amendment. Confirm that the temporary drill dump was removed
    and that no retained/scheduled dump is being represented as a current backup.
    Never restore over or rewire the source automatically.
-6. Deploy the exact reviewed repository, observe Railway `SUCCESS`, and run
+5. Deploy the exact reviewed repository, observe Railway `SUCCESS`, and run
    `pnpm smoke:production -- https://<production-origin>`.
-7. Inspect application logs plus HTTP, CPU, memory, network, and volume metrics.
+6. Inspect application logs plus HTTP, CPU, memory, network, and volume metrics.
    Any leak, unexplained restart/5xx, database failure, saturation, or failed
    migration blocks cutover.
-8. Make Railway canonical. Keep `.github/workflows/deploy.yml` manual-only so
-   pushes no longer replace the fallback Pages artifact.
+7. Confirm the Railway origin remains canonical and no active release workflow
+   targets a retired platform.
 
 ## Rollback
 
 - Application regression: select the prior migration-compatible Railway
   deployment. Do not roll schema backward; migrations use expand/migrate/
   contract compatibility.
-- Railway outage during the initial rollback window: direct learners to the
-  recorded Pages tag/artifact. It remains guest-only and device-local.
+- Railway outage: restore a prior compatible Railway deployment or recover into
+  an isolated Railway service before a separately reviewed traffic change.
 - Database corruption: leave the source untouched and use PITR to create a new
   PostgreSQL service. If production remains reachable and a portable rebuild is
   required, create a fresh approved logical export and restore it to a new

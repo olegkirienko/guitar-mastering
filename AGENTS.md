@@ -12,7 +12,8 @@ Interactive course for learning classical six-string guitar from first principle
 - Tailwind CSS 4
 - pnpm
 - React Router
-- GitHub Pages
+- Railway Node/Express
+- PostgreSQL
 - Untitled UI ecosystem
 
 ## Source of truth
