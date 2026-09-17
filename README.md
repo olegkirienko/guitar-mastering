@@ -11,14 +11,22 @@
 - Untitled UI React ecosystem / React Aria
 - pnpm
 - GitHub Pages
-- Cloudflare Workers + D1 (preview runtime)
+- Railway Node.js + PostgreSQL (target runtime)
 
 ## Local development
 
 ```bash
 pnpm install
+docker compose up -d postgres
+cp .env.example .env.local # then fill local values
+pnpm db:migrate
+pnpm dev:server
 pnpm dev
 ```
+
+Vite serves the frontend and proxies `/api` to the local Node service on port
+3000. The checked-in Compose service owns only PostgreSQL; the API stays a
+normal debuggable Node process.
 
 Build:
 
@@ -26,18 +34,21 @@ Build:
 pnpm build:pages
 ```
 
-Worker preview build and local runtime:
+Railway preview build and production server:
 
 ```bash
-pnpm build:worker
-pnpm db:migrate:local
-pnpm exec wrangler dev
+pnpm build:railway
+pnpm start
 ```
 
 The deployment target fails closed to `pages`: only an explicit
-`VITE_DEPLOY_TARGET=worker` enables the root-base Worker build and future account
-capabilities. Local API probes are available at `/api/v1/health` and
-`/api/v1/readiness`.
+`VITE_DEPLOY_TARGET=railway` enables the root-base Railway build and future
+account capabilities. The Railway service exposes health/readiness plus
+registration, login, logout, session restoration, and password-confirmed
+account deletion under `/api/v1`. It also exposes authenticated profile and
+versioned lesson-progress routes with optimistic revision conflicts. Lesson 1
+still uses its existing device-local adapter until its dedicated migration
+slice connects that UI to the reusable sync core.
 
 Preview production build:
 
@@ -51,14 +62,13 @@ Repository validation:
 pnpm lint
 pnpm test
 pnpm build:pages
-pnpm build:worker
+pnpm build:railway
+TEST_DATABASE_URL=postgresql://guitar_mastering:local-development-only@127.0.0.1:5432/guitar_mastering pnpm test:postgres
 ```
 
-`pnpm test` includes the runtime/schema acceptance suite. It builds both
-deployment targets through the real Vite configuration, exercises the client
-account-capability gate, and applies the checked-in migrations to fresh,
-isolated local D1 state. Run only that boundary with
-`pnpm test:runtime-schema`.
+`pnpm test` includes Node routing/configuration/shutdown tests and builds both
+deployment targets through the real Vite configuration. `pnpm test:postgres`
+is the explicit fresh-PostgreSQL migration, rollback, and concurrency gate.
 
 ## GitHub Pages
 
@@ -67,6 +77,20 @@ isolated local D1 state. Run only that boundary with
 Pages-збірка використовує `base: '/guitar-mastering/'`. Наявний workflow завжди
 передає явний target `pages`, тому майбутні account/profile/sync entry points не
 можуть випадково потрапити на origin без API.
+
+## Railway
+
+`railway.json` builds the SPA and server, runs `node-pg-migrate` as a blocking
+pre-deploy step, starts the compiled Node service, and probes database readiness
+before shifting traffic. Configure
+the key-only variables listed in `.env.example` in each Railway environment and
+reference the private PostgreSQL `DATABASE_URL`; do not commit their values.
+
+Production release, rollback, backup/restore, monitoring, cost, and Pages
+fallback procedures are recorded in
+[`docs/operations/production-cutover.md`](docs/operations/production-cutover.md).
+The data-handling and backup-retention disclosure is in
+[`docs/operations/privacy-and-retention.md`](docs/operations/privacy-and-retention.md).
 
 ## Structure
 

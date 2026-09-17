@@ -1,7 +1,10 @@
 import { Link, Outlet } from 'react-router-dom';
 import { BookOpen01, Home01 } from '@untitledui/icons';
+import { accountCapabilitiesEnabled } from '@/config/deployment';
+import { useAuth } from '@/auth/AuthProvider';
 
 export function AppLayout() {
+  const auth = useAuth();
   return (
     <div className="min-h-screen bg-white text-gray-950">
       <header className="sticky top-0 z-20 border-b border-gray-200/80 bg-white/90 backdrop-blur">
@@ -10,7 +13,7 @@ export function AppLayout() {
             <span className="flex size-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <BookOpen01 className="size-5" />
             </span>
-            <span>Гітара з нуля</span>
+            <span className="hidden sm:inline">Гітара з нуля</span>
           </Link>
 
           <nav className="flex items-center gap-1 text-sm">
@@ -21,7 +24,10 @@ export function AppLayout() {
               <Home01 className="size-4" />
               Курс
             </Link>
-            <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500">
+            {accountCapabilitiesEnabled && <Link to="/account" className="rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950">
+              {auth.user ? `@${auth.user.username}` : 'Увійти'}
+            </Link>}
+            <span className="hidden rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500 sm:inline-flex">
               v0.2.0
             </span>
           </nav>

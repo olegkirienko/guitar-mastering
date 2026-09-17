@@ -1,4 +1,4 @@
-export type DeploymentTarget = "pages" | "worker";
+export type DeploymentTarget = "pages" | "railway";
 
 export interface DeploymentConfig {
   target: DeploymentTarget;
@@ -7,7 +7,7 @@ export interface DeploymentConfig {
 }
 
 export function resolveDeploymentTarget(value: string | undefined): DeploymentTarget {
-  return value === "worker" ? "worker" : "pages";
+  return value === "railway" ? "railway" : "pages";
 }
 
 export function createDeploymentConfig(value: string | undefined): DeploymentConfig {
@@ -15,7 +15,7 @@ export function createDeploymentConfig(value: string | undefined): DeploymentCon
 
   return {
     target,
-    base: target === "worker" ? "/" : "/guitar-mastering/",
-    accountCapabilitiesEnabled: target === "worker",
+    base: target === "railway" ? "/" : "/guitar-mastering/",
+    accountCapabilitiesEnabled: target === "railway",
   };
 }

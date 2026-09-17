@@ -19,5 +19,13 @@ export default defineConfig(({ mode }) => {
     define: {
       "import.meta.env.VITE_DEPLOY_TARGET": JSON.stringify(deployment.target),
     },
+    server: {
+      proxy: {
+        "/api": "http://127.0.0.1:3000",
+      },
+    },
+    test: {
+      testTimeout: 60_000,
+    },
   };
 });

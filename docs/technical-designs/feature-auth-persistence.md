@@ -1,643 +1,491 @@
 # Authentication and persistence foundation
 
-## Status and scope
+## Status and amendment history
 
-This document is the authoritative technical design for `feature-auth-persistence`.
-It defines the first server-side foundation for accounts, profiles, sessions, and
-lesson progress. It is a design artifact, not an implementation.
+This is the authoritative technical design for `feature-auth-persistence`. It is
+a design artifact, not implementation authorization.
 
-The current application is a React/Vite single-page application deployed to
-GitHub Pages. Lesson 1 owns a validated `localStorage` snapshot in
-`src/pages/LessonOnePage.tsx`. The proposed architecture keeps the course usable
-without an account while adding same-origin APIs and durable cross-device
-progress for authenticated learners.
+Architecture Design Amendment 04, dated 2026-09-15, selects a Railway-hosted
+Node.js backend plus PostgreSQL. It supersedes every earlier Cloudflare
+Workers/D1 runtime, KDF, deployment, migration, rate-limit, test, and slice
+assumption. Product behavior and security invariants remain unless explicitly
+changed here. Amendments 01–03 and Design Reviews 03–06 remain immutable
+historical evidence; they are no longer implementation instructions.
+
+The React/Vite SPA is currently deployed to GitHub Pages. Lesson 1 has a
+validated local snapshot in `src/pages/LessonOnePage.tsx`. The target keeps the
+course usable without an account while adding same-origin APIs and durable
+cross-device progress.
 
 ## Goals
 
-- Let a learner register and sign in with a unique username and password.
-- Maintain revocable server-side sessions without exposing session secrets to
-  JavaScript.
-- Store an optional first name, optional last name, and one avatar selected from
-  an application-owned catalog.
-- Persist lesson progress per authenticated user and reconcile it safely with
-  existing guest progress.
-- Keep the lesson fully usable when signed out, offline after load, or when the
-  persistence API is temporarily unavailable.
-- Establish a deployable Cloudflare Workers + D1 runtime with migrations,
-  validation, tests, observability, and rollback procedures.
-- Preserve the existing lesson completion semantics. Server persistence is a
-  convenience and continuity feature, not proof of assessment integrity.
+- Support unique-username/password registration and login.
+- Keep revocable server sessions inaccessible to JavaScript.
+- Persist optional profile names, an application avatar, and lesson progress.
+- Preserve safe guest-to-account progress reconciliation and local-first use.
+- Put API execution, relational persistence, environments, secrets, deployment,
+  and basic operations in one coherent Railway project.
+- Use a conventional backend that supports transferable Node/PostgreSQL skills
+  and avoids Worker-isolate password-hashing constraints.
 
 ## Non-goals
 
 - Social login, passkeys, MFA, roles, administration, subscriptions, or public
   profiles.
-- Email or phone collection in the MVP. Email would add personally identifiable
-  data without providing recovery until verification and outbound mail exist.
-- Password reset or username change. The UI must state before registration that
-  there is no automated recovery in this slice set.
-- User-uploaded avatars or object storage.
-- Analytics, streaks, scoring, leaderboards, or certification.
-- Persisting transient animation frames, audio nodes, predictions, attempts,
-  checkpoint ordering, or private reflection text.
-- A universal lesson engine or a redesign of lesson content.
-- Multi-region sharding or D1 read replication for the initial expected scale.
+- Email/phone, password reset, or username change. Registration must disclose
+  that automated recovery is unavailable.
+- User-uploaded avatars, object storage, analytics, scores, or certification.
+- Persisting transient interaction, animation/audio state, or private reflection.
+- A lesson-engine/content redesign.
+- Redis, microservices, Kubernetes, HA, multi-region writes, or read replicas.
+- Migrating disposable experimental D1 auth data; there are no live accounts.
 
-## Architecture decision
+## Architecture Design Amendment 04
 
-Use one Cloudflare Worker to serve the built SPA as static assets and handle
-same-origin `/api/v1/*` requests, with one D1 database per environment.
+### Decision and topology
 
-This is preferred over keeping the frontend on GitHub Pages and hosting only an
-API elsewhere because same-origin deployment gives session cookies a narrow
-scope, avoids CORS and cross-site cookie configuration, and makes CSRF origin
-checks straightforward. D1 is a good fit for a small relational account model,
-unique usernames, revocable sessions, and one bounded progress row per user and
-lesson. It also supplies versioned SQL migrations and point-in-time recovery.
+Adopt Railway-hosted Node.js plus PostgreSQL.
 
-The Worker should use platform APIs and a small explicit route table rather than
-adding a server framework. Cloudflare bindings provide D1 and rate limiting.
-Wrangler is the only required platform development dependency. Password hashing
-uses Web Crypto PBKDF2, avoiding a JavaScript/Wasm password-hashing dependency
-and its memory pressure.
-
-### Runtime topology
+One persistent Node web service serves the Vite `dist/` output and handles
+`/api/v1/*`. One PostgreSQL service in the same Railway project/environment is
+reachable only over private networking. Preview and production use separate
+Railway environments and databases. This preserves same-origin cookies and
+simple CSRF controls without the isolate runtime.
 
 ```text
-browser
-  ├─ GET /assets/*, navigation ──> Worker Static Assets ──> dist/
-  └─ /api/v1/* ────────────────> Worker router
-                                      ├─ D1 binding: DB
-                                      └─ rate-limit bindings
+browser ── HTTPS ──> Railway Node web service
+                       ├─ /assets/* and SPA fallback ──> dist/
+                       ├─ /api/v1/* ──> Express modules
+                       └─ private DATABASE_URL ──> Railway PostgreSQL
 ```
 
-- Configure `assets.directory = "./dist"` and SPA fallback.
-- Run Worker code first only for `/api/*`; hashed assets remain asset-first.
-- Keep `HashRouter` during this work item to avoid coupling auth to a router
-  migration. Change Vite's production base from `/guitar-mastering/` to `/`
-  when the Worker becomes the production origin.
-- Introduce an explicit build-time deployment target in slice 1. A Pages build
-  uses `VITE_DEPLOY_TARGET=pages`, keeps `base: /guitar-mastering/`, and compiles
-  account/profile/sync entry points out of the rendered application. A Worker
-  preview build uses `VITE_DEPLOY_TARGET=worker`, uses `base: /`, and enables
-  those capabilities. Missing or invalid production configuration fails closed
-  to the Pages-safe build; client-side URL or storage overrides are not allowed.
-- Return JSON for every API path, including 404 and 405; never let an unknown
-  API path fall through to `index.html`.
-- Use separate local/preview and production D1 databases. Production credentials
-  and the Cloudflare account ID live in GitHub secrets, never in the repository.
+Use Node 24 pinned to `>=24.7 <25`, Express 5, `pg`, and
+`node-pg-migrate`. Express and explicit SQL/transactions are intentionally
+conventional and visible for learning. No ORM, Redis, or auth framework is
+introduced. The service listens on Railway's `PORT`, drains on `SIGTERM`, closes
+its pool, serves hashed assets with immutable caching, revalidates `index.html`,
+and returns JSON for all unknown API paths/methods.
+
+Keep `HashRouter`. Pages builds retain `/guitar-mastering/`; Railway builds use
+`/`. Until final cutover, GitHub Pages stays canonical and compiles account,
+profile, and sync entry points out; Railway preview exposes them.
+
+### Comparison
+
+| Concern | Cloudflare Worker + D1 | Railway + Node + PostgreSQL | Result |
+|---|---|---|---|
+| Authentication | Compact edge router, but auth became coupled to isolate behavior. | Normal Node lifecycle, Express middleware, and PostgreSQL transactions. | Railway is clearer and more conventional. |
+| Password hashing | Three local policies required redesign; deployed proofs hit KDF ceilings/resource failures; selected Workers API lacked Argon2. | Node 24 supplies asynchronous native Argon2id; container CPU/RAM and concurrency are explicit. | Railway removes the decisive blocker. |
+| Sessions | Opaque cookies work, with D1-specific batch semantics. | Same design maps to SQL transactions, row locks, and constraints. | Behavior is preserved with familiar primitives. |
+| Data/migrations | SQLite semantics, Wrangler migrations, automatic D1 Time Travel. | UUID, `timestamptz`, `jsonb`, richer SQL/tooling; Railway PostgreSQL recovery is operator-owned through PITR, with logical dumps used only as a verified on-demand portability mechanism under the accepted pet-project policy. | Better data foundation; more backup ownership and explicitly lower recovery redundancy. |
+| Local development | Wrangler/local D1 did not reveal deployed KDF behavior. | Same Node line and PostgreSQL major version locally; Vite proxies to the API. | Less runtime drift. |
+| Deployment | Very low-ops edge runtime, integrated assets/bindings, global scale. | One Railway project with web/database services, Git deploys, health checks, pre-deploy migrations, environments, and private networking. | Still coherent, but regional/container-based. |
+| Variables/secrets | Wrangler bindings plus Cloudflare/GitHub secret surfaces. | Railway variables/reference variables become ordinary process environment. | One backend configuration model. |
+| Observability | Invocation analytics, logs, D1 metadata. | stdout/stderr plus CPU/RAM/disk/network; application metrics require structured logs or later telemetry. | Better process visibility; app telemetry remains our job. |
+| Rate limiting | Convenient native limiter, but permissive and location-local. | Atomic PostgreSQL counters work across restarts/replicas; edge controls can be added later. | Slightly more code/writes, deterministic without Redis. |
+| Operations | Fewer services, but exceptional KDF/runtime engineering dominated. | Two services, pools, backups, lifecycle, and regional capacity. | More visible infrastructure, less exceptional code. |
+| Cost | Workers Paid starts at USD 5/month with large included usage; assets/D1 scale cheaply. | Hobby starts at USD 5/month as usage credit, then CPU/RAM/storage/egress. Persistent web + database will generally cost more. | Accept a likely modest increase; measure and cap it. |
+| Extensibility | Excellent edge ecosystem; heavy native/server workloads may need redesign. | Standard libraries, jobs, WebSockets, email, file work, and PostgreSQL extensions fit the same runtime. | Railway better matches likely growth. |
+| Learning value | Edge/serverless bindings and constraints. | HTTP lifecycle, middleware, SQL, pooling, transactions, migrations, secrets, deployment, logs, backups, and capacity. | Railway matches the owner's goal. |
+
+Cloudflare remains stronger for price, global static delivery, scale-to-zero,
+and automatic D1 Time Travel. Those benefits do not outweigh the observed KDF
+uncertainty and the desired conventional learning environment. Railway is the
+new target; another Workers-local KDF attempt is not approved.
+
+### Cost and availability boundaries
+
+- Production uses a paid Railway plan. Free credits and sleeping/serverless mode
+  are experimental only: wake-up can add latency or an initial 502, and database
+  traffic can prevent sleep.
+- Configure usage notifications/limits and measure one week of preview usage
+  before final CPU/RAM selection. Pricing is rechecked at cutover.
+- Start with one web replica in one region. Correctness, sessions, and rate
+  limits must remain replica-safe for later scaling.
+- PostgreSQL stays private. Production must not enable its public TCP proxy;
+  administration uses an authenticated tunnel/runbook.
+
+## Design Amendment 05 — Production backup policy
+
+### Decision and scope
+
+Native Railway volume backups are unavailable on Trial and Hobby entitlements
+and require Railway Pro. The authenticated workspace administrator can list
+backups and schedules, and Railway exposes manual-create plus daily, weekly, and
+monthly schedule APIs, but the effective plan limit permits zero native volume
+backups. This is a platform-plan constraint, not a missing permission or API.
+
+For this learning/pet project, the owner explicitly accepts Railway PITR as the
+only continuously maintained recovery copy. Logical dumps are a verified
+on-demand export and portability mechanism, not a retained or current second
+backup layer. The following are mandatory for cutover:
+
+1. Railway PostgreSQL PITR is enabled and healthy;
+2. a PITR restore drill has completed successfully into an isolated target;
+3. a provider-independent logical dump can be created;
+4. that logical dump has restored successfully into an isolated target; and
+5. production database readiness and health verification pass after the drills.
+
+Railway native scheduled or manual volume backups are not mandatory for this
+project's production cutover. They remain a recommended future enhancement if
+the project moves to Railway Pro or becomes production-critical.
+
+### Accepted tradeoff and recovery boundary
+
+Without the native volume-backup layer, the project has no Railway-managed
+scheduled snapshot history or native volume-restore path in addition to PITR.
+Recovery therefore depends on PITR for incidents inside its usable archive
+window. The completed logical-dump drill proves that an operator can export and
+reconstruct the database, but its temporary dump was deleted and supplies no
+recoverable copy. No scheduled or retained logical dump, off-project copy, or
+recovery point outside PITR is promised. If PITR and its Railway project/bucket
+are unavailable or deleted before a fresh export is made, current server data
+may be unrecoverable. The owner explicitly accepts that single-copy,
+shared-control-plane risk because this is a learning/pet project, not a
+production-critical service.
+
+PITR coverage starts only after its first successful base backup, is limited to
+the available archive window, depends on a healthy asynchronous archiver and its
+Railway bucket, and may be shorter after archive interruption. PITR restoration
+creates a separate service that must be verified before any reviewed connection
+change. An approved portability/export operation creates a fresh logical dump
+with permission `0600`, keeps credentials and contents out of logs, verifies the
+target as required, and securely removes the temporary artifact afterward.
+Retaining or scheduling logical dumps requires a separate reviewed policy that
+defines freshness/RPO, encryption, access, storage failure domain, retention,
+monitoring, and restore-drill cadence. Neither recovery path may overwrite or
+rewire production automatically.
+
+If the project becomes production-critical, begins holding data whose loss the
+owner no longer accepts, or moves to Railway Pro, reassess this policy. Add
+native manual/scheduled volume backups and a separately reviewed scheduled,
+encrypted, access-restricted logical-dump copy outside the Railway project
+failure boundary, with an explicit RPO, retention, failure alert, and recurring
+restore-verification cadence. PITR remains required even if those layers are
+later enabled.
+
+### Cutover disposition
+
+Production cutover may proceed without native Railway volume backups only after
+this amendment is reviewed and explicitly approved and every mandatory item
+above plus the remaining release gates passes. The existing successful PITR and
+logical-dump restore evidence remains valid and is not repeated as part of this
+design amendment. Until approval, `production-cutover-operations` remains
+paused.
 
 ## Trust and security boundaries
 
-The browser is untrusted. It may submit arbitrary profile or progress data and
-may call endpoints out of sequence. The Worker authenticates the session,
-derives `user_id` from it, validates every request, enforces body-size limits,
-and uses bound D1 prepared statements. A client-supplied user ID is never
-accepted.
+The browser is untrusted. The Node service authenticates the session, derives
+`user_id`, validates requests, enforces body limits, and uses parameterized SQL.
+Client-supplied user IDs are never accepted. Database disclosure must not expose
+plaintext passwords or usable session tokens. Logs/errors exclude passwords,
+cookies, raw tokens, hashes/salts, names, database URLs, full bodies, and raw IPs.
 
-D1 is trusted storage but a database disclosure must not reveal plaintext
-passwords or usable session tokens. Logs and error responses must not contain
-passwords, cookies, raw session tokens, password hashes, profile names, or full
-request bodies.
+### Password policy
 
-### Password rules and storage
+- Username is 3–32 ASCII characters matching `[a-zA-Z0-9._-]+`; canonical form
+  is ASCII lowercase while chosen spelling is preserved.
+- Password is 12–128 Unicode code points and at most 1,024 UTF-8 bytes. Do not
+  trim, case-fold, or normalize it.
+- Hash with asynchronous native `node:crypto.argon2`: `argon2id`,
+  `memory=19456` 1-KiB blocks (19 MiB), `passes=2`, `parallelism=1`, and
+  `tagLength=32`. This is the OWASP minimum Argon2id profile at amendment time.
+  Startup and CI fail if the pinned runtime or exact policy is unavailable.
+- Use a fresh random 16-byte salt and strict format
+  `v4$argon2id$m=19456,t=2,p=1,dk=32$<salt-base64url>$<tag-base64url>`.
+  Reject missing, duplicated, reordered, unknown, non-canonical, out-of-range,
+  or wrong-length data before KDF work.
+- Compare equal-length tags with `timingSafeEqual`. Unknown users and unusable
+  records perform one dummy current-policy derivation and return the same public
+  failure as wrong passwords.
+- Keep an allowlisted verifier registry. Rehash a supported older policy only
+  after success, with fresh salt and compare-and-swap. Never weaken or use a
+  fast-hash fallback.
+- Experimental `v1` PBKDF2 and `v2`/`v3` scrypt rows are disposable. If any
+  durable row is found, deployment stops for a separate reset/migration decision.
 
-- Username: 3–32 ASCII characters matching `[a-zA-Z0-9._-]+`.
-- Canonical username: Unicode-independent ASCII lowercase. Store the chosen
-  spelling for display and enforce uniqueness on the canonical value.
-- Password: 12–128 Unicode code points and at most 1,024 UTF-8 bytes. Do not
-  trim, case-fold, or normalize it. Accept spaces and all printable Unicode.
-- Hash with PBKDF2-HMAC-SHA-256 through Web Crypto, 600,000 iterations, a random
-  16-byte salt, and a 32-byte derived key. Store algorithm, iteration count,
-  salt, and hash in a parseable versioned string.
-- Generate salts and tokens with `crypto.getRandomValues`. Compare derived keys
-  in constant time. Rehash on a successful login when the stored work factor is
-  below the current policy.
-- Enforce request limits before hashing. Login returns the same status and
-  generic message for an unknown username and a wrong password; run a dummy
-  hash for unknown users to reduce timing-based enumeration.
-
-PBKDF2 is selected here because Workers provides a native Web Crypto
-implementation and the OWASP-recommended scrypt memory setting approaches the
-Worker's 128 MB isolate limit. The work factor must be benchmarked in the
-deployed Worker before launch. If it repeatedly violates the chosen Workers plan
-CPU budget, production launch is blocked until the plan or hashing architecture
-changes; lowering below the documented policy is not an automatic fallback.
+One bounded password-work service initially allows two active Argon2 jobs and a
+FIFO queue of eight per replica. Excess work returns byte-equivalent `503
+AUTH_BUSY`, `Cache-Control: no-store`, and `Retry-After: 1` before identifier
+lookup. Preview load acceptance may reduce concurrency but cannot change KDF
+parameters without review. Permits release in `finally`; shutdown stops new
+admission and drains bounded work. Validate/rate-limit before admission. KDF
+failure creates no account/session, returns generic `503 AUTH_UNAVAILABLE`, and
+never triggers a weaker algorithm.
 
 ### Sessions
 
-- On successful registration or login, create a random 32-byte opaque token.
-- Store only `SHA-256(token)` as lowercase hex in D1. Send the raw token once in
+- Create a random 32-byte token; store only its SHA-256 digest. Send it once as
   `__Host-gm_session` with `Secure; HttpOnly; SameSite=Lax; Path=/`, no
-  `Domain` attribute, `Max-Age=2592000`, and an `Expires` value calculated from
-  the same server instant as the database expiry.
-- Sessions expire after 30 days absolutely. Do not write `last_seen_at` on every
-  request. The database `expires_at` is authoritative; the cookie expiry must
-  never be later. A future idle-expiry policy can be added without changing the
-  token representation.
-- Rotate the browser session on every successful login. If the request carries
-  a currently valid session cookie, delete that session row in the same D1 batch
-  that creates the new session, even when the credentials select a different
-  account. Prune expired rows, create the replacement, then enforce the target
-  user's ten-session cap within that batch. A malformed, expired, or already
-  revoked incoming token needs no additional deletion and does not change the
-  generic login response.
-- Logout deletes the current row and expires the cookie even if the row is
-  already absent. Logout and account deletion clear the cookie with the same
-  `Path`, `Secure`, `HttpOnly`, and `SameSite` attributes plus `Max-Age=0` and an
-  `Expires` date in the past.
-- Registration and login cap the target user at ten active sessions by deleting
-  expired sessions and then the oldest surplus sessions in the same D1 batch.
-- Authentication treats missing, malformed, expired, or revoked tokens alike.
-  Expired rows may be deleted opportunistically after the response.
-- Local development may use an environment-specific non-`__Host-` cookie only
-  when the local runtime cannot provide HTTPS; production must fail closed if
-  secure-cookie configuration is disabled.
+  `Domain`, and matching 30-day `Max-Age`/`Expires`.
+- PostgreSQL `expires_at` is authoritative. On login, transactionally revoke a
+  valid incoming session, prune expired rows, insert the replacement, and cap
+  the target user at ten active sessions.
+- Logout is idempotent. Account deletion re-verifies the password and deletes
+  all owned rows transactionally. Missing/malformed/expired/revoked tokens are
+  externally identical.
+- Local HTTP may use an environment-specific non-`__Host-` cookie. Production
+  startup fails without HTTPS public origin and secure-cookie mode.
 
-### CSRF, browser, and abuse controls
+### CSRF and abuse controls
 
-- All API requests are same-origin. Do not enable wildcard CORS.
-- For `POST`, `PUT`, `PATCH`, and `DELETE`, require `Content-Type:
-  application/json` where a body exists and require the `Origin` header to match
-  the configured public origin. Reject missing or mismatched origins in
-  production. `SameSite=Lax` is defense in depth, not the only CSRF control.
-- Set `Cache-Control: no-store` on auth, profile, and progress responses.
-- Apply route-specific Worker rate-limit bindings to registration and login.
-  Use a hash of the normalized username as one key and a coarse network-derived
-  key as a second signal. Because the platform limiter is permissive and
-  location-local, it is abuse reduction rather than a strict lockout system.
-  Login failures and rate-limit responses must not expose whether a named
-  account exists. Registration intentionally discloses username availability:
-  a normalized-username collision returns `409 USERNAME_UNAVAILABLE`. This is
-  an accepted MVP tradeoff because username is the sole public registration
-  identifier; no separate availability endpoint is provided.
-- Reject bodies over 16 KiB before JSON parsing. Progress payload itself is
-  capped at 12 KiB.
-- Add baseline response headers: `X-Content-Type-Options: nosniff`, a restrictive
-  `Referrer-Policy`, `Permissions-Policy` disabling unused capabilities, and a
-  CSP compatible with the Vite bundle. CSP rollout begins in report-only mode
-  and becomes enforcing before production cutover.
+- Production API is same-origin; no wildcard CORS. State-changing requests need
+  JSON where applicable and an `Origin` matching `PUBLIC_ORIGIN`.
+- Set `Cache-Control: no-store` on auth, profile, and progress responses. Reject
+  bodies over 16 KiB before parsing and progress payloads over 12 KiB.
+- Registration/login use atomic PostgreSQL fixed-window counters keyed by action
+  plus HMAC-SHA-256 of normalized username and coarse network prefix.
+  `RATE_LIMIT_HMAC_KEY` is secret; rows contain no plaintext identifier/address
+  and expire quickly.
+- Derive network keys only from a preview-verified Railway ingress chain.
+  Express `trust proxy` must describe exact trusted hops, never blindly accept
+  forwarded headers. Unproven client-IP provenance blocks launch.
+- Initial limits: registration 5/minute per username and 20/minute per network;
+  login 10/minute per username and 30/minute per network. Responses never expose
+  account existence; registration alone may disclose username unavailability.
+- Apply `nosniff`, restrictive referrer/permissions policies, HSTS after HTTPS
+  cutover, and a Vite-compatible CSP (report-only before enforcement).
 
-## Data model
+## PostgreSQL model
 
-All IDs are UUID strings generated by the Worker. Times are UTC epoch seconds.
-Foreign keys are enabled in every migration and request path that depends on
-them. SQL uses `STRICT` tables when supported by the local and deployed D1
-versions.
+Node generates UUIDv4 IDs. Times are `timestamptz`, serialized as UTC ISO-8601.
 
-### `users`
+- `users(id uuid PK, username text, username_normalized text UNIQUE,
+  password_hash text, created_at timestamptz, updated_at timestamptz)`.
+- `profiles(user_id uuid PK/FK ON DELETE CASCADE, first_name text NULL,
+  last_name text NULL, avatar_id text NULL, updated_at timestamptz)`.
+- `sessions(token_hash bytea PK, user_id uuid FK ON DELETE CASCADE,
+  created_at timestamptz, expires_at timestamptz)` with user/expiry indexes. Do
+  not store IP or user agent.
+- `lesson_progress(user_id uuid FK ON DELETE CASCADE, lesson_id text,
+  schema_version integer, content_version integer, progress jsonb,
+  revision integer, updated_at timestamptz, PK(user_id, lesson_id))`.
+- `auth_rate_limits(action text, key_hash bytea, window_started_at timestamptz,
+  request_count integer, expires_at timestamptz,
+  PK(action, key_hash, window_started_at))` with expiry index.
 
-| Column | Type | Constraints / meaning |
-|---|---|---|
-| `id` | TEXT | primary key |
-| `username` | TEXT | chosen display spelling |
-| `username_normalized` | TEXT | unique, indexed login key |
-| `password_hash` | TEXT | versioned PBKDF2 representation |
-| `created_at` | INTEGER | required |
-| `updated_at` | INTEGER | required |
+Profiles keep optional trimmed 1–80-code-point names and a catalog avatar ID,
+never a URL. Progress catalog initially contains only `stage-01-lesson-01`;
+unknown IDs return `404 UNKNOWN_LESSON` before SQL. The JSON contains only
+`currentStepId`, `completedStepIds`, `checkpointPassed`, and `completedAt`.
+Audio/motion preferences, reflection, and transient state remain local.
 
-### `profiles`
+Rate counters use one atomic upsert and bounded cleanup. Constraints are the
+final uniqueness/ownership defense. Registration, session rotation/capping,
+and account deletion use transactions. Use a bounded `pg.Pool`, finite statement
+and transaction timeouts, and `finally` release. Readiness uses a short `SELECT
+1`; liveness does not depend on PostgreSQL.
 
-| Column | Type | Constraints / meaning |
-|---|---|---|
-| `user_id` | TEXT | primary key, FK users with cascade delete |
-| `first_name` | TEXT | nullable, trimmed, 1–80 code points when present |
-| `last_name` | TEXT | nullable, trimmed, 1–80 code points when present |
-| `avatar_id` | TEXT | nullable, validated against a versioned app catalog |
-| `updated_at` | INTEGER | required |
+## API and client behavior
 
-Names are private account data and are never used as login identifiers. Empty
-strings become `NULL`. `avatar_id` is an identifier such as `guitar-sun-01`, not
-a URL. The client and Worker share the allowed catalog constants.
+Base path is `/api/v1`, JSON UTF-8. Errors keep the stable
+`{ error: { code, message, fields?, requestId } }` envelope. Use 400 malformed,
+401 unauthenticated, 403 origin, 404 absent, 409 username/revision conflict, 413
+too large, 415 media type, 422 invalid fields, 429 limited, 503 auth busy/
+unavailable, and 500 unexpected failure.
 
-### `sessions`
-
-| Column | Type | Constraints / meaning |
-|---|---|---|
-| `token_hash` | TEXT | primary key; SHA-256 of opaque token |
-| `user_id` | TEXT | indexed FK users with cascade delete |
-| `created_at` | INTEGER | required |
-| `expires_at` | INTEGER | required and indexed |
-
-Do not store IP addresses or user-agent strings in the MVP.
-
-### `lesson_progress`
-
-| Column | Type | Constraints / meaning |
-|---|---|---|
-| `user_id` | TEXT | FK users with cascade delete |
-| `lesson_id` | TEXT | application lesson identifier |
-| `schema_version` | INTEGER | envelope version |
-| `content_version` | INTEGER | lesson-defined content version |
-| `progress_json` | TEXT | bounded validated JSON snapshot |
-| `revision` | INTEGER | optimistic concurrency counter, starts at 1 |
-| `updated_at` | INTEGER | server time |
-
-Primary key is `(user_id, lesson_id)`. The Worker owns a versioned catalog of
-server-supported lesson IDs; initially it contains only
-`stage-01-lesson-01`. Progress reads and writes accept only IDs in that catalog.
-`GET /progress` queries only catalog IDs, so its response is bounded by the
-catalog size, and unknown path IDs return `404 UNKNOWN_LESSON` before any D1
-read or write. Adding a lesson requires a reviewed server catalog change and its
-progress schema/adapter; syntactically valid arbitrary IDs are not forward
-compatible input.
-
-The JSON payload contains only durable learning state: `currentStepId`,
-`completedStepIds`, `checkpointPassed`, and
-`completedAt`. `audioEnabled` and manual/static motion preferences remain local
-device settings because automatic cross-device restoration can be surprising or
-unsafe. Private reflection and transient interaction state are excluded.
-
-The Worker validates catalog membership, the envelope, supported schema version,
-JSON shape, scalar/array limits, and total bytes. It does not treat progress as a
-security credential. Lesson-specific adapters in the client validate known step
-IDs and preserve pedagogical invariants before rendering. Catalog membership
-bounds each account to one row per supported lesson; body-size and revision
-checks still bound each write.
-
-## API contract
-
-Base path: `/api/v1`. JSON responses use UTF-8. Successful mutation responses
-return the canonical server representation when one exists.
-
-Errors have one stable shape:
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Check the highlighted fields.",
-    "fields": { "username": "USERNAME_UNAVAILABLE" },
-    "requestId": "..."
-  }
-}
-```
-
-Messages are safe for display; codes drive client behavior. Unexpected failures
-return `INTERNAL_ERROR` without implementation details. Use 400 malformed JSON,
-401 unauthenticated, 403 origin rejection, 404 resource absent, 409 username or
-revision conflict, 413 body too large, 415 wrong media type, 422 valid JSON with
-invalid fields, 429 rate limited, and 500 unexpected failure.
-
-`USERNAME_UNAVAILABLE` is intentionally observable only from registration.
-Unknown-user and wrong-password login attempts share the same status, code,
-message, and comparable hashing work. `UNKNOWN_LESSON` is a `404` and never
-creates a progress row.
-
-### Authentication and account
-
-| Method and path | Auth | Request | Success |
+| Method/path | Auth | Request | Success |
 |---|---|---|---|
-| `POST /auth/register` | no | `{ username, password }` | `201 { user }` + session cookie |
-| `POST /auth/login` | no | `{ username, password }` | `200 { user }` + session cookie |
+| `POST /auth/register` | no | `{ username, password }` | `201 { user }` + cookie |
+| `POST /auth/login` | no | `{ username, password }` | `200 { user }` + cookie |
 | `POST /auth/logout` | optional | `{}` | `204` + expired cookie |
 | `GET /session` | optional | none | `200 { user: UserView | null }` |
+| `PATCH /profile` | yes | subset of `{ firstName, lastName, avatarId }` | `200 { profile }` |
 | `DELETE /account` | yes | `{ password }` | `204` + expired cookie |
-
-`UserView` contains `id`, `username`, `profile`, and `createdAt`, never hash or
-session data. Account deletion re-verifies the password and deletes user,
-profile, sessions, and progress through foreign-key cascades in one transaction.
-
-### Profile
-
-| Method and path | Auth | Request | Success |
-|---|---|---|---|
-| `PATCH /profile` | yes | any subset of `{ firstName, lastName, avatarId }` | `200 { profile }` |
-
-An explicit `null` clears a field; omission leaves it unchanged. Unknown keys are
-rejected. Profile changes do not affect authentication.
-
-### Progress
-
-| Method and path | Auth | Request | Success |
-|---|---|---|---|
-| `GET /progress` | yes | none | `200 { items: ProgressRecord[] }` |
+| `GET /progress` | yes | none | `200 { items }` |
 | `GET /progress/:lessonId` | yes | none | `200 { item }` or `404` |
-| `PUT /progress/:lessonId` | yes | `{ baseRevision, schemaVersion, contentVersion, progress }` | `200 { item }` |
+| `PUT /progress/:lessonId` | yes | versioned progress + `baseRevision` | `200 { item }` |
 
-`baseRevision: 0` creates an absent row. A later write performs an atomic
-`UPDATE ... WHERE revision = ?`, increments the revision, and returns `409
-REVISION_CONFLICT` with the current record when no row matched. The client merges
-and retries once; further conflict remains visible as an unsynced local state.
-All SQL inputs are bound parameters.
+`UserView` never contains credential/session material. Profile `null` clears a
+field; omission preserves it. `baseRevision: 0` inserts; updates atomically
+match/increment revision and return current data on `409 REVISION_CONFLICT`.
 
-The collection contains at most one item for every ID in the server's supported
-lesson catalog. Pagination is unnecessary while that catalog remains small; if
-the catalog later outgrows the documented response budget, pagination must be
-designed before expanding it rather than allowing an unbounded response.
+Render local state immediately and bootstrap session in the background. Network
+failure differs from guest state. Registration/login may offer confirmed guest
+progress merge; never delete valid local progress on auth success. Lesson 1
+merge unions completed steps, ORs checkpoint pass, keeps earliest completion,
+and selects the furthest unlocked stable step. Save locally first, then sync with
+visible pending/synced/error and retry. Logout preserves device progress;
+account caches are user-ID scoped. Shared-device clearing is explicit/confirmed.
 
-## Client behavior and user flows
+Forms use visible labels, linked errors, keyboard operation, status regions,
+and text-labeled avatar radios. Account deletion requires current password and
+clear confirmation. Preserve 320 px layout, reduced motion, and existing lesson
+accessibility.
 
-### Bootstrap
+## Migrations and transition
 
-The application renders immediately from local state and requests `GET
-/api/v1/session` in the background. A small auth provider owns
-`loading | guest | authenticated` plus profile data. A network error is distinct
-from `guest`; it must not log out the visible client state or erase progress.
+Checked-in PostgreSQL migrations live in a backend-owned directory and run via
+`node-pg-migrate`. Railway's pre-deploy command runs them over private
+networking; failure prevents release.
 
-### Registration
+1. Use a PostgreSQL advisory lock against concurrent deploy races.
+2. Use transactional migrations where supported.
+3. Add before code requires; destructive work uses expand/migrate/contract.
+4. Run empty/local and preview acceptance, back up production, then pre-deploy.
+5. Prove provider-independent logical export and isolated restore before
+   cutover. Under the accepted pet-project policy, securely remove the temporary
+   drill artifact; do not retain or schedule dumps without a separately reviewed
+   lifecycle policy.
+6. D1 migrations are historical, not PostgreSQL inputs. With zero live users,
+   create fresh schema and discard preview D1 auth data; no dual write/copy.
+7. Browser progress uses the normal validated merge; malformed data keeps its
+   current fallback.
 
-1. Learner opens an accessible registration form and sees username/password
-   rules plus the lack of automated recovery.
-2. Client validates for quick feedback; server repeats all validation.
-3. On `201`, the session cookie is already set and the app announces success.
-4. If validated guest progress exists, the app offers to add that progress to
-   the new account. On confirmation, the sync service compares it with server
-   progress, merges, writes through the revision API, and only then marks it
-   synced. Declining keeps the guest snapshot separate.
-5. Local progress remains as a recoverable cache; it is never deleted merely
-   because registration succeeded.
+## Development, deployment, and operations
 
-### Login and merge
+Required typed startup configuration includes Railway `PORT` and private
+`DATABASE_URL`; `NODE_ENV`, `APP_ENV`, `PUBLIC_ORIGIN`, deployment version;
+secure-cookie mode; `RATE_LIMIT_HMAC_KEY`; pool/timeouts; and Argon2 admission
+limits. Commit only a key-only `.env.example`; ignore local values. Railway
+variables/reference variables hold deployed values. Never print config objects,
+URLs, or secrets.
 
-After login, fetch all remote progress and merge each known lesson with the
-matching account-scoped local cache. If separate guest progress exists, show its
-lesson/completion summary and require confirmation before importing it. For
-Lesson 1:
+Local development uses repository Node 24 and a local PostgreSQL container at
+the production major version. A checked-in Compose file may own only the local
+database; the Node API remains a normal debuggable process. Vite proxies `/api`.
+Ordinary work must not need a Railway account; a Railway tunnel is for explicit
+preview administration.
 
-- union valid completed step IDs;
-- `checkpointPassed` is logical OR;
-- keep the earliest valid `completedAt` when both are complete;
-- choose the furthest unlocked stable step implied by merged completion, while
-  permitting later user navigation backward locally;
-- validate both sides with the Lesson 1 adapter before merging;
-- keep device-only audio and motion preferences from the current device.
+Pull requests run lint/typecheck, frontend/server builds, unit tests, and fresh
+PostgreSQL integration tests. Railway builds one web artifact, runs the
+pre-deploy migration, checks readiness, and shifts traffic. Preview acceptance
+precedes production.
 
-Write a changed merge with the fetched server revision. A conflict triggers one
-refetch/merge/retry. Never replace a valid local completion with an older or
-malformed remote snapshot.
+Final cutover records the last good Pages commit/tag, smokes Railway, then
+switches canonical origin and disables routine Pages deploy triggers in one
+reviewed change. Code rollback selects a prior compatible Railway deployment;
+migrations remain forward-compatible. Guest mode and the tagged Pages artifact
+are the initial failure fallback.
 
-### Guest and failure behavior
+Before production, satisfy Design Amendment 05: verify healthy PITR,
+provider-independent logical export capability, successful isolated PITR and
+logical-dump restore drills, and production readiness/health. PITR is the only
+continuously maintained recovery copy; the drill artifact is temporary and does
+not constitute a retained second layer. Native Railway volume backups are not
+mandatory. Reopen the policy for Pro, production-critical use, or data whose
+loss is no longer acceptable. Restore corrupt data into a new service for
+verification before cutover; never automatically overwrite the source or clear
+browser progress.
 
-- Signed-out learners continue using the current local persistence behavior.
-- Lesson actions update local state first. Authenticated state then syncs in the
-  background with `pending`, `synced`, or `error` status.
-- API failure does not block lesson navigation or completion. Show a concise
-  persistent status and a retry action; avoid a toast for every autosave.
-- Debounce ordinary progress writes and flush important transitions such as
-  checkpoint pass and lesson completion immediately. Do not claim a successful
-  server save until the API acknowledges it.
-- Logout ends the server session but leaves local course progress on the device.
-  Account caches are namespaced by immutable user ID and are never displayed to
-  a guest or merged into another account. The legacy Lesson 1 storage key is
-  treated as guest data. The UI must explain this on shared devices and offer
-  separate “clear this account's local cache” and “clear guest progress” actions;
-  clearing requires explicit confirmation.
+Emit structured JSON with application/request IDs, route template, method,
+status, duration, deployment version, and coarse outcome. Railway supplies logs
+and CPU/RAM/disk/network metrics, not application latency/error metrics; derive
+the initial view from structured logs and add OpenTelemetry only if needed.
+Monitor 5xx, database/pool/latency, auth busy/unavailable, 401/409/429 trends,
+restarts, resources, backups, migrations, and health. The privacy notice covers
+PITR retention and temporary approved logical-export handling accurately.
 
-### Profile and account deletion
+Database outage returns generic bounded 503 and never trusts unsigned client
+claims; guest learning remains local. Pool saturation, invalid config, KDF
+capability failure, migration failure, and unproven proxy semantics fail closed.
+A single region is an accepted MVP tradeoff; HA needs a new design.
 
-Profile fields have visible labels, inline errors linked with
-`aria-describedby`, keyboard operation, and a status region for save results.
-Avatar choices are radio options with text names, not image-only controls.
-Account deletion requires the current password and a clear destructive
-confirmation. A failed delete leaves the account and local progress untouched.
+## Test and preview acceptance
 
-## Validation and consistency
+Unit/service tests cover validation; strict `v4` vectors/grammar; dummy work;
+constant-time comparison; rehash decisions; two-active/eight-queued FIFO
+admission, error/shutdown release, and pre-lookup busy equivalence; sessions;
+cookies; origins/media; trusted proxy parsing; HMAC limiter keys; atomic counter
+decisions; progress merge; deployment gates; static/API routing; configuration;
+and graceful shutdown.
 
-- Centralize request parsing and pure validators in Worker modules; share only
-  platform-neutral constants/types with the client.
-- Database constraints are the final defense for uniqueness and ownership.
-- Registration inserts `users`, `profiles`, and `sessions` in one D1 batch so a
-  failure rolls back the full operation.
-- Progress uses optimistic revisions. The API returns server time and revision;
-  client clocks do not decide the winner.
-- A row written by a newer deployment may become unknown after a code rollback.
-  Such a row remains stored and readable as an opaque record but is not rendered
-  or overwritten until a compatible adapter exists.
-- Maintain the current corruption-tolerant local reader during migration.
+PostgreSQL integration starts empty and checks all migrations, constraints, and
+indexes; repeat migration safety; concurrent registration; login equivalence;
+session rotation/restart/expiry/cap/logout; transaction rollback; rate-limit
+upserts/cleanup; pool/statement failure; profile; progress concurrency,
+isolation, size, and catalog bounds; and account cascades.
 
-## Migrations and compatibility
+Railway preview acceptance must:
 
-Use checked-in numbered SQL migrations under `migrations/`, applied with
-Wrangler separately to local/preview and production database names. The first
-migration creates the four tables, indexes, constraints, and foreign keys.
+1. Prove the pinned runtime uses native asynchronous Argon2id with exact `v4`
+   parameters for new, real, dummy, and confirmation work.
+2. Run fixed vectors and at least 50 production-shaped derivations after warmup;
+   record p50/p95 KDF/auth latency and CPU/RAM without secrets. The foundation
+   slice defines thresholds from local/preview baselines before auth work.
+3. Load-test two active jobs, bounded queue, excess `AUTH_BUSY`, and recovery
+   after throws/timeouts. No OOM, restart, event-loop starvation, unbounded
+   queue, or weaker fallback is acceptable.
+4. Run register/login/wrong/unknown/unusable/confirmation/session-restart flows;
+   prove no failure mutation and clean all acceptance rows.
+5. Verify client-IP derivation and prove spoofed forwarded headers cannot choose
+   a new network key; limits persist across web restarts.
+6. Verify HTTPS cookies, origins/headers, SPA/API fallback, readiness, graceful
+   deploy, migration-failure blocking, redaction, and environment isolation.
+7. Inspect logs/resource graphs for the entire window. Leakage, OOM, unexplained
+   restart/5xx, migration failure, or saturation fails acceptance.
 
-Migration policy:
+Browser tests cover guest/offline use, account/profile/delete flows, restored
+sessions, progress merge/status, Lesson 1 corruption/completion regression,
+accessibility/mobile, and Pages-hidden versus Railway-preview entry points.
 
-1. Additive schema changes deploy before code that requires them.
-2. Destructive changes require an expand/migrate/contract sequence in separate
-   deployments; this work item contains no destructive production migration.
-3. Run migrations against preview, execute API integration tests, record a D1
-   Time Travel bookmark for production, apply production migrations, then deploy
-   the compatible Worker.
-4. Never run remote migrations from an unreviewed pull request.
-5. Local browser progress needs no destructive migration. It is validated and
-   imported through the same merge adapter; malformed data falls back exactly as
-   the current lesson does.
+Before review of any implementation slice, run repository lint/build, relevant
+tests, and `git diff --check`.
 
-## Deployment, operations, and rollback
+## Revised implementation slices
 
-### Delivery
+The approved `cloudflare-runtime-schema` slice remains immutable workflow
+history but its architecture is superseded. It is not relabeled as failed and
+is not a foundation for later slices. No code changes occur until this amendment
+passes review and a new explicit `design_approval` gate.
 
-- Pull requests run install, lint, build, Worker tests, and local-D1 integration
-  tests. They may upload a preview Worker only when preview credentials and a
-  dedicated preview D1 database are configured.
-- Production deploy runs on `main` after validation and migration approval using
-  the official Wrangler GitHub Action with least-privilege
-  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
-- Through slices 1–5, the existing GitHub Pages workflow remains the canonical
-  production deploy and explicitly builds `VITE_DEPLOY_TARGET=pages`. Automated
-  checks assert its `/guitar-mastering/` base and the absence of account,
-  profile, and sync entry points. Worker preview deploys explicitly build
-  `VITE_DEPLOY_TARGET=worker`; all account and progress acceptance tests run
-  there. Thus merging a pre-cutover slice cannot advertise a feature whose API
-  is absent from the Pages origin.
-- Slice 6 is the only cutover slice. Before merge, deploy the candidate Worker
-  and production D1, run migrations and smoke tests at the Worker URL, and
-  record the currently deployed Pages commit as an annotated rollback tag. In
-  the same reviewed cutover change, disable the Pages workflow's `push` and
-  `workflow_dispatch` deploy triggers, make the production/canonical build use
-  `VITE_DEPLOY_TARGET=worker`, and update the advertised origin. Disabling the
-  workflow does not delete its last deployed artifact; document its URL, tag,
-  and verification result in the runbook. A dedicated, manual rollback
-  procedure may rebuild that tag with `VITE_DEPLOY_TARGET=pages`, but routine
-  post-cutover commits must never overwrite the fallback.
-- Health checks cover static `/`, `/api/v1/session`, D1 connectivity through a
-  non-sensitive readiness query, security headers, and cookie flags.
+1. **`cloudflare-runtime-schema` — completed historical, superseded.** Its
+   Worker/D1 artifacts remain audit evidence only.
+2. **`railway-node-postgres-foundation` — new replacement foundation.** Owns
+   Node/Express, static/API routing, shutdown, configuration, `pg`, local
+   PostgreSQL, all baseline tables/migrations, Railway config, health/readiness,
+   JSON errors, Vite proxy/build gates, test harness, migration failure/race
+   tests, obsolete Worker/D1 retirement, and recorded KDF thresholds. It exposes
+   only health/readiness and no credentials/profile/progress/cutover.
+3. **`auth-session-api` — revised.** Owns `v4` Argon2id, bounded admission,
+   dummy/upgrade work, PostgreSQL rate limits, trusted ingress proof, auth/
+   session/account routes, cookies, transactions, and preview auth acceptance.
+   Existing Workers PBKDF2/scrypt code is superseded, not reusable as policy.
+4. **`account-profile-ui` — behavior preserved.** Owns auth UI/provider,
+   profile endpoint/UI, avatar catalog, deletion UX, accessibility, and
+   Railway-build-only entry points before cutover.
+5. **`progress-api-sync-core` — adapter changed.** Owns PostgreSQL endpoints,
+   optimistic revisions, bounds/catalog, sync queue/status/retry, and merge APIs.
+6. **`lesson-one-progress-migration` — behavior preserved.** Owns the Lesson 1
+   adapter, guest import, user caches, confirmed merge, API sync, and save UI.
+7. **`production-cutover-operations` — target changed.** Owns Railway config/
+   CI, migrations, backups/restore, headers, smoke checks, monitoring/privacy,
+   cost controls, canonical origin, and Pages shutdown. This is final.
 
-### Observability and privacy
-
-- Emit structured route, method, response status, duration, deployment version,
-  and random request ID. Use coarse auth outcomes such as `login_failed`; never
-  log identifiers or credentials.
-- Monitor 5xx, D1 errors/latency, 401 trends, 409 progress conflicts, 429s, and
-  deployment health. Rate-limit events may use aggregate telemetry only.
-- Retain only data needed to provide accounts and progress. No IP/user-agent is
-  stored in application tables. Deleting an account removes all application
-  rows. D1 operational backups may retain deleted data within the provider's
-  documented Time Travel window; state this in the privacy notice.
-
-### Rollback
-
-- Worker code rollback uses a previous compatible version. Database migrations
-  remain forward-compatible during the rollback window.
-- If the Worker/API is unhealthy, the static course continues in local guest
-  mode and reports sync unavailable. The prior GitHub Pages deployment is the
-  temporary static fallback during initial cutover.
-- For corrupting database operations, stop writes, capture the current bookmark,
-  and use D1 Time Travel only through an explicitly approved incident procedure;
-  restoration overwrites the database and is not an automatic deploy step.
-- Never roll back by clearing browser progress or dropping tables.
-
-## Test strategy
-
-### Unit
-
-- Username/profile/password validators, byte and code-point limits.
-- PBKDF2 encode/parse/verify, dummy verification, token hashing, cookie creation.
-- Session expiry and auth middleware.
-- Progress envelope validation and Lesson 1 local/remote merge properties:
-  idempotence, commutativity for achievement fields, no completion regression,
-  and malformed-input fallback.
-- Deployment-target parsing fails closed; Pages and Worker builds expose only
-  their intended capability set and use their intended Vite base.
-- Error mapping and origin/media-type enforcement.
-
-### Worker and D1 integration
-
-- Apply migrations to a fresh local D1 database and inspect constraints/indexes.
-- Register, duplicate username with case variants, login success/failure, session
-  rotation, logout/revocation, expiry, and account cascade deletion. Verify that
-  duplicate registration returns `USERNAME_UNAVAILABLE`, while unknown-user and
-  wrong-password login responses are indistinguishable.
-- Verify browser restart restores an unexpired persistent cookie, expiry at the
-  server boundary rejects it, cookie expiry never exceeds row expiry, and login
-  with a valid cookie atomically revokes the incoming session and issues one
-  replacement.
-- Profile set/clear and invalid avatar/name cases.
-- Progress create/read/update, cross-user isolation, oversize rejection,
-  revision conflict, and retry behavior. Verify unknown lesson IDs return
-  `404 UNKNOWN_LESSON` without a row, and collection reads never exceed the
-  supported catalog cardinality.
-- Atomic rollback when one statement in registration/deletion fails.
-
-### Browser/component
-
-- Guest path remains usable with API offline.
-- Register/login/logout/profile flows, restored session, sync statuses, and
-  deterministic local/remote merge.
-- Existing Lesson 1 completion and corrupt-local-storage cases do not regress.
-- Keyboard-only and screen-reader form/status behavior; 320 px layout; disabled
-  motion and audio preferences remain device-local.
-- Cookie flags and security headers in a deployed preview.
-- Account routes and controls are absent from the Pages build through slice 5,
-  while the same revision exposes them in the Worker preview build.
-
-Before each implementation slice is offered for review, run the repository's
-lint/build commands, relevant tests, and `git diff --check`.
-
-## Implementation slices
-
-Slices are ordered and independently reviewable. A later slice is not authorized
-until the preceding review and human gate complete.
-
-### 1. `cloudflare-runtime-schema` — runtime and persistence skeleton
-
-Owns Wrangler configuration, Worker entry/router, static asset fallback,
-environment typing, local/preview D1 binding, initial SQL migration, health/error
-primitives, test harness, and the fail-closed `VITE_DEPLOY_TARGET` build contract.
-It adds automated Pages/Worker base and capability-gate assertions. It may expose
-only health/readiness API behavior.
-It must not implement credentials, auth UI, profile mutation, progress sync, or
-production cutover.
-
-Acceptance: the SPA and API route correctly under local Wrangler; a fresh local
-D1 applies the migration; unknown API routes stay JSON; the Pages build retains
-its current base and contains no account entry points; the Worker preview build
-uses the root base; existing frontend build passes.
-
-### 2. `auth-session-api` — credentials and server sessions
-
-Owns username/password validation, PBKDF2 utilities, register/login/logout,
-session lookup middleware, secure cookie handling, session limits, origin/media
-checks, explicit registration-disclosure behavior, auth rate limiting, and auth
-API tests. No auth/profile UI and no lesson progress endpoint.
-
-Acceptance: all auth/session security and failure cases above pass locally and
-against a preview runtime, including persistent-cookie restart/expiry and atomic
-replacement of an incoming valid session; password/hash/token material never
-appears in API responses or logs.
-
-### 3. `account-profile-ui` — account experience
-
-Owns the client auth provider, registration/login/logout forms, session
-bootstrap, profile read/update UI and endpoint, fixed avatar catalog, account
-deletion flow, accessible statuses/errors, and navigation entry points. It does
-not change lesson progress ownership or synchronization. All entry points are
-reachable only in the Worker-capable build and are absent from Pages production.
-
-Acceptance: guest and authenticated navigation work; profile fields and deletion
-obey validation/accessibility/privacy rules; API outages do not break the course.
-
-### 4. `progress-api-sync-core` — generic durable progress transport
-
-Owns progress API endpoints, optimistic revisions, bounded envelope validation,
-the versioned server lesson catalog and unknown-lesson rejection, client sync
-queue/status, retry policy, and pure reconciliation interfaces. It does not move
-Lesson 1 state out of its page or change completion rules. Sync UI remains behind
-the Worker capability gate.
-
-Acceptance: ownership isolation, create/update/conflict paths, unknown-ID
-rejection, catalog-bounded collection reads, offline local-first behavior, and
-retry semantics have automated coverage.
-
-### 5. `lesson-one-progress-migration` — first real adapter
-
-Owns extracting Lesson 1's durable progress adapter/repository, importing the
-existing storage key into a guest namespace, user-ID-scoped local caches,
-confirmed guest import, deterministic account merge, server sync integration,
-and save-status UI. It preserves all approved Lesson 1 pedagogy and retains
-audio and motion preferences locally. It does not implement Lesson 2.
-Authenticated import/sync entry points remain absent from the Pages build.
-
-Acceptance: existing/malformed local snapshots, anonymous completion,
-registration import, login conflict, cross-device restore, logout, shared-device
-warning, API failure, and retry are verified without completion regression.
-
-### 6. `production-cutover-operations` — deploy and hardening
-
-Owns production/preview configuration, CI deployment, migration runbook,
-security-header enforcement, smoke checks, monitoring documentation, privacy
-notice updates, canonical-origin/base configuration, and staged removal or
-disabling of the GitHub Pages production deploy. It performs the atomic release
-strategy defined above: verify the Worker candidate, preserve and tag the last
-known-good Pages artifact, disable Pages deploy triggers, then enable the Worker
-capability build and update the canonical origin in one reviewed cutover.
-
-Acceptance: production migration and deploy steps are reproducible; preview and
-production databases are isolated; smoke checks pass; Pages can no longer be
-overwritten by routine pushes; the fallback artifact/tag is recorded and its
-manual recovery is rehearsed; the canonical Worker build exposes the account
-capabilities with root-relative assets; no secret is committed. This is the
-final slice.
+After Design Review 07, the owner must explicitly approve `design_approval`.
+The first legal implementation action is `railway-node-postgres-foundation`.
 
 ## Definition of done
 
-- All six approved slices have passed implementation review and their human
-  gates.
-- Username/password auth, revocable sessions, optional profile fields, avatar
-  selection, account deletion, and cross-device Lesson 1 progress work on the
-  deployed same-origin application.
-- Guest/local-first learning remains fully functional during sign-out and API
-  failure, with truthful sync messaging.
-- Security controls, migration/rollback procedures, automated validation, and
-  privacy behavior match this design.
-- Production uses Cloudflare Workers Static Assets + D1, with GitHub Pages kept
-  only as the documented initial rollback artifact or retired after the rollback
-  window.
+- The historical Cloudflare slice and six Railway target slices remain visible;
+  every remaining slice passes review and its human gate.
+- Secure auth, sessions, profiles, deletion, and cross-device Lesson 1 progress
+  work on the Railway same-origin deployment; guest mode survives API failure.
+- Argon2id, PostgreSQL transactions/limits/migrations, PITR, verified on-demand
+  logical export/restore capability, rollback, observability, privacy, and cost
+  controls match this design and preview proof. The accepted single maintained
+  recovery copy is disclosed accurately; native backups and scheduled retained
+  logical dumps are future Pro, production-critical, or changed-risk
+  enhancements rather than cutover requirements.
+- Production uses Railway Node plus private PostgreSQL. Pages remains only the
+  recorded initial static fallback or is retired after its rollback window.
 
-## External platform references
+## Sources consulted
 
-- [Cloudflare Workers SPA static assets](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/)
-- [Cloudflare static-asset routing and bindings](https://developers.cloudflare.com/workers/static-assets/binding/)
-- [Cloudflare D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/)
-- [Cloudflare D1 prepared statements](https://developers.cloudflare.com/d1/worker-api/prepared-statements/)
-- [Cloudflare D1 batch transactions](https://developers.cloudflare.com/d1/worker-api/d1-database/)
-- [Cloudflare D1 limits](https://developers.cloudflare.com/d1/platform/limits/)
+- [Railway PostgreSQL](https://docs.railway.com/databases/postgresql)
+- [Railway variables](https://docs.railway.com/variables)
+- [Railway pre-deploy commands](https://docs.railway.com/deployments/pre-deploy-command)
+- [Railway domains/private networking](https://docs.railway.com/networking/domains/working-with-domains)
+- [Railway logs](https://docs.railway.com/observability/logs)
+- [Railway metrics](https://docs.railway.com/observability/metrics)
+- [Railway PostgreSQL backup/restore](https://docs.railway.com/guides/postgres-backups-restores)
+- [Railway volume backups](https://docs.railway.com/volumes/backups)
+- [Railway PostgreSQL PITR](https://docs.railway.com/volumes/point-in-time-recovery)
+- [Railway pricing](https://docs.railway.com/pricing)
+- [Railway serverless behavior](https://docs.railway.com/deployments/serverless)
+- [Cloudflare Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)
+- [Cloudflare D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)
 - [Cloudflare D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/)
-- [Cloudflare Workers Web Crypto](https://developers.cloudflare.com/workers/runtime-apis/web-crypto/)
-- [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
-- [Cloudflare Workers rate limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)
-- [Cloudflare GitHub Actions deployment](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)
-- [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
-- [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
+- [Node.js 24 `crypto.argon2`](https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptoargon2algorithm-parameters-callback)
+- [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+- [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)

@@ -17,9 +17,9 @@ describe("deployment target", () => {
     });
   });
 
-  it("uses a root base and enables account capabilities for Worker previews", () => {
-    expect(createDeploymentConfig("worker")).toEqual({
-      target: "worker",
+  it("uses a root base and enables account capabilities for Railway previews", () => {
+    expect(createDeploymentConfig("railway")).toEqual({
+      target: "railway",
       base: "/",
       accountCapabilitiesEnabled: true,
     });

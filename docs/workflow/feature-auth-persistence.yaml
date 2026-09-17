@@ -4,13 +4,35 @@ work_item_id: feature-auth-persistence
 work_item_type: technical_feature
 title: "Authentication and persistence foundation"
 
-phase: human_gate
-status: approved
-gate: next_slice_approval
+phase: implementation
+status: in_progress
+gate: none
 
 design:
   path: docs/technical-designs/feature-auth-persistence.md
   status: approved
+
+amendments:
+  - id: password-hashing-01
+    path: docs/reviews/feature-auth-persistence/design-amendment-01-password-hashing.md
+    status: approved
+    supersedes_assumption: "PBKDF2-HMAC-SHA-256 at 600000 iterations is deployable on Cloudflare Workers"
+  - id: password-hashing-resource-policy-02
+    path: docs/reviews/feature-auth-persistence/design-amendment-02-scrypt-resource-policy.md
+    status: approved
+    supersedes_assumption: "Three simultaneous exact-policy scrypt derivations fit within one Cloudflare Worker isolate"
+  - id: password-hashing-runtime-compatibility-03
+    path: docs/reviews/feature-auth-persistence/design-amendment-03-workers-kdf.md
+    status: approved
+    supersedes_assumption: "One-permit serialization makes scrypt N=2^14, r=8, p=5 compatible with Cloudflare Workers"
+  - id: railway-node-postgres-architecture-04
+    path: docs/technical-designs/feature-auth-persistence.md
+    status: approved
+    supersedes_assumption: "Cloudflare Workers + D1 remains the target authentication and persistence architecture"
+  - id: production-backup-policy-05
+    path: docs/reviews/feature-auth-persistence/design-amendment-05-production-backup-policy.md
+    status: approved
+    supersedes_assumption: "Production cutover requires native scheduled Railway volume backups in addition to PITR and provider-independent logical dumps"
 
 context:
   - AGENTS.md
@@ -20,23 +42,48 @@ context:
   - docs/lesson-designs/stage-01-lesson-01-sound.md
   - docs/workflow/stage-01-lesson-01.yaml
 
-completed_slices: []
+completed_slices:
+  - id: cloudflare-runtime-schema
+    name: "Runtime and persistence skeleton"
+    status: approved
+    final_review: docs/reviews/feature-auth-persistence/fix-rereview-02-cloudflare-runtime-schema.md
+    architecture_disposition: superseded_by_railway_node_postgres_architecture_04
+  - id: railway-node-postgres-foundation
+    name: "Railway Node and PostgreSQL replacement foundation"
+    status: approved
+    final_review: docs/reviews/feature-auth-persistence/fix-rereview-04-railway-node-postgres-foundation.md
+  - id: auth-session-api
+    name: "Authentication and session API"
+    status: approved
+    final_review: docs/reviews/feature-auth-persistence/fix-rereview-06-auth-session-api.md
+  - id: account-profile-ui
+    name: "Account and profile UI"
+    status: approved
+    final_review: docs/reviews/feature-auth-persistence/fix-rereview-09-account-profile-ui.md
+  - id: progress-api-sync-core
+    name: "Progress API and sync core"
+    status: approved
+    final_review: docs/reviews/feature-auth-persistence/fix-rereview-11-progress-api-sync-core.md
+  - id: lesson-one-progress-migration
+    name: "Lesson 1 progress migration"
+    status: approved
+    final_review: docs/reviews/feature-auth-persistence/fix-rereview-13-lesson-one-progress-migration.md
 
 current_slice:
-  id: cloudflare-runtime-schema
-  name: "Runtime and persistence skeleton"
-  status: approved
+  id: production-cutover-operations
+  name: "Production cutover and operations"
+  status: in_progress
 
 latest_review:
-  path: docs/reviews/feature-auth-persistence/fix-rereview-02-cloudflare-runtime-schema.md
+  path: docs/reviews/feature-auth-persistence/design-review-09.md
   verdict: APPROVED
 
 blocking_findings: []
 
 next:
   phase: implementation
-  action: begin-approved-slice-auth-session-api
-  human_approval_required: true
+  action: resume-approved-slice-production-cutover-operations
+  human_approval_required: false
 
 notes:
   - "Design authentication, profile, server-side persistence, and hosting/runtime architecture before implementation."
@@ -55,3 +102,73 @@ notes:
   - "Implementation review 01 requires a targeted fix for MEDIUM-03 before the slice can be approved."
   - "The targeted fix for MEDIUM-03 adds automated build, capability-gate, and isolated local D1 schema acceptance coverage and is ready for re-review."
   - "Targeted re-review 02 verifies MEDIUM-03 as fixed and approves cloudflare-runtime-schema; explicit next-slice approval is required before auth-session-api."
+  - "Human approved the next-slice gate; implementation of auth-session-api is authorized."
+  - "The auth-session-api implementation and local validation are complete; deployed preview-runtime acceptance remains pending because CLOUDFLARE_API_TOKEN is unavailable in the execution environment."
+  - "A deployed runtime capability discovery invalidated the approved 600000-iteration PBKDF2 assumption; the security policy was not lowered."
+  - "Design Amendment 01 replaces PBKDF2 with an OWASP-listed native scrypt profile and defines format, verification, upgrade, runtime, resource, preview, and migration requirements."
+  - "The auth-session-api slice is paused; its existing PBKDF2 implementation is superseded by the amendment and application code must not change before Design Review 03 and a new design approval gate."
+  - "Design Review 03 requires revision for HIGH-03 because the shared-isolate scrypt concurrency budget is tested but not deterministically enforced."
+  - "The auth-session-api slice remains paused; application code must not change until HIGH-03 is resolved, the amendment passes a new immutable design review, and a new design approval gate is explicitly accepted."
+  - "The HIGH-03 design revision defines a singleton three-permit isolate-local password-derivation admission controller, stable non-enumerating overload behavior, and a preview-only same-invocation acceptance proof."
+  - "The revised amendment is ready for immutable Design Review 04; auth-session-api application work remains paused until approval and a new explicit design approval gate."
+  - "Design Review 04 resolves HIGH-03 and approves the password-hashing amendment, with LOW-02 recorded as a non-blocking isolate-eviction wording correction."
+  - "A new explicit design approval is required before auth-session-api may resume under the approved scrypt and admission design."
+  - "Human approved the amended design gate; implementation of auth-session-api is authorized to resume under the approved scrypt and admission design."
+  - "The amended scrypt implementation, isolate-local three-permit admission controller, protected same-invocation preview proof, and local validation are complete. Deployed preview acceptance remains required before implementation review, but Wrangler is unauthenticated and no CLOUDFLARE_API_TOKEN is available in the execution environment."
+  - "Deployed preview acceptance invalidated the approved three-permit concurrency assumption: the same-isolate proof returned a platform-generated 503 Worker exceeded resource limits, no authentication flow completed, and preview D1 cleanup succeeded."
+  - "Design Amendment 02 preserves the approved scrypt parameters, reduces the isolate-local budget to one derivation with no queue and immediate non-enumerating admission rejection, and strengthens same-isolate, sequential-latency, real-flow, metrics, and cleanup proof requirements."
+  - "The auth-session-api slice is paused; application code must not change until Design Amendment 02 passes immutable design review and a new explicit design approval gate is accepted."
+  - "Design Review 05 approves the serialized one-permit scrypt resource policy with no blocking findings."
+  - "A new explicit design approval is required before auth-session-api may resume under Design Amendment 02; application code remains paused."
+  - "Human approved the amended design gate; implementation of auth-session-api is authorized to resume under the approved one-permit, zero-queue policy."
+  - "The one-permit implementation, registration/login/confirmation coordinators, amended preview proof, and local validation are complete. The slice remains in implementation because Wrangler has no CLOUDFLARE_API_TOKEN, so the required deployed-preview acceptance cannot yet run."
+  - "A clean deployed-preview repeat under Workers Paid still returned a Cloudflare-generated 503 Worker exceeded resource limits with exceededResources, one request, one error, zero subrequests, about 2.05 seconds CPU, and about 2.34 seconds wall time; D1 users, profiles, and sessions remained zero."
+  - "Design Amendment 03 does not infer a CPU-limit failure, treats the unchanged 128 MB isolate boundary and native runtime behavior as the primary compatibility risk, selects the OWASP-listed 8 MiB scrypt profile N=2^13, r=8, p=10 behind a new deployed gate, rejects PBKDF2 at the observed 100000-iteration ceiling, and requires external or dedicated hashing if the selected profile fails."
+  - "The auth-session-api slice is paused. Design Amendment 03 is ready for Design Review 06; no application implementation is authorized before review and a new explicit design approval gate."
+  - "Design Review 06 approves the Workers password-KDF compatibility amendment with no blocking findings."
+  - "A new explicit design approval is required before auth-session-api may resume under the approved v3 scrypt policy; application code remains paused."
+  - "The project owner did not approve that design gate and requested an architecture-only amendment evaluating Railway-hosted Node.js plus PostgreSQL."
+  - "Architecture Design Amendment 04 selects one Railway Node/Express web service serving the Vite SPA and API plus a private PostgreSQL service in the same Railway project."
+  - "Amendment 04 supersedes the Workers/D1 target and all Workers-local password-KDF implementation policy; prior amendments and reviews remain immutable history."
+  - "The approved cloudflare-runtime-schema slice remains recorded but is architecture-superseded. A new railway-node-postgres-foundation slice must replace it before the revised auth-session-api slice."
+  - "The unconsumed design_approval gate was not approved. Amendment 04 is ready for immutable Design Review 07; no application implementation is authorized."
+  - "Design Review 07 approves Architecture Design Amendment 04 with LOW-03 recorded as a non-blocking concurrent-session-cap implementation obligation."
+  - "A new explicit design approval is required before railway-node-postgres-foundation may begin; no application implementation is authorized at this gate."
+  - "Human approved the design gate; implementation of railway-node-postgres-foundation is authorized."
+  - "The Railway Node/PostgreSQL replacement foundation is implemented and validated; implementation review is next."
+  - "Implementation Review 03 requires targeted fixes for MEDIUM-04 and MEDIUM-05 before railway-node-postgres-foundation can be approved."
+  - "Targeted fixes for MEDIUM-04 and MEDIUM-05 configure Railway to gate deployment on database readiness and add allowlisted structured JSON-line logging with regression coverage; both findings are ready for targeted re-review."
+  - "Targeted Re-Review 04 verifies MEDIUM-04 and MEDIUM-05 as fixed and approves railway-node-postgres-foundation; explicit next-slice approval is required before auth-session-api."
+  - "Human approved the next-slice gate; railway-node-postgres-foundation is archived as approved and implementation of auth-session-api is authorized."
+  - "The Railway Node/PostgreSQL auth/session/account implementation, local KDF acceptance, unit/service coverage, PostgreSQL integration coverage, and local builds pass. Required Railway preview acceptance remains pending because no Railway CLI or authenticated Railway environment is available in this execution context."
+  - "Railway preview acceptance passed after preserving mounted API route classification before Express router rewriting; focused AUTH_BUSY logging coverage, live structured-log verification, required regressions, cleanup evidence, and final repository validation pass. The auth-session-api slice is implemented and ready for implementation review."
+  - "Implementation Review 05 requires targeted fixes for MEDIUM-06 and MEDIUM-07: reconcile and complete the durable Railway preview acceptance record, and add the omitted auth security and PostgreSQL regression gates."
+  - "Targeted fixes for MEDIUM-06 and MEDIUM-07 complete the durable Railway preview acceptance record and add the omitted password-policy, KDF/pool failure-no-mutation, session lifecycle, rate-limit, statement rollback, and cascade regression gates; both findings are ready for targeted re-review."
+  - "Targeted Re-Review 06 verifies MEDIUM-06 and MEDIUM-07 as fixed and approves auth-session-api; explicit next-slice approval is required before account-profile-ui."
+  - "Human approved the next-slice gate; auth-session-api is archived as approved and implementation of account-profile-ui is authorized."
+  - "The Railway-only authentication provider, account/profile UI, catalog avatars, profile API, and confirmed account-deletion experience are implemented and validated; account-profile-ui is ready for implementation review."
+  - "Implementation Review 07 requires targeted fixes for MEDIUM-08, MEDIUM-09, and MEDIUM-10 before account-profile-ui can be approved."
+  - "Targeted fixes for MEDIUM-08, MEDIUM-09, and MEDIUM-10 add atomic subset profile writes, accessible avatar focus/error behavior, and the required Chrome browser regression gate; all three findings are ready for targeted re-review."
+  - "Targeted Re-Review 08 verifies MEDIUM-08 and MEDIUM-10 as fixed, but MEDIUM-09 remains partially fixed because the browser regression uses programmatic focus and a mouse click instead of proving keyboard avatar selection. Route only MEDIUM-09 to targeted fixes."
+  - "The targeted fix for MEDIUM-09 replaces mouse avatar selection with an ArrowRight keyboard action and asserts that focus and checked state move to the next radio; the finding is ready for targeted re-review."
+  - "Targeted Re-Review 09 verifies MEDIUM-09 as fixed and approves account-profile-ui; explicit next-slice approval is required before progress-api-sync-core."
+  - "Human approved the next-slice gate; account-profile-ui is archived as approved and implementation of progress-api-sync-core is authorized."
+  - "The progress-api-sync-core implementation adds authenticated PostgreSQL progress endpoints, strict catalog/version/bounds validation, optimistic revision conflicts, and reusable client merge/queue/status/retry APIs. Lint, unit/service tests, PostgreSQL integration tests, Chrome browser tests, both deployment builds, and git diff validation pass; implementation review is next."
+  - "Implementation Review 10 requires a targeted fix for MEDIUM-11: add the approved PostgreSQL progress size and catalog-bound acceptance coverage, including proof that rejected writes leave durable state unchanged."
+  - "The targeted fix for MEDIUM-11 adds PostgreSQL acceptance for catalog/version/value boundaries, durable no-mutation behavior, and the named progress-size constraint; the finding is ready for targeted re-review."
+  - "Targeted Re-Review 11 verifies MEDIUM-11 as fixed and approves progress-api-sync-core; explicit next-slice approval is required before lesson-one-progress-migration."
+  - "Human approved the next-slice gate; progress-api-sync-core is archived as approved and implementation of lesson-one-progress-migration is authorized."
+  - "The Lesson 1 adapter now preserves local-first guest use, separates per-user caches, confirms guest import, merges optimistic conflicts, syncs only approved progress fields, and exposes pending/synced/error/retry UI. Lint, unit/service tests, PostgreSQL integration tests, Chrome browser tests, both deployment builds, and git diff validation pass; implementation review is next."
+  - "Implementation Review 12 requires targeted fixes for MEDIUM-12, MEDIUM-13, and MEDIUM-14: add confirmed current-user cache clearing, prevent corrupt preference data from replacing valid progress, and complete the approved Lesson 1 browser acceptance matrix."
+  - "Targeted fixes for MEDIUM-12, MEDIUM-13, and MEDIUM-14 add confirmed current-user cache clearing, isolate corrupt preference fallback from valid progress, and complete the required offline/retry/cache-isolation/corruption/mobile browser coverage; all three findings are ready for targeted re-review."
+  - "Targeted Re-Review 13 verifies MEDIUM-12, MEDIUM-13, and MEDIUM-14 as fixed and approves lesson-one-progress-migration; explicit next-slice approval is required before production-cutover-operations."
+  - "Human approved the next-slice gate; lesson-one-progress-migration is archived as approved and implementation of the final production-cutover-operations slice is authorized."
+  - "Production infrastructure, security headers, smoke automation, privacy/operations documentation, PITR, and a successful isolated Railway deployment are implemented. Scheduled/manual backup access, SSH-backed logical dump and restore drill, and the published Pages fallback/canonical switch remain open, so the slice stays in implementation."
+  - "The production restore drill passed: Railway PITR restored an isolated pre-migration point, a permission-restricted provider-independent logical dump rebuilt the approved schema in that service, and migrations, constraints, indexes, and row counts matched production. Scheduled/manual backup controls remain permission-blocked and the published Pages fallback/canonical switch remains open, so the slice stays in implementation."
+  - "After explicit owner approval, only the verified restore-drill PostgreSQL service and its restored volume were deleted. Production web/database health, PITR, the production database reference, and the full HTTPS smoke remained healthy; scheduled/manual backup controls and the published Pages fallback/canonical switch remain the only blocking work, so the slice stays in implementation."
+  - "Authenticated Railway diagnosis confirmed that native manual and scheduled volume backups are unavailable because the Trial/Hobby entitlement permits zero backups and requires Pro; the sole workspace user is an administrator and the backup APIs are present, so this is not a permission or API issue."
+  - "The owner accepts the additional recovery risk for this learning/pet project. Design Amendment 05 requires healthy PITR, successful PITR and provider-independent logical-dump restore drills, logical dump capability, and production health; native Railway volume backups are not a cutover requirement and remain a recommended future Pro/production-critical enhancement. production-cutover-operations stays paused pending immutable design review and explicit approval."
+  - "Design Review 08 requires revision for HIGH-04 because logical-dump capability plus a deleted historical drill artifact does not constitute a maintained second recovery layer; define durable dump freshness/lifecycle controls or explicitly accept a PITR-only continuous-recovery posture. production-cutover-operations remains paused."
+  - "The HIGH-04 revision states that PITR is the only continuously maintained recovery copy, treats logical dumps as verified on-demand portability capability rather than retained redundancy, explicitly accepts loss outside PITR or after a shared Railway project/bucket failure, and defines future policy-reopen and temporary-export controls. Design Review 09 is next; production-cutover-operations remains paused."
+  - "Design Review 09 resolves HIGH-04 and approves the revised PITR-only continuously maintained recovery posture with no blocking findings. Explicit design approval is required before production-cutover-operations may resume."
+  - "Human approved the amended design gate; production-cutover-operations is authorized to resume under the approved PITR-only continuously maintained recovery posture."
