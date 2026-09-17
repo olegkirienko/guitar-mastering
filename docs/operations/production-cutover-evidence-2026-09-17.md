@@ -23,6 +23,16 @@
   user-facing privacy disclosure and corrected smoke utility, reached `SUCCESS`,
   and passed the complete HTTPS smoke. The prior corrected deployment is now
   `REMOVED` after the normal replacement.
+- Published commit `67be1d6238dacfdb2e0f108839d63b64cc38e708` contains the
+  reviewed Railway implementation and the manual-only Pages workflow. Annotated
+  tag `pages-fallback-2026-09-17` preserves the last known-good Pages commit
+  `8c502ac4c5894d2fbec4496446794e6edd497f2a` on the remote.
+- Exact-commit deployment `ac9df4fb-ce8a-40f8-bbce-cdec1276e7d1` reached
+  `SUCCESS`. Its read-back exposed a stale `DEPLOYMENT_VERSION` variable, so the
+  variable was corrected to the published commit and Railway created replacement
+  deployment `11a3dc0e-0092-4b61-8643-61cb30da5e3a`. The replacement reached
+  `SUCCESS`, uses the same reviewed source, and reports the correct full SHA in
+  structured startup and request logs.
 
 ## Acceptance
 
@@ -36,50 +46,38 @@ Local Node `24.7.0` validation passed:
 - `pnpm build:pages` and `pnpm build:railway`;
 - `git diff --check`.
 
-The HTTPS production smoke passed for health, database readiness, unknown-API
-JSON behavior, SPA delivery, no-store/no-cache behavior, HSTS, CSP report-only,
+The HTTPS production smoke passed both before and after the deployment-version
+correction for health, database readiness, unknown-API JSON behavior, SPA
+delivery, no-store/no-cache behavior, HSTS, CSP report-only,
 permissions/referrer policy, and `nosniff`.
 
-The smoke window recorded four HTTP requests: three 2xx, one expected 404, zero
-5xx, p95 116 ms. Web CPU peaked near 0.026 vCPU. Memory peaked near 148 MB of a
-1 GB limit. Logs showed no secret leakage, unexplained restart, or post-release
-error.
+The final smoke window recorded three 2xx responses, one expected 404, and no
+5xx response. Web CPU peaked near 0.021 vCPU and memory near 149 MB of a 1 GB
+limit. Logs showed successful no-op migrations, readiness, the correct
+deployment version, no secret leakage, and no unexplained restart or
+application error. Railway classifies pnpm's command echo and optional missing
+`.env.local` notice as stderr/error-level transport lines; both are expected in
+the deployed environment and are followed by successful migration and startup.
 
 At inspection time, Railway workspace usage was USD 0.1372 and the estimated
 period total was USD 0.1830. No workspace spending limit is configured; no
 threshold was invented because the owner has not selected one.
 
-## Open production blockers
+## Cutover disposition
 
-The cutover is not complete and this evidence does not authorize marking the
-implementation ready for review:
+No production-cutover blocker remains. Design Review 09 approved Amendment 05
+and the owner explicitly approved its PITR-only continuously maintained recovery
+posture. The live PITR probe remains enabled, bucket-wired, and archiver-healthy;
+the successful isolated PITR and logical-dump restore drill remains valid
+evidence and was not repeated. Native volume backups and scheduled retained
+logical dumps remain recommended future controls, not requirements for this pet
+project under the approved risk acceptance.
 
-1. Railway rejects both the daily/weekly backup schedule and a named manual
-   backup because the authenticated Trial/Hobby entitlement permits zero native
-   volume backups; the sole workspace user is an administrator and list/API
-   capability is present. Design Amendment 05 proposes reclassifying this from
-   an operational backup blocker to an owner-accepted learning/pet-project risk.
-   Healthy PITR, the successful PITR restore drill, provider-independent logical
-   dump capability, the successful logical-dump restore drill, and production
-   health remain mandatory. The HIGH-04 revision explicitly treats PITR as the
-   only continuously maintained recovery copy and the deleted drill dump as
-   capability evidence rather than retained redundancy. Native volume backups
-   and scheduled encrypted off-project dumps become recommended future
-   enhancements if the project moves to Pro, becomes production-critical, or
-   holds data whose loss is no longer acceptable. The reclassification is not
-   effective until immutable design review and explicit design approval.
-2. The last known-good Pages commit/tag and actual GitHub push-trigger shutdown
-   must be completed when the reviewed changes are committed/published. The
-   repository workflow is already changed to manual-only, but an unpushed
-   working-tree edit is not an external cutover.
-Do not switch public links or declare Railway canonical until Amendment 05 is
-approved, blocker 2 is resolved, its PITR/logical-dump release gates pass,
-and smoke/monitoring checks are repeated against the final exact deployment.
-
-The successful PITR and logical-dump restore drill below remains valid evidence
-for the proposed mandatory recovery policy and is not repeated for this design
-amendment. It does not itself approve Amendment 05 or resume
-`production-cutover-operations`.
+The fallback tag and commit are published, pushes no longer trigger the Pages
+deployment workflow, the exact reviewed source is live on Railway, the final
+version marker is correct, and smoke/log/resource checks pass. Railway is now
+the canonical application origin; the tagged Pages artifact remains the initial
+guest-only, device-local rollback fallback.
 
 `railway.json` remains functional but Railway reports it deprecated after
 2026-12-01. Migration to typed Railway IaC is a non-blocking follow-up that
@@ -126,14 +124,19 @@ exactly PostgreSQL service `postgres-restore-drill-20260917`
 web still referenced `${{Postgres-DOv_.DATABASE_URL}}`, and no non-target
 service referenced the restore-drill name or ID.
 
-After explicit owner approval, only that restore-drill service was deleted.
-Railway subsequently reported:
+After explicit owner approval, only that restore-drill service was deleted. A
+later final-cutover read-back found its detached restored volume still present,
+so deletion was issued specifically for restored volume
+`postgres-1GMc-restored` (`6e71c3f4-fa7c-43db-a620-bca26071f8b8`). Railway now
+reports that volume as `isPendingDeletion: true`; the attached production volume
+`postgres-volume-1GMc` (`4495ab33-2440-4d29-a4d4-e214813676a8`) was not changed.
+Railway also reported:
 
 - no service/config entry for `3a5f5d76-7f2c-4a26-86a0-41c2511dc60a`;
-- no service instance or volume attached to that ID;
+- no service instance attached to the deleted restore-drill service ID;
 - only production web `4d0a3739-0beb-4ea9-9a7e-7a9f3494708e` and production
   PostgreSQL `82d4b5e1-830a-4467-bb1f-f9448fd1d58d` remain in production;
-- production web deployment `3c577338-f883-4b86-adbd-439fad684178` remains
+- production web deployment `11a3dc0e-0092-4b61-8643-61cb30da5e3a` is
   `SUCCESS` and still references `${{Postgres-DOv_.DATABASE_URL}}`;
 - the production HTTPS smoke again passed health, readiness, expected API 404,
   SPA, caching, and security-header checks;
@@ -142,4 +145,5 @@ Railway subsequently reported:
 - production PITR remains enabled and bucket-wired with a healthy archiver.
 
 No production service, production database, DNS, GitHub Pages fallback, or
-other Railway resource was modified or deleted during cleanup.
+other Railway resource was deleted during cleanup. The only final cleanup
+mutation was scheduling deletion of the detached restore-drill volume.

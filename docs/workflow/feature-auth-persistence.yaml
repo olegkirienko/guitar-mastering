@@ -4,8 +4,8 @@ work_item_id: feature-auth-persistence
 work_item_type: technical_feature
 title: "Authentication and persistence foundation"
 
-phase: implementation
-status: in_progress
+phase: implementation_review
+status: ready
 gate: none
 
 design:
@@ -72,7 +72,7 @@ completed_slices:
 current_slice:
   id: production-cutover-operations
   name: "Production cutover and operations"
-  status: in_progress
+  status: implemented
 
 latest_review:
   path: docs/reviews/feature-auth-persistence/design-review-09.md
@@ -81,8 +81,8 @@ latest_review:
 blocking_findings: []
 
 next:
-  phase: implementation
-  action: resume-approved-slice-production-cutover-operations
+  phase: implementation_review
+  action: review-production-cutover-operations
   human_approval_required: false
 
 notes:
@@ -165,10 +165,11 @@ notes:
   - "Human approved the next-slice gate; lesson-one-progress-migration is archived as approved and implementation of the final production-cutover-operations slice is authorized."
   - "Production infrastructure, security headers, smoke automation, privacy/operations documentation, PITR, and a successful isolated Railway deployment are implemented. Scheduled/manual backup access, SSH-backed logical dump and restore drill, and the published Pages fallback/canonical switch remain open, so the slice stays in implementation."
   - "The production restore drill passed: Railway PITR restored an isolated pre-migration point, a permission-restricted provider-independent logical dump rebuilt the approved schema in that service, and migrations, constraints, indexes, and row counts matched production. Scheduled/manual backup controls remain permission-blocked and the published Pages fallback/canonical switch remains open, so the slice stays in implementation."
-  - "After explicit owner approval, only the verified restore-drill PostgreSQL service and its restored volume were deleted. Production web/database health, PITR, the production database reference, and the full HTTPS smoke remained healthy; scheduled/manual backup controls and the published Pages fallback/canonical switch remain the only blocking work, so the slice stays in implementation."
+  - "After explicit owner approval, the verified restore-drill PostgreSQL service was deleted; a later final-cutover read-back found its detached volume still present and scheduled that volume for deletion without changing the attached production volume. Production web/database health, PITR, the production database reference, and the full HTTPS smoke remained healthy."
   - "Authenticated Railway diagnosis confirmed that native manual and scheduled volume backups are unavailable because the Trial/Hobby entitlement permits zero backups and requires Pro; the sole workspace user is an administrator and the backup APIs are present, so this is not a permission or API issue."
   - "The owner accepts the additional recovery risk for this learning/pet project. Design Amendment 05 requires healthy PITR, successful PITR and provider-independent logical-dump restore drills, logical dump capability, and production health; native Railway volume backups are not a cutover requirement and remain a recommended future Pro/production-critical enhancement. production-cutover-operations stays paused pending immutable design review and explicit approval."
   - "Design Review 08 requires revision for HIGH-04 because logical-dump capability plus a deleted historical drill artifact does not constitute a maintained second recovery layer; define durable dump freshness/lifecycle controls or explicitly accept a PITR-only continuous-recovery posture. production-cutover-operations remains paused."
   - "The HIGH-04 revision states that PITR is the only continuously maintained recovery copy, treats logical dumps as verified on-demand portability capability rather than retained redundancy, explicitly accepts loss outside PITR or after a shared Railway project/bucket failure, and defines future policy-reopen and temporary-export controls. Design Review 09 is next; production-cutover-operations remains paused."
   - "Design Review 09 resolves HIGH-04 and approves the revised PITR-only continuously maintained recovery posture with no blocking findings. Explicit design approval is required before production-cutover-operations may resume."
   - "Human approved the amended design gate; production-cutover-operations is authorized to resume under the approved PITR-only continuously maintained recovery posture."
+  - "The immutable Pages fallback tag and manual-only Pages workflow are published; exact reviewed commit 67be1d6 is deployed to Railway production, the corrected deployment-version redeploy is healthy, final smoke/PITR/log/resource checks pass, and production-cutover-operations is ready for implementation review."
