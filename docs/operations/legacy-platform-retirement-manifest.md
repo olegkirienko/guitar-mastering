@@ -3,17 +3,20 @@
 ## Manifest status
 
 - **Work item:** `infra-legacy-platform-retirement`
-- **Prepared:** 2026-09-17
+- **Prepared:** 2026-09-17; retirement policy clarified 2026-09-19.
 - **Scope:** Exact non-secret inventory for the proposed destructive retirement
   of GitHub Pages and the legacy Cloudflare Worker/D1 stack.
 - **Current authorization:** Inventory and repository cleanup only.
 - **Destructive authorization:** **NOT GRANTED**. No resource in this manifest
   may be disabled, deleted, detached, or revoked before the dedicated
   `authorize-destructive-live-legacy-resource-retirement` human gate.
-- **Repository-state basis:** base commit
-  `0d755047f1f43cdadbdabcc78321918b23b7d45f`; implementation review must freeze
-  the exact working-tree diff identity and this file's SHA-256 before opening
-  the gate.
+- **Repository-state basis:** the reviewed cleanup is committed on remote
+  `main` as `d0cd8f56e2a391bf0d2f546711129281999274d9`. The policy-clarification
+  review freezes its exact repository-state diff and this revised file's
+  SHA-256 before the existing destructive gate may be approved.
+- **Retirement timing:** no rollback window or timed drain is required. These
+  were exploratory, superseded platforms for a learning/pet project, not an
+  established production platform with a user/data migration dependency.
 
 ## Canonical Railway production
 
@@ -119,16 +122,20 @@ unrecoverable data. There will be no D1 data rollback artifact after deletion.
 - No routes, custom domains, schedules, tail consumers, active tails, service
   bindings, Cloudflare Pages projects, or GitHub secrets/variables add another
   consumer.
-- The live legacy URLs are rollback-only historical surfaces and are not the
-  canonical production origin.
+- The live legacy URLs are superseded exploratory surfaces, not the canonical
+  production origin or required rollback protection.
 
 ## Approved deletion order after the dedicated gate
 
-1. Reconfirm this manifest SHA-256, repository-state identity, exact remote
-   identities, Railway health, and zero D1 application row counts.
-2. Confirm the reviewed repository cleanup is merged so normal automation
-   cannot recreate a legacy deployment.
-3. Observe the approved quiet/drain check and keep Railway canonical.
+1. Reconfirm this manifest SHA-256 and reviewed repository-state identity;
+   verify the cleanup remains on remote `main` and the legacy deploy workflow
+   remains absent.
+2. Reconfirm exact GitHub Pages, Worker, and D1 identities and dependencies,
+   including zero D1 application row counts.
+3. Reconfirm Railway production health and independence, then confirm explicit
+   human approval of this exact manifest was recorded at
+   `authorize-destructive-live-legacy-resource-retirement` before the workflow
+   entered implementation. No rollback window or timed drain precedes deletion.
 4. Disable GitHub Pages for `olegkirienko/guitar-mastering`; retain repository,
    workflow history, environment history, fallback tag, and expired artifact
    metadata.
@@ -141,12 +148,12 @@ unrecoverable data. There will be no D1 data rollback artifact after deletion.
 8. Re-run Railway HTTPS smoke and complete the retirement record with provider
    read-back evidence.
 
-## Rollback limitations
+## Recovery limitations
 
-Before deletion, repository rollback can use Git history and the fallback tag.
-After Pages/Worker/D1 deletion, the legacy resources may require recreation with
-new identities; there is no retained D1 export. The supported production
-recovery path is Railway deployment rollback and Railway PostgreSQL PITR. These
-limitations are accepted by Design Amendment 01 and are why exact destructive
-approval remains mandatory.
-
+Git history and the Pages fallback tag remain historical evidence, not a
+required rollback interval. After Pages/Worker/D1 deletion, those exploratory
+resources may require recreation with new identities; there is no retained D1
+export. The supported production recovery path is Railway deployment rollback
+and Railway PostgreSQL PITR. These limitations are accepted by Design Amendment
+01 and the 2026-09-19 policy clarification; exact destructive approval remains
+mandatory.

@@ -4,9 +4,9 @@ work_item_id: infra-legacy-platform-retirement
 work_item_type: infrastructure
 title: "Retire GitHub Pages, Cloudflare Workers, and D1"
 
-phase: human_gate
-status: approved
-gate: next_slice_approval
+phase: complete
+status: complete
+gate: none
 
 design:
   path: docs/technical-designs/infra-legacy-platform-retirement.md
@@ -29,35 +29,41 @@ context:
   - package.json
   - railway.json
 
-completed_slices: []
+completed_slices:
+  - id: repository-cleanup-and-retirement-preflight
+    status: approved
+    review: docs/reviews/infra-legacy-platform-retirement/implementation-review-03-retirement-timing-policy-refresh.md
+  - id: live-legacy-resource-retirement
+    status: approved
+    review: docs/reviews/infra-legacy-platform-retirement/implementation-review-04-live-legacy-resource-retirement.md
 
 current_slice:
-  id: repository-cleanup-and-retirement-preflight
-  name: "Repository cleanup and retirement preflight"
+  id: live-legacy-resource-retirement
+  name: "Live legacy resource retirement"
   status: approved
 
 latest_review:
-  path: docs/reviews/infra-legacy-platform-retirement/implementation-review-02-repository-cleanup-and-retirement-preflight.md
+  path: docs/reviews/infra-legacy-platform-retirement/implementation-review-04-live-legacy-resource-retirement.md
   verdict: APPROVED
 
 blocking_findings: []
 
 approval_manifest:
   path: docs/operations/legacy-platform-retirement-manifest.md
-  sha256: d463fb3a10071420b3120f04c58840f0e0455ccd67ed5a7f2fd9f2ac8b1cbdb3
+  sha256: 5a59c71645e4be1b93caa70101df7a0c96452fda7146a5b87054602fb735c6ca
   repository_state:
-    base_commit: 0d755047f1f43cdadbdabcc78321918b23b7d45f
-    tracked_binary_diff_sha256: a1a54202f63b37b981a9dba19c3df340e7dd7b7f52d7b384f1d78befa87f101a
-    sorted_untracked_content_list_sha256: 31cf3bb7bba02f7b6e6710cfdf617dd3e9632ac0d532e436a3d60360787a9cc0
+    base_commit: d0cd8f56e2a391bf0d2f546711129281999274d9
+    tracked_binary_diff_sha256: 3d0b0c22ab6b632dc9395dbc288ca74f48c59b9a375abc395cf5235380c63b25
+    sorted_untracked_content_list_sha256: 8d4aeb0f3c40d46408b765f328fffa0c19644a14096215d559b15a2c77ac0724
     hash_exclusions:
       - docs/workflow/infra-legacy-platform-retirement.yaml
-      - docs/reviews/infra-legacy-platform-retirement/implementation-review-02-repository-cleanup-and-retirement-preflight.md
-    frozen_by: docs/reviews/infra-legacy-platform-retirement/implementation-review-02-repository-cleanup-and-retirement-preflight.md
+      - docs/reviews/infra-legacy-platform-retirement/implementation-review-03-retirement-timing-policy-refresh.md
+    frozen_by: docs/reviews/infra-legacy-platform-retirement/implementation-review-03-retirement-timing-policy-refresh.md
 
 next:
-  phase: implementation
-  action: authorize-destructive-live-legacy-resource-retirement
-  human_approval_required: true
+  phase: complete
+  action: none
+  human_approval_required: false
 
 notes:
   - "The design inventories repository artifacts from both the migration working tree and tracked HEAD because the Railway migration is currently uncommitted."
@@ -78,3 +84,9 @@ notes:
   - "Owner-approved Design Amendment 01 removes the mandatory external D1 export/checksum/retention prerequisite after verification that the preview D1 database contains no unique or unrecoverable data. Authenticated identity, schema, migration, aggregate row-count, binding, and dependency evidence remain mandatory; destructive deletion still requires the dedicated manifest-bound human gate."
   - "Repository cleanup and authenticated retirement preflight are implemented without remote mutation. Railway production remains canonical and healthy; GitHub Pages and Cloudflare inventories resolve the exact live targets; D1 application row counts are zero; no Railway or unreviewed remote dependency on the legacy resources was found. Lint, unit/foundation tests, browser tests, PostgreSQL integration tests, production build, legacy-reference searches, and git diff hygiene pass. The slice is ready for implementation review."
   - "Implementation Review 02 approves repository-cleanup-and-retirement-preflight with no findings and freezes manifest SHA-256 d463fb3a10071420b3120f04c58840f0e0455ccd67ed5a7f2fd9f2ac8b1cbdb3 plus the recorded base/diff identity. The workflow is stopped at next_slice_approval; only explicit approval of authorize-destructive-live-legacy-resource-retirement may begin the final destructive slice."
+  - "On 2026-09-19 the owner clarified that exploratory GitHub Pages and Cloudflare infrastructure for this learning/pet project requires no rollback window or timed drain. Design Review 02 approves the four-check policy: exact manifest, remote identities including empty D1, Railway health/independence, and explicit destructive approval. This policy approval is not destructive-gate approval."
+  - "Implementation Review 03 approves the non-destructive design/manifest policy refresh and freezes revised manifest SHA-256 5a59c71645e4be1b93caa70101df7a0c96452fda7146a5b87054602fb735c6ca against the recorded d0cd8f56 base-plus-diff identity. The existing next_slice_approval gate remains unconsumed; no legacy resource may be disabled or deleted without explicit approval of the revised manifest and exact targets."
+  - "On 2026-09-19 the owner explicitly approved only the exact retirement manifest SHA-256 5a59c71645e4be1b93caa70101df7a0c96452fda7146a5b87054602fb735c6ca for authorize-destructive-live-legacy-resource-retirement, conditioned on fresh identity, D1 emptiness, Railway health/independence, and repository-state checks. All checks passed before the gate was consumed; the final live-legacy-resource-retirement slice is authorized."
+  - "The authorized final slice disabled GitHub Pages for olegkirienko/guitar-mastering, deleted only Worker guitar-mastering-preview without force, then deleted only D1 UUID c70af9e6-73e0-4baa-8023-af8679cba410 after repeated zero application-row and dependency checks. Authenticated provider read-back, public URL checks after Pages cache expiry, Railway production smoke/status, lint, build, unit, PostgreSQL integration, browser tests, and git diff hygiene passed. Exact UTC action times and outcomes are in docs/operations/legacy-platform-retirement-record.md. The slice is ready for implementation review; no completion verdict is asserted here."
+  - "Implementation Review 04 approves the final live-legacy-resource-retirement slice with no actionable findings. The work item is at the explicit work_item_completion human gate; completion approval has not been given."
+  - "On 2026-09-19 the owner explicitly approved the work_item_completion gate. The final approved slice is recorded in completed_slices and remains visible in current_slice; the work item is complete."

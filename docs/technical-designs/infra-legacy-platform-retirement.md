@@ -7,6 +7,13 @@ This is the authoritative infrastructure design for
 from Cloudflare Workers, D1, and GitHub Pages to Railway Node/Express and
 PostgreSQL. It does not authorize implementation or remote deletion.
 
+Policy clarification approved by the owner on 2026-09-19: this learning/pet
+project is still selecting its platform. GitHub Pages and Cloudflare were
+exploratory, superseded infrastructure, not an established production platform
+with a migration rollback obligation. No rollback window or timed drain is
+required for their retirement. This clarification does not grant the separate
+destructive human approval.
+
 The architecture decision is already recorded in
 `docs/technical-designs/feature-auth-persistence.md`. This work item owns only
 the retirement of superseded repository and remote deployment artifacts. It
@@ -25,8 +32,9 @@ the approved cutover.
 - Reconcile active documentation with the Railway topology while preserving
   immutable architecture and review history.
 - Retire live GitHub Pages and Cloudflare preview resources only after a
-  verified Railway production cutover, a rollback window, an authenticated
-  account-wide inventory, and explicit destructive-cleanup approval.
+  verified Railway production cutover, an authenticated account-wide
+  inventory, exact manifest and remote-identity verification, and explicit
+  destructive-cleanup approval.
 - Leave durable, non-secret evidence of what was removed, when, by whom, and
   how deletion was verified.
 
@@ -98,8 +106,8 @@ does not silently amend another workflow.
 
 Removing the deploy workflow is not sufficient to achieve the target state:
 the already-published Pages site may remain reachable. The remote-retirement
-slice must explicitly disable Pages after the rollback window and verify the
-URL no longer serves the application.
+slice must explicitly disable Pages after the dedicated destructive approval
+and verify the URL no longer serves the application.
 
 ### Cloudflare Worker, Wrangler, D1, and generated artifacts
 
@@ -238,37 +246,34 @@ Railway production deployment. Before it changes deployment paths, it must
 also verify that its changes do not collide with uncommitted work owned by
 `feature-auth-persistence`.
 
-Remote retirement has a stricter gate. All of these must be true:
+Remote retirement has a stricter gate. It may proceed immediately, without a
+rollback window or timed drain, once all four checks below pass:
 
-1. `feature-auth-persistence` records an approved ownership handoff. Either its
-   `production-cutover-operations` slice already completed the overlapping
-   retirement (making this work verification-only), or an approved amendment
-   delegates legacy retirement here and defines a separately reviewable
-   Railway production-readiness milestone. That milestone is approved before
-   destructive cleanup; this avoids a circular dependency on Pages shutdown.
-2. Railway production has a successful running web deployment and PostgreSQL
-   service, the canonical production domain is healthy, `/api/v1/health` and
-   `/api/v1/readiness` pass, the SPA loads assets at the root, and a documented
-   database backup/restore proof exists.
-3. Authentication and persistence acceptance required by the parent design has
-   passed on the production candidate.
-4. The rollback window defined during cutover has elapsed without an unresolved
-   severity-one or severity-two incident.
-5. Authenticated Cloudflare and GitHub inventories have been captured, and no
-   unreviewed dependency or user data is discovered.
-6. A provider-independent D1 export is encrypted/stored outside the repository,
-   its checksum and retention deadline are recorded, and table counts confirm
-   whether the approved “no live accounts” assumption remains true.
-7. The workflow is at the standard `next_slice_approval` gate whose action is
-   `authorize-destructive-live-legacy-resource-retirement`, and the owner
-   explicitly approves the exact Worker, D1 database, Pages site, secrets, and
-   tokens named in the inventory. The approval identifies the repository state
-   (commit when available, otherwise base commit plus exact diff) and SHA-256
-   digest of
+1. **Exact manifest verification:** the manifest SHA-256 and reviewed
+   repository-state identity match the current payload, and the reviewed
+   cleanup is present on the GitHub default branch with no legacy deployment
+   workflow.
+2. **Remote identity verification:** authenticated GitHub and Cloudflare
+   inventories match every exact resource and dependency named in the
+   manifest. D1 application-table row counts remain zero; any new user data or
+   unreviewed dependency stops retirement. Design Amendment 01 removes the
+   external D1 export prerequisite.
+3. **Railway health verification:** the approved ownership handoff and parent
+   authentication/persistence acceptance remain established; Railway
+   production web and PostgreSQL are successful, the canonical domain,
+   `/api/v1/health`, `/api/v1/readiness`, and root SPA are healthy, the
+   documented backup/restore proof exists, and Railway has no dependency on
+   the legacy resources.
+4. **Explicit human approval:** the workflow is at `next_slice_approval` with
+   action `authorize-destructive-live-legacy-resource-retirement`, and the
+   owner explicitly approves the exact Worker, D1 database, Pages site,
+   secrets, and tokens in the reviewed manifest. The approval identifies the
+   repository state (commit when available, otherwise base commit plus exact
+   diff) and SHA-256 digest of
    `docs/operations/legacy-platform-retirement-manifest.md`.
 
 Design approval, approval of the first implementation slice, or approval of the
-Railway architecture does not satisfy item 7. If any precondition fails, stop;
+Railway architecture does not satisfy item 4. If any check fails, stop;
 do not partially delete remote resources.
 
 ## Safe live-resource deletion plan
@@ -290,11 +295,7 @@ do not partially delete remote resources.
 5. With authenticated GitHub access, capture Pages build type, source,
    environment, custom domain, workflow runs, relevant secrets/variables by
    name, and the current public URL.
-6. Export the remote D1 database using the pinned/current Wrangler CLI to an
-   encrypted, access-controlled location outside the repository. Record only
-   checksum, size, timestamp, schema/table counts, storage location class, and
-   deletion deadline in the retirement record.
-7. Compare Cloudflare account tokens and GitHub secrets to known consumers.
+6. Compare Cloudflare account tokens and GitHub secrets to known consumers.
    Dedicated legacy credentials become deletion candidates; shared credentials
    remain until every consumer is resolved.
 
@@ -305,7 +306,7 @@ Present one immutable approval manifest containing:
 - Cloudflare account ID;
 - Worker name, URL, routes/domains, latest deployment/version identity, and
   secret names;
-- D1 name, UUID, table counts, export checksum, and retention deadline;
+- D1 name, UUID, schema/migration identity, and application-table counts;
 - GitHub Pages URL, build source, environment/custom domain, and relevant
   secret/variable names;
 - dependency check results;
@@ -323,12 +324,15 @@ The owner must approve that manifest at the dedicated workflow gate. Any
 resource identity change invalidates approval and requires a fresh manifest and
 approval.
 
-### Phase C — drain and delete
+### Phase C — verify and delete
 
 1. Freeze legacy deploys first: merge the reviewed repository cleanup so no
    workflow or normal script can recreate Pages or Worker deployments.
-2. Observe the agreed quiet/drain interval and confirm the canonical domain and
-   clients use Railway. Capture legacy-origin request metrics if available.
+2. Immediately before any mutation, repeat checks 1–3 above and confirm that
+   check 4's explicit approval of this exact manifest was recorded before the
+   workflow entered implementation. No rollback window, timed drain, or
+   legacy-origin traffic-wait condition is required. Capture available request
+   metrics as context, not as a waiting gate.
 3. Disable the GitHub Pages site using the authenticated repository setting.
    Do not delete the repository, environment history, or workflow history.
 4. Delete `guitar-mastering-preview` Worker by exact resolved name. Use
@@ -345,7 +349,7 @@ approval.
 7. Remove orphan routes/custom domains/triggers only when the inventory proves
    they belong solely to this Worker. Do not touch unrelated zones/resources.
 
-### Phase D — verification and retention
+### Phase D — verification
 
 - Authenticated lists no longer contain the approved Worker or D1 UUID.
 - The Workers preview and GitHub Pages URLs no longer serve the application;
@@ -355,15 +359,13 @@ approval.
   workerd, Miniflare, D1, or Workers-types dependency.
 - Railway production frontend, API health/readiness, authentication smoke, and
   persistence smoke still pass after legacy shutdown.
-- Keep the encrypted D1 export only for the approved short retention window,
-  then obtain separate approval to delete that backup and record its removal.
 
 Remote rollback after Worker/D1 deletion is not an ordinary redeploy: it may
-require recreating resources with new identities. The safe rollback path during
-the drain window is to revert the repository-cleanup commit and redeploy the
-recorded last-known-good Pages tag/artifact before deletion. After deletion,
-rollback is Railway deployment/database recovery plus the retained D1 export
-only; this asymmetry is why the dedicated approval occurs immediately before
+require recreating resources with new identities. The historical Pages fallback
+tag remains evidence, not a required rollback window or active production
+fallback. There is no retained D1 export under Design Amendment 01; supported
+production recovery is Railway deployment rollback and PostgreSQL PITR. These
+limitations must be visible in the manifest approved immediately before
 deletion.
 
 ## Secrets, privacy, and security
@@ -371,8 +373,6 @@ deletion.
 - Never commit API tokens, database exports, Pages credentials, secret values,
   user rows, or raw request logs.
 - Inventory secret names and ownership only.
-- Treat the D1 export as sensitive even if row counts are zero; encrypt it,
-  restrict access, and give it a deletion deadline.
 - Use least-privilege short-lived credentials for discovery/deletion where
   possible. Revoke dedicated credentials only after verification.
 - A nonzero user/session/profile/progress count is a blocking discovery. Stop
@@ -390,7 +390,7 @@ deletion.
 | Authenticated inventory finds extra Worker/D1/Page resource | Add it to a reviewed manifest; do not infer ownership or delete it. |
 | D1 contains unexpected durable data | Stop; encrypt/export; open a separate migration/retention decision. |
 | Worker reports a dependent service/route | Do not use force; resolve the dependency and repeat review/approval. |
-| Pages/Worker receives material traffic during drain | Extend the window and identify callers/canonical-domain gaps. |
+| An unreviewed caller or dependency on a legacy origin is discovered | Stop, resolve ownership and impact, then refresh the manifest and approval; no timed drain is implied. |
 | Remote deletion partially succeeds | Stop further deletion, record exact state, keep Railway canonical, and choose provider-specific recovery before proceeding. |
 | Dedicated token cannot be proven dedicated | Leave it active but flag it for credential ownership review; do not break unrelated services. |
 | Legacy URL still serves after reported deletion | Inspect route, cache, alternate account/project, and DNS state before declaring completion. |
@@ -431,18 +431,17 @@ Owns repository-local cleanup and non-destructive remote preflight:
   state while retaining the defensive `.wrangler/` ignore entry;
 - preserve immutable reviews/workflows and Git history;
 - capture the last-known-good Pages tag/artifact and tested restoration steps;
-- perform authenticated, read-only GitHub/Cloudflare discovery, export the D1
-  database to the approved encrypted external location, and verify table
-  counts/dependencies;
+- perform authenticated, read-only GitHub/Cloudflare discovery and verify D1
+  schema, migration, table counts, and dependencies;
 - write `docs/operations/legacy-platform-retirement-manifest.md` with exact
   resource identities, non-secret evidence, deletion order, Railway evidence,
-  rollback limitations, and the external export checksum/retention deadline;
+  and recovery limitations;
 - add `docs/operations/legacy-platform-retirement-record.md` as an uncompleted
   record template containing no remote deletion claim;
 - prove the Node/Express Railway artifact still serves frontend and API.
 
-This slice performs no destructive remote mutations. Read-only inventory and
-D1 export are allowed, but Pages/Worker/D1/secret/token deletion, disablement,
+This slice performs no destructive remote mutations. Read-only inventory is
+allowed, but Pages/Worker/D1/secret/token deletion, disablement,
 or revocation is forbidden. It cannot claim the target topology is fully
 complete while Pages/Cloudflare URLs remain live. Its implementation review
 must record the manifest repository-state identifier and SHA-256 digest before
@@ -451,7 +450,7 @@ commit plus exact diff identity instead.
 
 ### 2. `live-legacy-resource-retirement` — final, destructive
 
-Owns a final read-only identity/digest freshness check, drain, GitHub Pages
+Owns a final read-only identity/digest/health freshness check, GitHub Pages
 disablement, exact Worker/D1 deletion, dedicated credential revocation,
 read-back verification, Railway post-cleanup smoke tests, and completion of the
 final retirement record.
@@ -478,6 +477,4 @@ approved, the workflow must use `work_item_completion`.
   credentials are absent, with authenticated verification evidence.
 - Active documentation describes Railway only; historical designs, workflow
   records, reviews, and Git history remain intact and clearly historical.
-- The encrypted D1 export has an owner and deletion deadline; eventual backup
-  deletion is recorded separately.
 - Both implementation slices pass review and their required human gates.
