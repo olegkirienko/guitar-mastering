@@ -1,0 +1,67 @@
+version: 2
+
+work_item_id: railway-ci-cd-iac
+work_item_type: infrastructure
+title: "Railway GitHub CI/CD and Infrastructure as Code"
+
+phase: implementation
+status: in_progress
+gate: none
+
+design:
+  path: docs/technical-designs/railway-ci-cd-iac.md
+  status: approved
+
+amendments:
+  - id: restart-policy-parity-01
+    path: docs/reviews/railway-ci-cd-iac/design-amendment-01-restart-policy-parity.md
+    status: approved
+
+context:
+  - AGENTS.md
+  - .github/workflows/ci.yml
+  - package.json
+  - server/config.ts
+  - server/app.ts
+  - docs/operations/production-cutover.md
+  - docs/operations/legacy-platform-retirement-record.md
+  - docs/operations/railway-iac-parity-foundation-plan.md
+  - docs/operations/github-main-validation-plan.md
+
+completed_slices:
+  - railway-iac-parity-foundation
+
+current_slice:
+  id: github-main-validation
+  name: "GitHub main validation"
+  status: in_progress
+
+latest_review:
+  path: docs/reviews/railway-ci-cd-iac/fix-rereview-06-railway-iac-parity-foundation.md
+  verdict: APPROVED
+
+blocking_findings: []
+
+next:
+  phase: implementation
+  action: activate-and-verify-github-main-policy
+  human_approval_required: false
+
+notes:
+  - "On 2026-09-21 the owner made olegkirienko/guitar-mastering public and explicitly approved the github-main-validation operator activation. GitHub now permits rulesets. The repository has only the owner as collaborator, so the approved ownership-capability exception uses required pull requests with zero required approving reviews; requiring the author to obtain one approval would make compliant merge impossible. Strict validate, conversation resolution, deletion/force-push protection, and no bypass remain required."
+  - "Node 24.7.0 local validation passed for the current slice changes: pnpm lint; pnpm test (55 passed, 19 skipped); pnpm test:browser (10 passed); pnpm test:postgres (19 passed); pnpm build; and git diff --check. The initial sandboxed pnpm test attempt could not bind localhost (EPERM); the unrestricted required rerun passed without code changes."
+  - "The github-main-validation repository change is implemented locally: Validate now runs on pull requests and pushes to main, manual dispatch is removed, and acceptance coverage preserves the trigger/no-concurrency/validation-only invariants. Live GitHub read-back found only Validate active, but both rulesets and classic branch protection are unavailable for this private repository on its current plan (HTTP 403: upgrade to GitHub Pro or make the repository public). No push, visibility/plan change, policy mutation, or Railway operation was attempted. Exact-SHA push validation and the separately approved branch-policy mutation remain pending; see docs/operations/github-main-validation-plan.md."
+  - "On 2026-09-21 the owner explicitly approved next_slice_approval. The approved railway-iac-parity-foundation slice was archived in completed_slices and github-main-validation became the current implementation slice. Railway source/autodeploy changes remain out of scope."
+  - "Fix Re-Review 06 verifies MEDIUM-01 as fixed and approves railway-iac-parity-foundation. A later approved slice, github-main-validation, exists; explicit next_slice_approval is required before it begins. The approval supplied while the canonical phase was fix_rereview was not applied prospectively to this newly created gate."
+  - "The targeted MEDIUM-01 fix reconciles only the authoritative design's current status/routing text and the operator record's malformed final sentence. It makes no IaC, application, dependency, test, or remote Railway change and is ready for targeted re-review."
+  - "Implementation Review 05 accepts the IaC/runtime result but requires the documentation-only MEDIUM-01 fix: reconcile stale current-status/routing statements in the authoritative design and complete the malformed operator-record ending. No IaC, application, dependency, test, or remote Railway change is authorized."
+  - "The amended foundation slice is implemented and ready for implementation review: explicit restart type removed from IaC, retry cap 3 retained, clean plans before and after railway.json removal, effective ON_FAILURE/3 and healthy topology verified read-only, local validation passed, no second apply or production mutation."
+  - "Under the approved restart-policy exception, the IaC authoring source omits restartPolicyType and retains restartPolicyMaxRetries 3. A fresh production plan is clean; effective service and active deployment both report ON_FAILURE/3; production smoke, PostgreSQL, volume, domain, and PITR checks pass. The legacy railway.json file was then removed from the repository without a further IaC apply or production mutation."
+  - "On 2026-09-20 the owner explicitly approved the Design Review 04 design_approval gate. The railway-iac-parity-foundation slice resumed under the restart-policy platform exception; implementation is limited to that approved slice."
+  - "Design Review 04 approves the restart-policy parity amendment with no findings. The existing railway-iac-parity-foundation slice remains paused at design_approval; explicit owner approval is required before any IaC source edit or parity verification resumes."
+  - "On 2026-09-20 a narrow restart-policy parity amendment was submitted: omit restartPolicyType from IaC, retain max retries 3, and verify effective ON_FAILURE/3 after deployment. The slice is paused for a new immutable design review and explicit design approval; no IaC edit, apply, railway.json removal, or production mutation is authorized by this transition."
+  - "On 2026-09-20 the owner approved design_approval and explicitly accepted that Railway may build a deployment image before the pre-deploy exact-SHA verifier runs."
+  - "On 2026-09-20 the owner approved the operator plan; the production Config File handoff and reviewed 0/2/0 IaC apply ran. The new web deployment is healthy, but the follow-up plan still proposes deploy.restartPolicyType, so parity is unproved. railway.json remains and implementation review is blocked; see docs/operations/railway-iac-parity-foundation-plan.md."
+  - "Design Review 03 approved the revised design and closed HIGH-03 and MEDIUM-02."
+  - "The first approved implementation slice is railway-iac-parity-foundation; design approval is required before it begins."
+  - "No application code, GitHub settings, Railway configuration, secrets, or deployment was changed in this review phase."
