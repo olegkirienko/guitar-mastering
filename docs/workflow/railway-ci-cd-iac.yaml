@@ -4,9 +4,9 @@ work_item_id: railway-ci-cd-iac
 work_item_type: infrastructure
 title: "Railway GitHub CI/CD and Infrastructure as Code"
 
-phase: fix_rereview
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: next_slice_approval
 
 design:
   path: docs/technical-designs/railway-ci-cd-iac.md
@@ -34,21 +34,21 @@ completed_slices:
 current_slice:
   id: github-main-validation
   name: "GitHub main validation"
-  status: fixed
+  status: approved
 
 latest_review:
-  path: docs/reviews/railway-ci-cd-iac/implementation-review-07-github-main-validation.md
-  verdict: CHANGES_REQUIRED
+  path: docs/reviews/railway-ci-cd-iac/fix-rereview-08-github-main-validation.md
+  verdict: APPROVED
 
-blocking_findings:
-  - MEDIUM-02
+blocking_findings: []
 
 next:
-  phase: fix_rereview
-  action: rereview-github-main-validation
-  human_approval_required: false
+  phase: implementation
+  action: approve-start-deployment-metadata-and-runbook
+  human_approval_required: true
 
 notes:
+  - "Fix Re-Review 08 verifies MEDIUM-02 as fixed and approves github-main-validation. The later approved deployment-metadata-and-runbook slice exists; explicit next_slice_approval is required before it begins. No application, CI workflow, IaC, dependency, GitHub setting, secret, or Railway state changed during re-review."
   - "The targeted MEDIUM-02 fix updates only the authoritative design's current status, GitHub baseline, public-visibility/credential boundary, slice routing, and the operator record's pre-activation SHA label. It requires a narrow design amendment and approval before railway-github-autodeploy chooses authenticated or anonymous verifier access. No application, CI workflow, IaC, dependency, GitHub setting, secret, or Railway state changed; MEDIUM-02 remains active pending targeted re-review."
   - "Implementation Review 07 accepts the CI workflow, active ruleset, and exact-SHA push validation but requires the documentation/state-only MEDIUM-02 fix: reconcile the authoritative design with the implemented public-repository state and require a narrow design amendment before the future verifier credential decision. No application, workflow, IaC, dependency, GitHub setting, secret, or Railway change is authorized."
   - "The github-main-validation slice is implemented and ready for implementation review. PR 1 passed Validate, active ruleset 23761397 requires PRs and strict validate while blocking deletion/force-push with no bypass, and merge commit 3e933bdb80eff22cb4edd5ab132dd979dea901cb passed the separate exact-SHA push Validate run 35587159315 with every required step successful. The single-owner capability exception uses zero approving reviews. No Railway resource or setting changed."
