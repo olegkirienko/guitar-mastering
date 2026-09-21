@@ -3,8 +3,7 @@
 **Work item:** `railway-ci-cd-iac`  
 **Slice:** `github-main-validation`  
 **Prepared:** 2026-09-21  
-**Status:** repository changes implemented locally; on 2026-09-21 the owner made
-the repository public and explicitly approved the remote policy activation.
+**Status:** implemented and verified on 2026-09-21.
 
 ## Target and read-only baseline
 
@@ -98,3 +97,32 @@ recovery, then re-read the effective rules. Stop for renewed review on an
 unexpected check producer, ambiguous required-check context, missing `push`
 run, failed validation, direct-push requirement, or any proposed Railway
 mutation.
+
+## Execution evidence — 2026-09-21
+
+The owner made `olegkirienko/guitar-mastering` public and explicitly approved
+the reviewed policy activation. Pull request
+`https://github.com/olegkirienko/guitar-mastering/pull/1` carried the repository
+change. Its `Validate` pull-request run `35586604121` completed successfully
+before policy activation and merge.
+
+Repository ruleset `23761397` (`Protect main validation`) is active for the
+default branch. Read-back shows pull requests required, zero required approving
+reviews under the documented single-owner exception, required conversation
+resolution, strict required GitHub Actions context `validate` with integration
+ID `15368`, deletion and non-fast-forward protection, no bypass actors, and
+`current_user_can_bypass: never`. Merge queue is not enabled.
+
+PR 1 merged through that ruleset at `2026-09-21T10:08:46Z`, producing exact
+`main` SHA `3e933bdb80eff22cb4edd5ab132dd979dea901cb`. The separate `push`-event
+`Validate` run `35587159315` for that full SHA completed successfully at
+`2026-09-21T10:10:11Z`:
+`https://github.com/olegkirienko/guitar-mastering/actions/runs/35587159315`.
+Its sole job was `validate`; install, lint/typecheck, unit/foundation, browser,
+PostgreSQL, and production-build steps all concluded `success`.
+
+Final inventory found exactly one active workflow, `Validate`, and exactly one
+check on the accepted `main` SHA, GitHub Actions context `validate`. The
+workflow has no path filters, conditions, manual dispatch, or concurrency
+cancellation. No Railway source, Wait for CI, autodeploy, secret, deployment,
+migration, or IaC setting was changed in this slice.

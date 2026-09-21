@@ -4,8 +4,8 @@ work_item_id: railway-ci-cd-iac
 work_item_type: infrastructure
 title: "Railway GitHub CI/CD and Infrastructure as Code"
 
-phase: implementation
-status: in_progress
+phase: implementation_review
+status: ready
 gate: none
 
 design:
@@ -34,7 +34,7 @@ completed_slices:
 current_slice:
   id: github-main-validation
   name: "GitHub main validation"
-  status: in_progress
+  status: implemented
 
 latest_review:
   path: docs/reviews/railway-ci-cd-iac/fix-rereview-06-railway-iac-parity-foundation.md
@@ -43,11 +43,12 @@ latest_review:
 blocking_findings: []
 
 next:
-  phase: implementation
-  action: activate-and-verify-github-main-policy
+  phase: implementation_review
+  action: review-github-main-validation
   human_approval_required: false
 
 notes:
+  - "The github-main-validation slice is implemented and ready for implementation review. PR 1 passed Validate, active ruleset 23761397 requires PRs and strict validate while blocking deletion/force-push with no bypass, and merge commit 3e933bdb80eff22cb4edd5ab132dd979dea901cb passed the separate exact-SHA push Validate run 35587159315 with every required step successful. The single-owner capability exception uses zero approving reviews. No Railway resource or setting changed."
   - "On 2026-09-21 the owner made olegkirienko/guitar-mastering public and explicitly approved the github-main-validation operator activation. GitHub now permits rulesets. The repository has only the owner as collaborator, so the approved ownership-capability exception uses required pull requests with zero required approving reviews; requiring the author to obtain one approval would make compliant merge impossible. Strict validate, conversation resolution, deletion/force-push protection, and no bypass remain required."
   - "Node 24.7.0 local validation passed for the current slice changes: pnpm lint; pnpm test (55 passed, 19 skipped); pnpm test:browser (10 passed); pnpm test:postgres (19 passed); pnpm build; and git diff --check. The initial sandboxed pnpm test attempt could not bind localhost (EPERM); the unrestricted required rerun passed without code changes."
   - "The github-main-validation repository change is implemented locally: Validate now runs on pull requests and pushes to main, manual dispatch is removed, and acceptance coverage preserves the trigger/no-concurrency/validation-only invariants. Live GitHub read-back found only Validate active, but both rulesets and classic branch protection are unavailable for this private repository on its current plan (HTTP 403: upgrade to GitHub Pro or make the repository public). No push, visibility/plan change, policy mutation, or Railway operation was attempted. Exact-SHA push validation and the separately approved branch-policy mutation remain pending; see docs/operations/github-main-validation-plan.md."
