@@ -10,7 +10,8 @@
 - Repository: public `olegkirienko/guitar-mastering`; default branch `main`.
 - Authenticated operator: `olegkirienko`, repository permission `ADMIN`.
 - Active workflows: only `.github/workflows/ci.yml`, named `Validate`.
-- Current remote `main`: `1d95822ceafb5901199247df26e53112c7bee4d9`.
+- Pre-activation remote `main`:
+  `1d95822ceafb5901199247df26e53112c7bee4d9`.
 - The latest `Validate` run on that SHA was a successful manual
   `workflow_dispatch` run, not a `push` run:
   `https://github.com/olegkirienko/guitar-mastering/actions/runs/35444229616`.

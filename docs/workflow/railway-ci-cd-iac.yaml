@@ -4,8 +4,8 @@ work_item_id: railway-ci-cd-iac
 work_item_type: infrastructure
 title: "Railway GitHub CI/CD and Infrastructure as Code"
 
-phase: fixes
-status: changes_required
+phase: fix_rereview
+status: ready
 gate: none
 
 design:
@@ -34,7 +34,7 @@ completed_slices:
 current_slice:
   id: github-main-validation
   name: "GitHub main validation"
-  status: changes_required
+  status: fixed
 
 latest_review:
   path: docs/reviews/railway-ci-cd-iac/implementation-review-07-github-main-validation.md
@@ -44,11 +44,12 @@ blocking_findings:
   - MEDIUM-02
 
 next:
-  phase: fixes
-  action: fix-medium-02-design-visibility-consistency
+  phase: fix_rereview
+  action: rereview-github-main-validation
   human_approval_required: false
 
 notes:
+  - "The targeted MEDIUM-02 fix updates only the authoritative design's current status, GitHub baseline, public-visibility/credential boundary, slice routing, and the operator record's pre-activation SHA label. It requires a narrow design amendment and approval before railway-github-autodeploy chooses authenticated or anonymous verifier access. No application, CI workflow, IaC, dependency, GitHub setting, secret, or Railway state changed; MEDIUM-02 remains active pending targeted re-review."
   - "Implementation Review 07 accepts the CI workflow, active ruleset, and exact-SHA push validation but requires the documentation/state-only MEDIUM-02 fix: reconcile the authoritative design with the implemented public-repository state and require a narrow design amendment before the future verifier credential decision. No application, workflow, IaC, dependency, GitHub setting, secret, or Railway change is authorized."
   - "The github-main-validation slice is implemented and ready for implementation review. PR 1 passed Validate, active ruleset 23761397 requires PRs and strict validate while blocking deletion/force-push with no bypass, and merge commit 3e933bdb80eff22cb4edd5ab132dd979dea901cb passed the separate exact-SHA push Validate run 35587159315 with every required step successful. The single-owner capability exception uses zero approving reviews. No Railway resource or setting changed."
   - "On 2026-09-21 the owner made olegkirienko/guitar-mastering public and explicitly approved the github-main-validation operator activation. GitHub now permits rulesets. The repository has only the owner as collaborator, so the approved ownership-capability exception uses required pull requests with zero required approving reviews; requiring the author to obtain one approval would make compliant merge impossible. Strict validate, conversation resolution, deletion/force-push protection, and no bypass remain required."
