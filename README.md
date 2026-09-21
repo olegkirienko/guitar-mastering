@@ -61,7 +61,7 @@ is the explicit fresh-PostgreSQL migration, rollback, and concurrency gate.
 
 ## Railway
 
-`railway.json` builds the SPA and server, runs `node-pg-migrate` as a blocking
+`.railway/railway.ts` configures Railway to build the SPA and server, runs `node-pg-migrate` as a blocking
 pre-deploy step, starts the compiled Node service, and probes database readiness
 before shifting traffic. Configure
 the key-only variables listed in `.env.example` in each Railway environment and

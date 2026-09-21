@@ -31,8 +31,8 @@ beforeAll(async () => {
 
 describe("production artifact acceptance", () => {
   it("gates traffic on database readiness", async () => {
-    const railwayConfig = JSON.parse(await readFile(path.join(repositoryRoot, "railway.json"), "utf8"));
-    expect(railwayConfig.deploy.healthcheckPath).toBe("/api/v1/readiness");
+    const railwayConfig = await readFile(path.join(repositoryRoot, ".railway/railway.ts"), "utf8");
+    expect(railwayConfig).toContain('healthcheckPath: "/api/v1/readiness"');
   });
 
   it("uses the same-origin root and enables account capabilities", () => {
@@ -44,6 +44,9 @@ describe("production artifact acceptance", () => {
   it("keeps CI validation-only and builds the production artifact", async () => {
     const workflow = await readFile(path.join(repositoryRoot, ".github/workflows/ci.yml"), "utf8");
     expect(workflow).toContain("pnpm build");
+    expect(workflow).toMatch(/\n  pull_request:\s*\n  push:\s*\n    branches:\s*\n      - main\s*\n/);
+    expect(workflow).not.toContain("workflow_dispatch");
+    expect(workflow).not.toContain("concurrency:");
     expect(workflow).not.toContain("deploy-pages");
     expect(workflow).not.toContain("wrangler");
   });
