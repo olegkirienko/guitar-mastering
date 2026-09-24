@@ -4,9 +4,9 @@ work_item_id: railway-ci-cd-iac
 work_item_type: infrastructure
 title: "Railway GitHub CI/CD and Infrastructure as Code"
 
-phase: human_gate
-status: awaiting_approval
-gate: next_slice_approval
+phase: implementation
+status: in_progress
+gate: none
 
 design:
   path: docs/technical-designs/railway-ci-cd-iac.md
@@ -15,6 +15,12 @@ design:
 amendments:
   - id: restart-policy-parity-01
     path: docs/reviews/railway-ci-cd-iac/design-amendment-01-restart-policy-parity.md
+    status: approved
+  - id: verifier-credential-02
+    path: docs/reviews/railway-ci-cd-iac/design-amendment-02-verifier-credential.md
+    status: approved
+  - id: production-web-service-identity-03
+    path: docs/reviews/railway-ci-cd-iac/design-amendment-03-production-web-service-identity.md
     status: approved
 
 context:
@@ -27,27 +33,45 @@ context:
   - docs/operations/legacy-platform-retirement-record.md
   - docs/operations/railway-iac-parity-foundation-plan.md
   - docs/operations/github-main-validation-plan.md
+  - docs/operations/railway-github-autodeploy-plan.md
 
 completed_slices:
   - railway-iac-parity-foundation
+  - github-main-validation
+  - deployment-metadata-and-runbook
 
 current_slice:
-  id: github-main-validation
-  name: "GitHub main validation"
-  status: approved
+  id: railway-github-autodeploy
+  name: "Railway GitHub autodeploy"
+  status: implementing
 
 latest_review:
-  path: docs/reviews/railway-ci-cd-iac/fix-rereview-08-github-main-validation.md
+  path: docs/reviews/railway-ci-cd-iac/design-review-13-production-web-service-identity.md
   verdict: APPROVED
 
 blocking_findings: []
 
 next:
   phase: implementation
-  action: approve-start-deployment-metadata-and-runbook
-  human_approval_required: true
+  action: implement-railway-github-autodeploy-under-amendment-03
+  human_approval_required: false
 
 notes:
+  - "On 2026-09-24 the owner explicitly approved the fresh Design Amendment 03 design_approval gate. The railway-github-autodeploy slice resumes in implementation with the corrected production web-service identity. Work remains limited to the already approved design and reviewed bootstrap boundaries; production source connection, Wait for CI, and autodeploy remain separately blocked pending first-link proof and a new explicit source-setting approval."
+  - "Design Review 13 verifies LOW-01 as resolved and approves revised Design Amendment 03 with no active findings. The amendment accurately records both historical UUID entries, does not claim the immutable evidence is internally consistent, and bases the correction on the live Railway identity, later verified full-UUID evidence, and corrected current operator documents. The railway-github-autodeploy slice remains paused at a fresh design_approval gate; no prior approval is reusable, and no implementation or provider mutation is authorized by the review."
+  - "The design phase addressed Design Review 12 LOW-01 only. Amendment 03 now states that immutable 2026-09-17 cutover evidence contains both an earlier truncated web-service UUID and a later full verified UUID, without claiming internal consistency. It bases the authoritative correction on the current live Railway identity, the later verified full-UUID evidence, and the corrected current bootstrap plan and CI/CD runbook. Historical evidence, bootstrap sequencing, IaC, application code, GitHub state, and Railway provider state were unchanged. LOW-01 remains active pending a new immutable design review."
+  - "Design Review 12 finds LOW-01 unresolved: the immutable 2026-09-17 cutover evidence contains the truncated web-service UUID in its early topology summary and the full verified UUID in its later Railway read-back, while revised Amendment 03 inaccurately says the evidence already agrees without qualification. Revise only the amendment's audit statement and trail to record both historical references; keep the evidence immutable. The railway-github-autodeploy slice remains paused, no human approval is consumable, and no implementation or provider mutation is authorized."
+  - "The design phase addressed Design Review 11 LOW-01 only: Amendment 03 now states accurately that the immutable 2026-09-17 cutover evidence already contains the verified full web-service UUID. The historical evidence and application code were not changed. The revised amendment is ready for a new immutable design review; LOW-01 remains active until that review resolves it, and no provider mutation or human approval is authorized."
+  - "Design Review 11 requires the LOW-01 design-only correction: Amendment 03 inaccurately says the immutable 2026-09-17 cutover evidence contains the truncated web-service identity, but that artifact already contains the full correct UUID. Revise only that audit statement and submit a new immutable design review. The railway-github-autodeploy slice remains paused; no human approval is currently consumable, and no implementation or provider mutation is authorized."
+  - "On 2026-09-24 a read-only production preflight confirmed that the bootstrap plan and CI/CD runbook contained a truncated web-service UUID. Design Amendment 03 corrects only those current references to live service 4d0a3739-0beb-4ea9-9a7e-7a9f3494708e. The earlier bootstrap approval was not consumed and cannot be reused; after immutable design review, a new explicit design approval is required before implementation or any bootstrap/provider mutation resumes. No remote state changed."
+  - "The railway-github-autodeploy repository verifier and its 14-test focused suite are implemented. Node 24.7.0 validation passed: pnpm lint; pnpm test (73 passed, 19 skipped); pnpm test:browser (10 passed); pnpm test:postgres (19 passed); pnpm build; and git diff --check. The initial sandboxed unit run could not bind localhost (EPERM); the unrestricted rerun passed without code changes. The final built verifier passed an authenticated read-only live check for main SHA dda15469df039e3cbb349d6b3a02f2b015988665, workflow run 35590758279, and job 106304363143 without printing or persisting the credential. GitHub exposes only Validate/validate on current main. Railway production identities and the healthy deployment were confirmed read-only, and the web source remains unset. The reviewed bootstrap plan is docs/operations/railway-github-autodeploy-plan.md; explicit approval is required before any CLI deployment, credential installation, Railway variable/IaC mutation, or SSH proof. Production source connection, Wait for CI, and autodeploy remain blocked because current CLI/public documentation does not prove safe first-link ordering."
+  - "On 2026-09-22 the owner explicitly approved the Design Amendment 02 design_approval gate. The railway-github-autodeploy slice resumes under the approved verifier-credential design. Implementation is limited to that slice and amendment; credential creation and Railway variable/IaC/source/autodeploy mutations still require the design's separately reviewed operator actions."
+  - "Design Review 10 approves Design Amendment 02 with no findings. The authenticated verifier mode uses a repository-only fine-grained Actions: read token, no anonymous fallback, bounded API requests, fail-closed rate-limit/error handling, sealed storage, and reviewed rotation/revocation. The railway-github-autodeploy slice remains paused at design_approval; this review authorizes no implementation, credential, Railway variable/IaC/source/autodeploy change, deployment, migration, or other provider mutation."
+  - "On 2026-09-22 the owner explicitly approved next_slice_approval only to enter railway-github-autodeploy. The approved deployment-metadata-and-runbook slice was archived in completed_slices and railway-github-autodeploy became current, but implementation is paused for the separately required verifier-credential amendment review and design_approval."
+  - "Design Amendment 02 is submitted for immutable review. Read-only anonymous and authenticated GitHub API checks returned 200 for the pinned workflow-runs and jobs endpoints; anonymous access had a shared source-IP core budget of 60/hour while authenticated access had 5000/hour. The amendment selects a repository-only fine-grained Actions: read credential with no anonymous fallback, at-most-90-day expiry, sealed Railway storage, rate-limit/failure guards, and reviewed rotation/revocation. No credential, verifier code, IaC, GitHub setting, Railway variable/source/autodeploy setting, deployment, or other provider mutation was created or changed."
+  - "Implementation Review 09 approves deployment-metadata-and-runbook with no findings. A later approved railway-github-autodeploy slice exists, so explicit next_slice_approval is required before it begins. That approval does not waive the separate narrow verifier-credential amendment, immutable design review, and explicit design approval required before verifier implementation or production activation. No provider command or remote mutation was executed during review."
+  - "The deployment-metadata-and-runbook slice is implemented and ready for implementation review. Runtime configuration prefers a validated full RAILWAY_GIT_COMMIT_SHA while preserving required DEPLOYMENT_VERSION fallback behavior; contributor, cutover, IaC, SHA-correlation, drift, failure-response, and rollback guidance is updated. Node 24.7.0 validation passed: pnpm lint; pnpm test (59 passed, 19 skipped); pnpm test:browser (10 passed); pnpm test:postgres (19 passed); pnpm build; and git diff --check. The initial sandboxed unit run could not bind localhost (EPERM); the unrestricted rerun passed without code changes. No dependency, GitHub setting, Railway source, secret, IaC apply, production variable, deployment, or other remote state changed."
+  - "On 2026-09-21 the owner explicitly approved next_slice_approval. The approved github-main-validation slice was archived in completed_slices and deployment-metadata-and-runbook became the current implementation slice. GitHub source connection, autodeploy, verifier implementation, and production variable changes remain out of scope."
   - "Fix Re-Review 08 verifies MEDIUM-02 as fixed and approves github-main-validation. The later approved deployment-metadata-and-runbook slice exists; explicit next_slice_approval is required before it begins. No application, CI workflow, IaC, dependency, GitHub setting, secret, or Railway state changed during re-review."
   - "The targeted MEDIUM-02 fix updates only the authoritative design's current status, GitHub baseline, public-visibility/credential boundary, slice routing, and the operator record's pre-activation SHA label. It requires a narrow design amendment and approval before railway-github-autodeploy chooses authenticated or anonymous verifier access. No application, CI workflow, IaC, dependency, GitHub setting, secret, or Railway state changed; MEDIUM-02 remains active pending targeted re-review."
   - "Implementation Review 07 accepts the CI workflow, active ruleset, and exact-SHA push validation but requires the documentation/state-only MEDIUM-02 fix: reconcile the authoritative design with the implemented public-repository state and require a narrow design amendment before the future verifier credential decision. No application, workflow, IaC, dependency, GitHub setting, secret, or Railway change is authorized."

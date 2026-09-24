@@ -51,12 +51,24 @@ Amendment 05 passes review and explicit approval.
    solely for this amendment. Confirm that the temporary drill dump was removed
    and that no retained/scheduled dump is being represented as a current backup.
    Never restore over or rewire the source automatically.
-5. Deploy the exact reviewed repository, observe Railway `SUCCESS`, and run
-   `pnpm smoke:production -- https://<production-origin>`.
-6. Inspect application logs plus HTTP, CPU, memory, network, and volume metrics.
+5. Correlate the release to one full Git commit SHA. Until the separately
+   reviewed GitHub source/autodeploy slice is approved and activated, deploy
+   the exact reviewed repository through the existing manual path and retain
+   `DEPLOYMENT_VERSION` as its static fallback. After activation, require the
+   actual `push`-event `Validate` run for that exact `main` SHA and follow the
+   ordered controls in the [Railway CI/CD runbook](railway-ci-cd.md). A manual
+   workflow run is never release evidence.
+6. Observe Railway `SUCCESS`, correlate Railway deployment metadata with the
+   structured `server_started` and `request_completed` log
+   `deploymentVersion`, and run
+   `pnpm smoke:production -- https://<production-origin>`. GitHub-triggered
+   deployments must log `RAILWAY_GIT_COMMIT_SHA`; current manual deployments
+   use the preserved `DEPLOYMENT_VERSION` fallback. Do not remove the fallback
+   until end-to-end acceptance proves Git metadata in production.
+7. Inspect application logs plus HTTP, CPU, memory, network, and volume metrics.
    Any leak, unexplained restart/5xx, database failure, saturation, or failed
    migration blocks cutover.
-7. Confirm the Railway origin remains canonical and no active release workflow
+8. Confirm the Railway origin remains canonical and no active release workflow
    targets a retired platform.
 
 ## Rollback
@@ -73,6 +85,9 @@ Amendment 05 passes review and explicit approval.
   reviewed recovery action.
 - Client state is never cleared as part of rollback. Guest learning and valid
   device-local progress remain available.
+- Record the failed and restored Railway deployment IDs and their full source
+  SHAs. Confirm the restored structured-log `deploymentVersion` matches the
+  selected migration-compatible deployment before closing the incident.
 
 ## Recovery boundary
 

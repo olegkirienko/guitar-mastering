@@ -29,6 +29,17 @@ function required(environment: Environment, key: string): string {
   return value;
 }
 
+function deploymentVersion(environment: Environment): string {
+  const railwayGitCommitSha = environment.RAILWAY_GIT_COMMIT_SHA;
+  if (railwayGitCommitSha) {
+    if (!/^[0-9a-f]{40}$/i.test(railwayGitCommitSha)) {
+      throw new Error("RAILWAY_GIT_COMMIT_SHA must be a full 40-character Git commit SHA.");
+    }
+    return railwayGitCommitSha;
+  }
+  return required(environment, "DEPLOYMENT_VERSION");
+}
+
 function integer(
   environment: Environment,
   key: string,
@@ -110,7 +121,7 @@ export function loadConfig(environment: Environment = process.env): ServerConfig
     nodeEnv,
     appEnv,
     publicOrigin,
-    deploymentVersion: required(environment, "DEPLOYMENT_VERSION"),
+    deploymentVersion: deploymentVersion(environment),
     secureCookies,
     rateLimitHmacKey,
     poolMax: integer(environment, "PG_POOL_MAX", 10, 1, 50),
