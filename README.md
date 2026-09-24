@@ -70,8 +70,31 @@ reference the private PostgreSQL `DATABASE_URL`; do not commit their values.
 Production release, rollback, backup/restore, monitoring, and cost procedures
 are recorded in
 [`docs/operations/production-cutover.md`](docs/operations/production-cutover.md).
+CI/CD policy, commit-SHA correlation, Railway IaC drift checks, and deployment
+failure response are recorded in
+[`docs/operations/railway-ci-cd.md`](docs/operations/railway-ci-cd.md).
+The approved target pre-deploy command is `pnpm release:predeploy`, which runs
+the exact-SHA GitHub Actions verifier before `pnpm db:migrate`. Production must
+use a sealed, repository-only `Actions: read` credential and never fall back to
+anonymous GitHub API access. Activation remains controlled by the reviewed
+[`docs/operations/railway-github-autodeploy-plan.md`](docs/operations/railway-github-autodeploy-plan.md);
+do not connect the production source or change gate variables ad hoc.
 The data-handling and backup-retention disclosure is in
 [`docs/operations/privacy-and-retention.md`](docs/operations/privacy-and-retention.md).
+
+## Contributing and releases
+
+Make repository changes through a pull request. `Validate` must pass for the
+pull request and again for the exact commit created on `main`; do not use CI
+skip directives, direct pushes, or a manual workflow run as a substitute. Keep
+the workflow unconditional and preserve its single `validate` job unless a
+reviewed CI/CD design changes those invariants.
+
+GitHub Actions validates code but does not deploy, migrate production, or apply
+Railway IaC. Railway infrastructure changes use a separately reviewed manual
+`railway config plan` / `railway config apply` procedure. The production GitHub
+source and autodeploy path are not enabled by this repository change; follow
+the workflow state and the CI/CD runbook before any remote Railway mutation.
 
 ## Structure
 

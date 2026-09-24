@@ -18,6 +18,7 @@ describe("server configuration", () => {
     expect(loadConfig(validEnvironment)).toMatchObject({
       port: 8080,
       appEnv: "production",
+      deploymentVersion: "commit-sha",
       secureCookies: true,
       poolMax: 10,
       statementTimeoutMs: 5_000,
@@ -25,6 +26,31 @@ describe("server configuration", () => {
       argon2MaxActive: 2,
       argon2MaxQueue: 8,
     });
+  });
+
+  it("prefers the full Railway Git commit SHA for deployment logs", () => {
+    const railwayGitCommitSha = "3e933bdb80eff22cb4edd5ab132dd979dea901cb";
+
+    expect(loadConfig({ ...validEnvironment, RAILWAY_GIT_COMMIT_SHA: railwayGitCommitSha }))
+      .toMatchObject({ deploymentVersion: railwayGitCommitSha });
+  });
+
+  it("keeps DEPLOYMENT_VERSION as the non-Git deployment fallback", () => {
+    expect(loadConfig({ ...validEnvironment, RAILWAY_GIT_COMMIT_SHA: undefined }))
+      .toMatchObject({ deploymentVersion: "commit-sha" });
+  });
+
+  it("rejects malformed Railway Git commit metadata instead of logging it", () => {
+    expect(() => loadConfig({ ...validEnvironment, RAILWAY_GIT_COMMIT_SHA: "short-sha" }))
+      .toThrow("RAILWAY_GIT_COMMIT_SHA must be a full 40-character Git commit SHA.");
+  });
+
+  it("requires the static fallback when Railway Git metadata is absent", () => {
+    expect(() => loadConfig({
+      ...validEnvironment,
+      RAILWAY_GIT_COMMIT_SHA: undefined,
+      DEPLOYMENT_VERSION: undefined,
+    })).toThrow("Missing required environment variable: DEPLOYMENT_VERSION");
   });
 
   it("fails closed when deployed configuration is incomplete", () => {

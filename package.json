@@ -21,6 +21,7 @@
     "test:foundation": "vitest run build/foundation.acceptance.test.ts server",
     "test:postgres": "REQUIRE_POSTGRES_TESTS=true vitest run --no-file-parallelism server/*.integration.test.ts",
     "smoke:production": "node scripts/smoke-production.mjs",
+    "release:predeploy": "node dist-server/verify-ci.js && pnpm db:migrate",
     "db:migrate": "node --env-file-if-exists=.env.local node_modules/node-pg-migrate/bin/node-pg-migrate.js up --migrations-dir server/migrations --advisory-lock-mode wait"
   },
   "dependencies": {
