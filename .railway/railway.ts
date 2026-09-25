@@ -19,7 +19,7 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm install --frozen-lockfile && pnpm build",
     },
     deploy: {
-      preDeployCommand: ["pnpm db:migrate"],
+      preDeployCommand: ["pnpm release:predeploy"],
       startCommand: "pnpm start",
       healthcheckPath: "/api/v1/readiness",
       healthcheckTimeout: 120,
@@ -30,6 +30,8 @@ export default defineRailway((ctx) => {
       ARGON2_MAX_ACTIVE: preserve(),
       ARGON2_MAX_QUEUE: preserve(),
       DATABASE_URL: preserve(),
+      GITHUB_ACTIONS_READ_TOKEN: preserve(),
+      GITHUB_CI_GATE_REQUIRED: "true",
       // Retain the static fallback until a GitHub-triggered deployment proves
       // Railway's built-in RAILWAY_GIT_COMMIT_SHA metadata end to end.
       DEPLOYMENT_VERSION: preserve(),

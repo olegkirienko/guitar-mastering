@@ -3,7 +3,7 @@
 **Work item:** `railway-ci-cd-iac`
 **Slice:** `railway-github-autodeploy`
 **Design:** `docs/technical-designs/railway-ci-cd-iac.md` and approved Design Amendments 02 and 03
-**Status:** bootstrap approved on 2026-09-24; protected-branch merge and ordered production bootstrap in progress; source connection still awaits first-link proof and separate approval
+**Status:** ordered production bootstrap complete; source connection remains blocked pending first-link proof and separate approval
 
 ## Fixed scope and identities
 
@@ -109,6 +109,75 @@ Stop immediately on any unexpected deployment, nonmatching identity, add or
 delete, source mutation, missing artifact, secret disclosure, migration before
 guard success, verifier ambiguity, unhealthy prior deployment, or failure to
 read back effective configuration.
+
+## Bootstrap execution evidence — 2026-09-24
+
+- Pull request 5 passed its `validate` check and merged normally. Merge commit
+  `7e8a3eb88246c3c5fdc676b9d5f18347e9a6098f` then passed the separate
+  push-triggered `Validate` run `35979509606`, job `107567779717`.
+- Immediately before deployment, the production web service still had no
+  source, deployment `e0e98aab-e244-4151-8622-3e88a6d4f9ed` was successful,
+  its effective pre-deploy command was `pnpm db:migrate`, all fixed topology
+  identities matched, and the complete production smoke passed.
+- The exact validated checkout was deployed once through the CLI to existing
+  web service `4d0a3739-0beb-4ea9-9a7e-7a9f3494708e`. Deployment
+  `063aef0c-bff0-4587-9eb7-0328dc56c729` reached `SUCCESS` with image digest
+  `sha256:c04ba3593ddfdfb34ad9f2fc58566b338b452ec074408a8d0b6ab6ef938b0f7f`.
+  Its manifest retained `pnpm db:migrate`, `/api/v1/readiness`, the 120-second
+  health timeout, and effective `ON_FAILURE` with three retries. Post-deploy
+  health, readiness, SPA, and unknown-API smoke checks passed.
+- Read-only SSH on running instance
+  `c28ad783-76c7-49f9-a722-105c5a37ef6c` proved
+  `dist-server/verify-ci.js` exists and `package.json` contains the exact
+  `node dist-server/verify-ci.js && pnpm db:migrate` script. No migration or
+  verifier command was invoked by the SSH proof.
+- Presence-only checks found `GITHUB_ACTIONS_READ_TOKEN` absent both locally
+  and in the deployed image. Execution stops before credential installation,
+  IaC changes, or further deployment until the owner creates the approved
+  fine-grained token. No source, Wait for CI, or autodeploy setting changed.
+
+## Bootstrap continuation evidence — 2026-09-25
+
+- The owner staged `GITHUB_ACTIONS_READ_TOKEN` on the fixed production web
+  service without deploying. Redacted staged-patch read-back showed patch
+  `75d6d102-9375-41df-a0dc-91a22b9b2a11` contained exactly that one variable
+  on service `4d0a3739-0beb-4ea9-9a7e-7a9f3494708e`, with no deploy or source
+  field. The patch was committed with deploys skipped. Post-commit read-back
+  reported the variable present and sealed, while deployment history remained
+  unchanged. Repository scope, `Actions: read`, metadata-only unavoidable
+  access, no write permission, and expiry within 90 days are owner-attested;
+  the token value was never displayed or persisted in repository evidence.
+- `.railway/railway.ts` now preserves `GITHUB_ACTIONS_READ_TOKEN`, uses
+  `pnpm release:predeploy`, and declares `GITHUB_CI_GATE_REQUIRED` explicitly.
+  The first saved plan reported zero adds, two expected property changes on the
+  one existing web service, and zero destroys: add the bootstrap `false` flag
+  and change only the pre-deploy command. Applying that pinned plan triggered
+  deployment `461b23f8-9b06-4033-b225-f46571b5d350`, which reached `SUCCESS`.
+  Its logs show the explicit bootstrap bypass followed by no pending
+  migrations; smoke passed; source remained unset; the token remained sealed;
+  and effective restart behavior remained `ON_FAILURE` with three retries.
+- Read-only SSH on running instance
+  `a3a7ff2f-ebd0-440a-9b7f-04bf1f9e56a2` invoked only
+  `node dist-server/verify-ci.js` with a process-local true gate. Main SHA
+  `7e8a3eb88246c3c5fdc676b9d5f18347e9a6098f` passed against workflow run
+  `35979509606` and job `107567779717`; an impossible full SHA failed with exit
+  code 1 and the nonsecret no-matching-run diagnostic. A discarded shell
+  wrapper attempt exited 127 because its non-login shell lacked Node in PATH;
+  it did not execute the verifier or migration and is not acceptance evidence.
+- The second saved plan reported zero adds, exactly one variable change, and
+  zero destroys. Applying it set `GITHUB_CI_GATE_REQUIRED` to literal `true`
+  and triggered CLI-source deployment
+  `56a63457-6062-4083-8c06-d2422e4ea45e`. That deployment failed in the
+  verifier because `RAILWAY_GIT_COMMIT_SHA` was absent. Its logs contain only
+  the `release:predeploy` script echo and no actual `node-pg-migrate`,
+  `Migrations complete`, or `No migrations to run` output. Prior deployment
+  `461b23f8-9b06-4033-b225-f46571b5d350` remains active and successful;
+  production smoke passed after the failure.
+- Final read-back proves a clean IaC plan, sealed token, true gate,
+  `pnpm release:predeploy`, effective `ON_FAILURE`/three retries, no GitHub
+  source, unchanged project/environment/service/domain/PostgreSQL/volume/PITR
+  identities, and no pending production change. No source connection, Wait for
+  CI, or autodeploy mutation was attempted.
 
 ## First-link entry criterion and remaining block
 
