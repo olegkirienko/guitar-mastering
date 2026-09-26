@@ -36,9 +36,6 @@ export default defineRailway((ctx) => {
       DATABASE_URL: preserve(),
       GITHUB_ACTIONS_READ_TOKEN: preserve(),
       GITHUB_CI_GATE_REQUIRED: "true",
-      // Retain the static fallback until a GitHub-triggered deployment proves
-      // Railway's built-in RAILWAY_GIT_COMMIT_SHA metadata end to end.
-      DEPLOYMENT_VERSION: preserve(),
       NODE_ENV: preserve(),
       PG_CONNECTION_TIMEOUT_MS: preserve(),
       PG_POOL_MAX: preserve(),
