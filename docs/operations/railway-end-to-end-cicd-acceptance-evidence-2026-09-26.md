@@ -3,7 +3,7 @@
 **Work item:** `railway-ci-cd-iac`  
 **Slice:** `end-to-end-cicd-acceptance`  
 **Plan:** `docs/operations/railway-end-to-end-cicd-acceptance-plan.md`  
-**Status:** positive and protected-branch negative acceptance passed; recovery in progress
+**Status:** positive, protected-branch negative, and recovery acceptance passed; static version-variable retirement pending separate approval
 
 ## Preflight
 
@@ -123,8 +123,47 @@ migration, runtime, or promotion occurred. Positive deployment
 During and after the failure, production smoke again returned health 200,
 readiness 200, unknown API 404, and root 200.
 
-Recovery commit `9413149` recreates the already validated preview patch from
-the failed protected `main` and removes only the temporary fixture step and
-marker. Its final PR, distinct recovery merge SHA, successful push validation,
-Railway deployment, guard/migration ordering, SHA logs, smoke, metrics,
-identity, and IaC evidence remain pending.
+Recovery commit `9413149` recreated the already validated preview patch from
+the failed protected `main` and removed only the temporary fixture step and
+marker. Evidence commit `b1b10ded6058faabd29c89147d524c2a317ab309`
+recorded the negative result without changing application behavior.
+
+- Recovery PR: `https://github.com/olegkirienko/guitar-mastering/pull/10`.
+- PR `Validate`: run `36244070270`, job `108409858666`, passed.
+- Merge time: `2026-09-26T13:08:28Z`.
+- Recovery merge SHA: `f8b3510b3ab1e7392ebf97315a91bb7073eb9923`.
+- Push `Validate`: run `36244168991`, job `108410127894`, event `push`, exact
+  recovery SHA, started `2026-09-26T13:08:30Z`, completed successfully at
+  `2026-09-26T13:09:38Z`; every required step concluded success.
+- Run URL:
+  `https://github.com/olegkirienko/guitar-mastering/actions/runs/36244168991`.
+
+Railway created recovery deployment `abd82366-6c2d-4427-b65f-cb81be65f546`
+at `2026-09-26T13:08:30.003Z` for the exact recovery SHA. It was observed
+`WAITING` while GitHub validation ran and reached `SUCCESS` with image digest
+`sha256:f6ee7460320d1b279110c655a3867c44e7d337587c3f746186dd3977795dac6e`.
+The verifier passed at `2026-09-26T13:10:34.722Z`; migration began afterward
+at `13:10:35.094Z` and completed with no pending migrations at `13:10:35.225Z`.
+At `13:10:42.464Z`, both `server_started` and the first readiness request
+logged the full recovery SHA as `deploymentVersion`.
+
+Post-recovery smoke returned health 200, readiness 200, unknown API 404, and
+root 200. The 30-minute metric snapshot showed zero 5xx, HTTP p95 13 ms,
+current CPU about 0.021 vCPU, and current memory about 148 MB of 8192 MB. The
+source remained `olegkirienko/guitar-mastering` branch `main`, deployment
+trigger `37dfea95-f342-49fa-af20-08dfbb9d3607` retained
+`checkSuites: true` with one valid suite, autodeploy remained enabled and
+eligible, and a fresh IaC plan reported no changes.
+
+## Static production version-variable retirement
+
+The successful positive and recovery deployments prove Railway Git metadata
+end to end. A separate candidate removes only production
+`DEPLOYMENT_VERSION` ownership from `.railway/railway.ts`; the application
+fallback remains for earlier CLI rollback images and local/test fixtures. The
+redacted provider plan returned `0 add / 0 change / 1 destroy`; the sole
+destructive action is deletion of
+`guitar-mastering-web-production.DEPLOYMENT_VERSION`. No other resource,
+variable, or field appears. Explicit approval of that exact deletion is still
+required before apply. See
+`docs/operations/railway-deployment-version-retirement-plan.md`.
