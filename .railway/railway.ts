@@ -1,4 +1,4 @@
-import { defineRailway, preserve, project, service } from "railway/iac";
+import { defineRailway, github, preserve, project, service } from "railway/iac";
 
 // This repository owns only the existing production web service. The database,
 // volume, and PITR bucket are managed outside this named partial.
@@ -13,6 +13,10 @@ export default defineRailway((ctx) => {
   }
 
   const web = service("guitar-mastering-web-production", {
+    source: github("olegkirienko/guitar-mastering", {
+      branch: "main",
+      checkSuites: true,
+    }),
     build: {
       builder: "RAILPACK",
       buildEnvironment: "V3",

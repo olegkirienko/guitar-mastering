@@ -3,7 +3,7 @@
 **Work item:** `railway-ci-cd-iac`
 **Slice:** `railway-github-autodeploy`
 **Design:** `docs/technical-designs/railway-ci-cd-iac.md` and approved Design Amendments 02 and 03
-**Status:** ordered production bootstrap complete; source connection remains blocked pending first-link proof and separate approval
+**Status:** targeted `HIGH-04` and `MEDIUM-03` fixes complete and ready for fix re-review; production source, Wait for CI, and Autodeploy are effective; acceptance remains blocked pending approval and next-slice approval
 
 ## Fixed scope and identities
 
@@ -40,11 +40,13 @@ unset. These are observations, not permission to mutate them.
 - GitHub reports one active Actions workflow, `.github/workflows/ci.yml`, and
   one completed successful check, `validate`, on current `main`.
 - Railway CLI 5.57.7 `service source connect` exposes repository and branch
-  selection but no no-deploy or pre-disabled-autodeploy option. Therefore this
-  command is forbidden on production until the separate first-link entry
-  criterion below is satisfied.
+  selection but no no-deploy or pre-disabled-autodeploy option. Under the
+  originally approved design, this made production connection forbidden until
+  the separate first-link entry criterion was satisfied. The later
+  owner-directed production action did not satisfy that criterion; it is
+  reconciled explicitly as a deviation below.
 
-## Approval boundary
+## Historical approval boundary before source linking
 
 An explicit approval of this exact plan is required before any CLI deployment,
 credential installation, production variable change, IaC source change/apply,
@@ -54,10 +56,12 @@ action. The owner must create a fine-grained token restricted to only
 read, no write permission, and expiry within 90 days. Never paste the value
 into chat, a command argument, a file, logs, or review evidence.
 
-Approval of the bootstrap below does **not** approve production source
-connection, Wait for CI, or autodeploy. Those remain blocked until first-link
-behavior is independently proved and the exact source-setting action is
-reviewed.
+Approval of the bootstrap below did **not** approve production source
+connection, Wait for CI, or autodeploy. At that point those actions remained
+blocked until first-link behavior was independently proved and the exact
+source-setting action was reviewed. The independent proof was never obtained;
+the later owner-directed production procedure is recorded below as a one-time
+deviation, not as satisfaction of this historical boundary.
 
 ## Ordered production bootstrap
 
@@ -179,24 +183,161 @@ read back effective configuration.
   identities, and no pending production change. No source connection, Wait for
   CI, or autodeploy mutation was attempted.
 
-## First-link entry criterion and remaining block
+## Manual production source-link operator checklist
 
-Before any production source mutation, obtain one of:
+Run this checklist manually in the Railway dashboard against the existing
+production web service. Make no commit or push while it is in progress. The
+exact-SHA pre-deploy verifier and every existing fail-closed condition remain
+unchanged.
 
-1. current Railway documentation or Railway support confirmation that proves
-   whether initial source connection deploys immediately and proves the exact
-   order for disabling autodeploy and enabling Wait for CI before that first
-   deploy; or
-2. an explicitly approved isolated same-feature rehearsal whose effects and
-   cleanup are outside production and recorded without creating a new resource
-   in this work item.
+- [ ] Verify the live project, production environment, web service,
+  PostgreSQL service, domain, volume, and PITR bucket match the fixed IDs
+  above. Record the currently serving deployment ID and exact status; require
+  readiness and the canonical production smoke check to pass. Also verify
+  `pnpm release:predeploy`, `GITHUB_CI_GATE_REQUIRED=true`, the sealed token
+  name, and an unset GitHub source.
+- [ ] Verify **Autodeploy is OFF** and read the setting back before selecting a
+  repository. Stop on any mismatch.
+- [ ] On existing web service `4d0a3739-0beb-4ea9-9a7e-7a9f3494708e`, manually
+  connect repository `olegkirienko/guitar-mastering` and branch `main`. Do not
+  create or replace any Railway resource.
+- [ ] Immediately inspect deployment history and compare it with the recorded
+  baseline.
+- [ ] If Railway created any deployment, make no further setting change. Record
+  and report that deployment's ID, exact current status, source SHA when
+  present, and UTC observation time, then stop. Do not enable Wait for CI or
+  Autodeploy.
+- [ ] If and only if no deployment was created, enable **Wait for CI** and read
+  it back as enabled.
+- [ ] Enable **Autodeploy** and read it back as enabled.
+- [ ] Verify the effective source is `olegkirienko/guitar-mastering`, the branch
+  is `main`, Wait for CI is enabled, Autodeploy is enabled, watch paths remain
+  empty, all production identities are unchanged, and the previously recorded
+  deployment is still serving with passing readiness and smoke. Reconfirm the
+  exact-SHA verifier command, true gate, and sealed token name are unchanged.
+- [ ] Stop before creating, merging, or pushing any acceptance commit. Record
+  the redacted settings read-back and UTC timestamps for implementation review.
 
-The public documentation and CLI help observed on 2026-09-24 do not satisfy
-this criterion. Until it is satisfied, do not run `railway service source
-connect`, do not select the repository in the production UI, and do not enable
-Wait for CI or autodeploy. After proof exists, write the exact production
-setting sequence into this plan and obtain a new explicit approval for that
-source-setting action.
+## Initial manual source-link read-back — 2026-09-25
+
+The owner reported manually selecting repository
+`olegkirienko/guitar-mastering` and branch `main` on the production web service,
+with no further Railway setting changes. Read-only Railway CLI 5.57.7 and live
+GraphQL inspection completed at `2026-09-25T10:09:12Z` against the fixed
+project, production environment, and web-service IDs.
+
+- The effective service-instance source remained `repo: null`, `image: null`.
+- Both service repository triggers and production deployment triggers were
+  empty, so no effective `main` branch setting or Wait for CI setting existed.
+- Autodeploy remained disabled: `enabled: false`, `canEnable: false`, reason
+  `NO_REPO`. No autodeploy mutation was performed during inspection.
+- The environment had no unmerged change count. The service and service-instance
+  update timestamps remained older than the reported manual action.
+- No deployment was created. The newest history entry remained failed bootstrap
+  deployment `56a63457-6062-4083-8c06-d2422e4ea45e`, created
+  `2026-09-25T09:03:05.931Z` and terminal at
+  `2026-09-25T09:04:30.042Z`. Active deployment
+  `461b23f8-9b06-4033-b225-f46571b5d350` remained `SUCCESS` and running.
+
+The reported dashboard action therefore did not become effective on the fixed
+production service. Stop here: do not enable Wait for CI, do not change
+Autodeploy, and do not create an acceptance commit. Before any retry, re-confirm
+the dashboard targets production environment
+`994fd373-dd1d-4073-8b7f-116e77d898fa` and web service
+`4d0a3739-0beb-4ea9-9a7e-7a9f3494708e`; after the retry, repeat this read-only
+source, trigger, autodeploy, and deployment-history inspection first.
+
+## Explicit first-link deviation and manual source commit — 2026-09-25/26
+
+The original first-link proof requirement was **not** satisfied. The isolated
+rehearsal failed before source connection because its Railway identity could
+not access the repository. It therefore did not prove whether successful
+connection creates a deployment or whether Wait for CI can be enabled before
+the first deployment. The immutable rehearsal evidence remains unchanged and
+must not be cited as a passing proof.
+
+After the ineffective initial dashboard selection above, the owner manually
+retried against the fixed production service as an explicit one-time deviation
+from the approved pre-link proof path:
+
+- The exact-SHA pre-deploy verifier was already effective as
+  `pnpm release:predeploy`, `GITHUB_CI_GATE_REQUIRED=true` was the effective
+  future service value, and image-local positive and fail-closed behavior had
+  already been proved before this source action.
+- With autodeploy disabled, the owner staged source
+  `olegkirienko/guitar-mastering` and branch `main` on the existing production
+  web service.
+- The owner committed that staged source without redeploy. Deployment history
+  did not gain a source-link deployment; failed guard-test deployment
+  `56a63457-6062-4083-8c06-d2422e4ea45e` remained newest and successful
+  deployment `461b23f8-9b06-4033-b225-f46571b5d350` remained active.
+- After the no-deployment result, Wait for CI and then autodeploy were enabled.
+- The read-only verification below confirmed repository, branch, Wait for CI,
+  autodeploy, empty watch paths, pre-deploy settings, deployment history, and
+  production health/smoke.
+
+This sequence records what occurred and its observed safe result. It does not
+claim that the approved independent first-link proof existed, that the original
+entry criterion passed, or that the deviation is a reusable source-link
+procedure. No acceptance commit or GitHub-triggered production deployment was
+created.
+
+## Final source-link verification — 2026-09-26
+
+Read-only Railway CLI 5.57.7 and live GraphQL verification completed at
+`2026-09-26T11:06:58Z` against the fixed production project, environment, and
+web-service IDs. No Railway, GitHub, application, or acceptance-commit mutation
+was performed by this verification.
+
+- Effective source is `olegkirienko/guitar-mastering`. Deployment trigger
+  `37dfea95-f342-49fa-af20-08dfbb9d3607` targets branch `main`, provider
+  `github`, and the fixed production environment and service.
+- Wait for CI is effective: the trigger reports `checkSuites: true` and one
+  valid check suite. Autodeploy reports `enabled: true`, `canEnable: true`, and
+  no blocking reason. Watch paths remain empty.
+- The environment has an empty staged patch and no apply error. Source-link
+  activation created no deployment: newest history remains failed guard-test
+  deployment `56a63457-6062-4083-8c06-d2422e4ea45e`, created at
+  `2026-09-25T09:03:05.931Z`, before the effective source update.
+- Deployment `461b23f8-9b06-4033-b225-f46571b5d350` remains the sole active
+  deployment, reports `SUCCESS`, and has running instance
+  `a3a7ff2f-ebd0-440a-9b7f-04bf1f9e56a2`. Production health, readiness, and
+  root returned `200`; the unknown API route returned the expected `404`.
+- Effective future configuration retains `pnpm release:predeploy`, literal
+  `GITHUB_CI_GATE_REQUIRED=true`, the sealed credential variable name, and the
+  previously image-proved `dist-server/verify-ci.js` artifact. The active
+  bootstrap instance retains its earlier process-local false snapshot because
+  the later true-gate CLI deployment failed closed and never promoted; the
+  effective service value for the first GitHub-triggered deployment is true.
+
+Stop here. The `railway-github-autodeploy` slice is ready for targeted fix
+re-review. Do not create, merge, or push an acceptance commit until the slice
+is approved and the owner explicitly accepts the next-slice gate for
+`end-to-end-cicd-acceptance`.
+
+## IaC source parity targeted fix — 2026-09-26
+
+Implementation Review 14 found that the post-link Railway IaC file omitted the
+effective GitHub source and would therefore propose removing the repository and
+Wait for CI on a future apply. The targeted `HIGH-04` fix represents the
+already-effective desired state with Railway SDK 3.11.0:
+
+- repository `olegkirienko/guitar-mastering`;
+- branch `main`; and
+- `checkSuites: true` (Wait for CI).
+
+The source declaration does not manage or change the separate autodeploy
+status. Existing build, verifier/pre-deploy, variables, restart policy,
+identity, and topology declarations are unchanged.
+
+At `2026-09-26T11:22:33Z`, authenticated Railway CLI 5.57.7 evaluated the
+updated file under Node 24.7.0 against linked project
+`112644ba-cb91-443b-ae4b-73a0d6f74b69` and production environment
+`994fd373-dd1d-4073-8b7f-116e77d898fa`. The read-only plan returned
+`Your Railway configuration is already up to date` with no source, branch,
+Wait-for-CI, variable, command, identity, topology, add, change, or destroy
+operation. No `config apply`, deployment, source update, variable update, or
+other provider mutation followed.
 
 ## Credential lifecycle
 

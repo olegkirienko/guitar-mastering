@@ -1,7 +1,7 @@
 # Railway GitHub CI/CD and Infrastructure as Code
 
 **Work item:** `railway-ci-cd-iac` (`infrastructure`)
-**Status:** The `railway-iac-parity-foundation`, `github-main-validation`, and `deployment-metadata-and-runbook` slices are approved. The owner approved entry into `railway-github-autodeploy`, Design Amendment 02, and on 2026-09-24 the fresh Design Amendment 03 gate. Design Review 13 resolved `LOW-01`; the corrected production web service is `4d0a3739-0beb-4ea9-9a7e-7a9f3494708e`. Implementation has resumed within the reviewed bootstrap boundary. Production source connection, Wait for CI, and autodeploy remain blocked pending first-link proof and a separate explicit source-setting approval.
+**Status:** The first four slices are approved. On 2026-09-26 the owner approved entry into the final `end-to-end-cicd-acceptance` slice. Production has source `olegkirienko/guitar-mastering`, branch `main`, Wait for CI enabled, autodeploy enabled, the exact-SHA guard active, and clean IaC parity. The independent first-link proof remains explicitly unobtained; its one-time deviation record is not retroactive proof. Final implementation is limited to the reviewed positive and protected-branch negative acceptance, SHA/log/deployment correlation, static production version-variable retirement after proof, evidence capture, and runbook closure.
 
 ## Goal and boundaries
 
@@ -108,6 +108,35 @@ Make a **read-only first-link proof** a hard entry criterion. Obtain current Rai
 
 Once proof establishes a supported order, follow only that recorded sequence on the existing web service: disable autodeploy before connection if supported; connect `olegkirienko/guitar-mastering` branch `main`; keep it disabled; read back source, service/environment IDs, domain, variable references, database/PITR identities, and deployment history; enable Wait for CI; read it back; enable autodeploy; read it back. If the supported order instead permits Wait for CI before connection, enable and verify it first. Do not proceed if neither order rules out an ungated deploy. Freeze pushes during the sequence. The first automatically deployed commit must be a later controlled `main` commit with a fresh, actual `Validate` push success. Keep Railway watch paths empty.
 
+### First-link deviation and reconciliation — 2026-09-25/26
+
+The hard entry criterion above was not satisfied. The approved isolated
+rehearsal failed before connection because its Railway identity could not
+access the repository, so it did not prove successful first-link behavior,
+Wait-for-CI ordering, or zero-deployment behavior. Its immutable evidence
+remains authoritative for that failed result; this record does not reinterpret
+the rehearsal as a pass or claim that the original proof requirement was met.
+
+The owner subsequently used a manual production procedure as an explicit
+one-time deviation. On the fixed existing web service, with the exact-SHA
+pre-deploy verifier already active and its positive and fail-closed behavior
+already proved, the owner staged source `olegkirienko/guitar-mastering` branch
+`main`, then committed that staged source without redeploy. Deployment history
+showed no source-link deployment. Only after that no-deployment result were
+Wait for CI and autodeploy enabled. Post-link read-only verification confirmed
+the source and branch, `checkSuites: true`, autodeploy enabled, empty watch
+paths, the unchanged prior successful deployment, the failed guard-test
+deployment still newest, and passing health, readiness, API-boundary, and root
+smoke checks. No acceptance commit or first GitHub-triggered deployment was
+created in this slice.
+
+This is an audit reconciliation of the observed owner-directed action, not a
+retroactive design amendment or proof. The preventive invariants remain: the
+pre-deploy verifier must succeed for the exact Railway Git SHA before migration
+or promotion, Wait for CI must remain enabled, autodeploy must remain scoped to
+`main`, and the final acceptance slice must prove both positive and negative
+end-to-end behavior before completion.
+
 If a deployment unexpectedly appears at connection, immediately disable autodeploy and stop further source or IaC changes. Identify and monitor that exact deployment; if it is waiting, cancel it using a verified supported action before build/pre-deploy; if it has started, the required guard must fail before migration unless the SHA has a successful push `Validate`. If promotion occurred, restore the previously recorded migration-compatible deployment through a reviewed Railway deployment action. Confirm the prior deployment ID is serving with readiness and smoke, and inspect migration logs before considering any retry. Preserve the same web service, PostgreSQL, volume, domain, and PITR identities throughout. A surprise deployment is a failed slice requiring incident evidence and renewed review, even if smoke remains healthy.
 
 Expected state: a new `main` SHA is seen by Railway → deployment `WAITING` → all GitHub Actions check suites conclude → failed workflow means skipped deployment and old healthy release remains; successful workflows allow build; the pre-deploy verifier independently requires exact-SHA successful push validation before migration or promotion. Skipped/neutral never blocks Railway, cancelled is conditional, and two-hour timeout skips. If the verifier or effective pre-deploy command cannot enforce the invariant for the repository's actual workflow set, keep autodeploy disabled and revisit the integration design.
@@ -133,7 +162,7 @@ Implementation must update `docs/operations/production-cutover.md`, README contr
 1. **`railway-iac-parity-foundation`** — Capture live parity; generate and review IaC; perform the controlled Config as Code association handoff and reviewed apply only after zero unexpected changes; read back a clean plan for supported round-trippable fields and verify documented platform exceptions through effective runtime/read-only checks before removing `railway.json`. Keep `restartPolicyMaxRetries: 3` in IaC and verify effective `ON_FAILURE` with three retries after deployment. No GitHub source/autodeploy. The slice is implemented; Implementation Review 05 accepted its IaC/runtime result and routed only the documentation reconciliation to targeted fix and re-review. Slice 2 remains unauthorized until that re-review approves the slice and the owner accepts `next_slice_approval`.
 2. **`github-main-validation`** — Implemented: `Validate` runs on pull requests and pushes to `main`, manual dispatch is removed, ruleset `23761397` is active, and exact-SHA `main` push validation passed. Implementation Review 07 accepted the functional result and routed only `MEDIUM-02` to documentation/state fix and targeted re-review. No Railway source connection occurred; slice 3 remains unauthorized until that re-review approves and the owner accepts `next_slice_approval`.
 3. **`deployment-metadata-and-runbook`** — Approved: introduce SHA-backed logs with safe fallback; update release, IaC, and contributor documentation. Keep existing production static variable until a GitHub-triggered deployment proves metadata. No source connection.
-4. **`railway-github-autodeploy`** — In progress under approved Design Amendment 02. Implement and test the exact-SHA verifier using required authenticated access; provision the narrowly scoped GitHub read token only through a separate reviewed operator action. Perform the ordered production-image guard bootstrap and its reviewed CLI deployment/IaC/variable changes, and prove positive and negative verifier outcomes in the deployed image. Obtain first-link behavior proof *before* connecting the existing production web service. Follow only the proved safe sequence to enable Wait for CI and autodeploy; otherwise stop for design amendment. Preserve identities and record settings. No schema mutation beyond normal deployment pre-deploy.
+4. **`railway-github-autodeploy`** — Targeted fixes complete and ready for fix re-review under approved Design Amendments 02 and 03. The exact-SHA verifier, scoped credential, production-image bootstrap, effective pre-deploy guard, source `olegkirienko/guitar-mastering` branch `main`, Wait for CI, and autodeploy are present. The originally required first-link proof was not obtained; the owner-directed manual source stage/commit was a recorded one-time deviation whose safe observed outcome does not retroactively satisfy that requirement. `HIGH-04` now has exact IaC source parity and a clean read-only production plan; `MEDIUM-03` has the explicit deviation/reconciliation audit trail. Preserve identities and settings; do not create an acceptance deployment or mutate Railway before re-review.
 5. **`end-to-end-cicd-acceptance`** — Run positive and protected-branch negative acceptance; correlate exact SHA and all gate outcomes; smoke and observe production; retire static production version variable only after proven Git metadata; record evidence and close runbook gaps. Do not weaken branch rules for the negative test; unresolved production failure-path evidence blocks completion.
 
 Each slice is bounded by the repository's design review, human approval, implementation review, and next-slice/completion gates. Remote source connection, branch rules, IaC handoff/apply, token provisioning, and production acceptance require explicit reviewable plans within their slices. The owner approved entry into `railway-github-autodeploy` and approved Design Amendment 02; repository verifier implementation is authorized, while the amendment's separately reviewed operator actions remain required before credential or provider configuration changes.
