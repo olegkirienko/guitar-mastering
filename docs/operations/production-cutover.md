@@ -51,20 +51,19 @@ Amendment 05 passes review and explicit approval.
    solely for this amendment. Confirm that the temporary drill dump was removed
    and that no retained/scheduled dump is being represented as a current backup.
    Never restore over or rewire the source automatically.
-5. Correlate the release to one full Git commit SHA. Until the separately
-   reviewed GitHub source/autodeploy slice is approved and activated, deploy
-   the exact reviewed repository through the existing manual path and retain
-   `DEPLOYMENT_VERSION` as its static fallback. After activation, require the
-   actual `push`-event `Validate` run for that exact `main` SHA and follow the
-   ordered controls in the [Railway CI/CD runbook](railway-ci-cd.md). A manual
-   workflow run is never release evidence.
+5. Correlate the release to one full Git commit SHA. Require the actual
+   `push`-event `Validate` run for that exact protected `main` SHA and follow
+   the ordered controls in the [Railway CI/CD runbook](railway-ci-cd.md).
+   Railway must wait for CI and the exact-SHA pre-deploy verifier must pass
+   before migration. A manual workflow run or CLI deployment is never normal
+   release evidence.
 6. Observe Railway `SUCCESS`, correlate Railway deployment metadata with the
    structured `server_started` and `request_completed` log
    `deploymentVersion`, and run
    `pnpm smoke:production -- https://<production-origin>`. GitHub-triggered
-   deployments must log `RAILWAY_GIT_COMMIT_SHA`; current manual deployments
-   use the preserved `DEPLOYMENT_VERSION` fallback. Do not remove the fallback
-   until end-to-end acceptance proves Git metadata in production.
+   deployments must log `RAILWAY_GIT_COMMIT_SHA`. Preserve the production
+   `DEPLOYMENT_VERSION` fallback until end-to-end acceptance proves Git
+   metadata and a separate reviewed configuration change retires the variable.
 7. Inspect application logs plus HTTP, CPU, memory, network, and volume metrics.
    Any leak, unexplained restart/5xx, database failure, saturation, or failed
    migration blocks cutover.

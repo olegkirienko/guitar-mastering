@@ -6,11 +6,11 @@
 requires the strict `validate` context. GitHub Actions is validation-only: it
 does not deploy, run production migrations, or apply Railway infrastructure.
 
-The production Railway web service is still on the existing manual release
-path. This runbook does not authorize connecting its GitHub source, enabling
-Wait for CI or autodeploy, creating a verifier credential, changing production
-variables, or applying infrastructure. Those actions remain gated by the
-`railway-ci-cd-iac` workflow and their approved operator plans.
+The production Railway web service is connected to
+`olegkirienko/guitar-mastering` branch `main`, with Wait for CI and autodeploy
+enabled. Application releases now follow the protected GitHub path below.
+Provider configuration changes and Railway IaC applies remain separately
+reviewed operations; an application push does not apply `.railway/railway.ts`.
 
 The exact-SHA verifier is implemented in `server/verify-ci.ts`. When
 `GITHUB_CI_GATE_REQUIRED=true`, it requires a full Railway Git SHA and sealed
@@ -44,14 +44,15 @@ The approved target sequence is:
 2. Merge through the protected `main` branch without a CI skip directive.
 3. Require the separate `push`-event `Validate` run for the resulting full
    `main` SHA.
-4. After the later autodeploy slice is approved and activated, Railway waits
-   for CI, builds that SHA, and runs the exact-SHA verifier before migration.
+4. Railway waits for CI, builds that SHA, and runs the exact-SHA verifier before
+   migration.
 5. A successful verifier permits `pnpm db:migrate`; readiness must pass before
    promotion, followed by production smoke and observation.
 
-Until step 4 is explicitly activated, use the existing reviewed manual release
-procedure in [production-cutover.md](production-cutover.md). Do not treat this
-target sequence as evidence that GitHub source or autodeploy is active.
+The first positive and protected-branch negative production proof is governed
+by the reviewed
+[end-to-end acceptance plan](railway-end-to-end-cicd-acceptance-plan.md).
+Do not use a manual CLI deployment as a substitute for this release path.
 
 ## Commit-SHA correlation
 
@@ -60,7 +61,7 @@ For a GitHub-triggered deployment, the server prefers Railway's built-in
 `deploymentVersion` in `server_started` and `request_completed` structured
 logs. Health and readiness response bodies intentionally do not expose it.
 
-For the current manual deployment path and local/test fixtures,
+For earlier CLI-built rollback images and local/test fixtures,
 `DEPLOYMENT_VERSION` remains the required fallback. Preserve that production
 variable until a successful GitHub-triggered acceptance release proves the
 same full SHA across:

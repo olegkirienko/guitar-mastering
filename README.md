@@ -76,9 +76,11 @@ failure response are recorded in
 The approved target pre-deploy command is `pnpm release:predeploy`, which runs
 the exact-SHA GitHub Actions verifier before `pnpm db:migrate`. Production must
 use a sealed, repository-only `Actions: read` credential and never fall back to
-anonymous GitHub API access. Activation remains controlled by the reviewed
-[`docs/operations/railway-github-autodeploy-plan.md`](docs/operations/railway-github-autodeploy-plan.md);
-do not connect the production source or change gate variables ad hoc.
+anonymous GitHub API access. The production source, Wait for CI, and autodeploy
+are active. The first positive and protected-branch negative proof follows the
+reviewed
+[`docs/operations/railway-end-to-end-cicd-acceptance-plan.md`](docs/operations/railway-end-to-end-cicd-acceptance-plan.md);
+do not change source, gate variables, or branch policy ad hoc.
 The data-handling and backup-retention disclosure is in
 [`docs/operations/privacy-and-retention.md`](docs/operations/privacy-and-retention.md).
 
@@ -90,11 +92,11 @@ skip directives, direct pushes, or a manual workflow run as a substitute. Keep
 the workflow unconditional and preserve its single `validate` job unless a
 reviewed CI/CD design changes those invariants.
 
-GitHub Actions validates code but does not deploy, migrate production, or apply
-Railway IaC. Railway infrastructure changes use a separately reviewed manual
-`railway config plan` / `railway config apply` procedure. The production GitHub
-source and autodeploy path are not enabled by this repository change; follow
-the workflow state and the CI/CD runbook before any remote Railway mutation.
+GitHub Actions validates code but does not itself apply Railway IaC. A protected
+`main` push can trigger Railway only after Wait for CI; Railway then runs the
+exact-SHA verifier before its production migration. Infrastructure changes use
+a separately reviewed manual `railway config plan` / `railway config apply`
+procedure.
 
 ## Structure
 
