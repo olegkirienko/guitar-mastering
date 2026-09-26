@@ -3,7 +3,7 @@
 **Work item:** `railway-ci-cd-iac`  
 **Slice:** `end-to-end-cicd-acceptance`  
 **Plan:** `docs/operations/railway-end-to-end-cicd-acceptance-plan.md`  
-**Status:** positive acceptance passed; protected-branch negative test in progress
+**Status:** positive and protected-branch negative acceptance passed; recovery in progress
 
 ## Preflight
 
@@ -81,7 +81,50 @@ remain recorded in
 
 ## Negative and recovery evidence
 
-Pending execution. The negative fixture and marker are temporary and
-application-inert. They must be removed by the prepared recovery patch after
-the failed `main` SHA is proven `SKIPPED` without build, pre-deploy, migration,
-or promotion.
+The negative branch added only an application-inert marker and a final workflow
+step. Its failure condition was the conjunction of `push`,
+`refs/heads/main`, and marker presence. Every ordinary validation command ran
+before it.
+
+- Negative PR: `https://github.com/olegkirienko/guitar-mastering/pull/8`.
+- Negative head SHA: `54a0d01040bab00a7ac7362c48c1564e142e6f21`.
+- PR run `36243693214`, job `108408830537`, event `pull_request`, completed
+  successfully at `2026-09-26T13:01:21Z`; all ordinary steps and the fixture
+  step passed.
+- Recovery preview: draft PR 9 from exact removal commit
+  `fb7d6dd6b0c634b2151fe740cc41b3d561b15827` targeted the negative branch.
+  Its pull-request run `36243695296`, job `108408835371`, completed
+  successfully at `2026-09-26T13:01:17Z`. The preview was closed without merge
+  after proving the removal patch, then recreated from failed protected
+  `main`.
+- The unchanged ruleset was read back immediately before merge with no bypass
+  and strict `validate` still required.
+- Negative merge time: `2026-09-26T13:01:59Z`.
+- Negative merge SHA: `80852de1c51ba7fa04c8205bd0aa33f77ab95294`.
+- Push run `36243811419`, job `108409140941`, event `push`, exact negative
+  SHA, started `2026-09-26T13:02:02Z` and completed with the intended failure
+  at `2026-09-26T13:03:13Z`.
+- Run URL:
+  `https://github.com/olegkirienko/guitar-mastering/actions/runs/36243811419`.
+
+Checkout, setup, install, lint/typecheck, unit/foundation, browser, PostgreSQL,
+and production-build steps all concluded success. Only
+`Protected-branch negative acceptance fixture` concluded failure with exit 1.
+No skip directive, direct push, ruleset bypass, or branch-policy mutation was
+used.
+
+Railway created deployment `0605b749-5a7b-4bff-a18b-6bacb9a929ad` at
+`2026-09-26T13:02:01.163Z` for the exact negative SHA. It was observed
+`WAITING`, then became `SKIPPED` with provider reason
+`CI check suite failed`. Railway reported that it had no associated build; its
+metadata contained no image digest or Railpack build result, and no pre-deploy,
+migration, runtime, or promotion occurred. Positive deployment
+`17f0bf39-19bb-4340-8b05-9ac674c8f123` remained the active successful release.
+During and after the failure, production smoke again returned health 200,
+readiness 200, unknown API 404, and root 200.
+
+Recovery commit `9413149` recreates the already validated preview patch from
+the failed protected `main` and removes only the temporary fixture step and
+marker. Its final PR, distinct recovery merge SHA, successful push validation,
+Railway deployment, guard/migration ordering, SHA logs, smoke, metrics,
+identity, and IaC evidence remain pending.
