@@ -61,3 +61,11 @@ jobs:
 
       - name: Build production artifact
         run: pnpm build
+
+      - name: Protected-branch negative acceptance fixture
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" && -f .github/fixtures/railway-main-push-negative-acceptance ]]; then
+            echo "Intentional protected-main CI/CD negative acceptance failure."
+            exit 1
+          fi

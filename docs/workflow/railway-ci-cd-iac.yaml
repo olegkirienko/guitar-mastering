@@ -37,6 +37,7 @@ context:
   - docs/operations/railway-first-link-rehearsal-plan.md
   - docs/operations/railway-first-link-rehearsal-evidence-2026-09-25.md
   - docs/operations/railway-end-to-end-cicd-acceptance-plan.md
+  - docs/operations/railway-end-to-end-cicd-acceptance-evidence-2026-09-26.md
 
 completed_slices:
   - railway-iac-parity-foundation
