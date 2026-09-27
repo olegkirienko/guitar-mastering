@@ -62,19 +62,20 @@ For a GitHub-triggered deployment, the server prefers Railway's built-in
 logs. Health and readiness response bodies intentionally do not expose it.
 
 For earlier CLI-built rollback images and local/test fixtures,
-`DEPLOYMENT_VERSION` remains the required fallback. Preserve that production
-variable until a successful GitHub-triggered acceptance release proves the
-same full SHA across:
+`DEPLOYMENT_VERSION` remains the application fallback. Production retired the
+static variable after successful GitHub-triggered acceptance proved the same
+full SHA across:
 
 - the merged `main` commit;
 - the `push`-event `Validate` run and its `head_sha`;
 - Railway deployment metadata;
 - application structured logs.
 
-Missing Git metadata uses the fallback. Malformed nonempty
+Missing Git metadata uses the fallback when one is supplied. Malformed nonempty
 `RAILWAY_GIT_COMMIT_SHA` fails startup instead of recording ambiguous release
-identity. Removing the production fallback is a separately reviewed action in
-the end-to-end acceptance slice.
+identity. The reviewed production retirement and post-deletion verification are
+recorded in
+[the retirement plan](railway-deployment-version-retirement-plan.md).
 
 ## Manual Railway IaC and drift
 

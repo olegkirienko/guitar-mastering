@@ -3,7 +3,7 @@
 **Work item:** `railway-ci-cd-iac`  
 **Slice:** `end-to-end-cicd-acceptance`  
 **Prepared:** 2026-09-26  
-**Status:** pending separate review and explicit apply approval
+**Status:** applied and verified on 2026-09-27
 
 ## Proven entry condition
 
@@ -69,3 +69,34 @@ Any additional plan action, secret disclosure, unexpected deployment source,
 missing Git SHA, failed guard/migration/readiness, identity drift, or health
 failure stops the change. Do not remove the application fallback or any other
 variable.
+
+## Execution record
+
+The owner approved merge of PR 11 and the exact destructive plan. PR 11 still
+contained only reviewed commit `4b41e091c435cd3dfc01bcb285fad808be08ce33`;
+its required `validate` check passed before merge. The PR merged normally as
+`398ef93595f92196fc522edf0e9fec32c4931e83` at
+`2026-09-26T14:14:00Z`. Push `Validate` run `36247805042`, job
+`108420135186`, passed for that exact SHA. GitHub-triggered deployment
+`eddc69af-1960-42d3-a67f-fbab038ce2f3` was observed waiting for CI and then
+reached `SUCCESS`; its verifier, runtime logs, and smoke all used the exact
+merge SHA.
+
+On the merged source, Railway CLI 5.57.7 generated a saved plan with exactly
+`0 to add, 0 to change, 1 to destroy`. Its sole action was deletion of
+`guitar-mastering-web-production.DEPLOYMENT_VERSION`. The pinned plan was
+applied with no other action. A filtered variable-name read-back reports
+`DEPLOYMENT_VERSION` absent.
+
+The apply created deployment `2ad9e615-2f2e-458d-8e95-932c7ef2b6e4`, which
+reached `SUCCESS` with image digest
+`sha256:3f640c92d111af0ac607c2c35714648108ae29f93fd2780206141671ef71dcf6`.
+The exact-SHA verifier passed before migration; `server_started` and readiness
+both logged `398ef93595f92196fc522edf0e9fec32c4931e83` as
+`deploymentVersion`, proving the built-in Railway Git metadata remained
+effective after static-variable deletion. Health, readiness, unknown-API, and
+root smoke returned 200, 200, 404, and 200. The 30-minute metric snapshot had
+zero 5xx and HTTP p95 19 ms. Source remained `olegkirienko/guitar-mastering`
+on `main`; trigger `37dfea95-f342-49fa-af20-08dfbb9d3607` retained
+`checkSuites: true` with one valid suite, and autodeploy remained enabled and
+eligible. The final IaC plan was a clean no-op.

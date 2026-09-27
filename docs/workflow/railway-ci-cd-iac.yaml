@@ -4,8 +4,8 @@ work_item_id: railway-ci-cd-iac
 work_item_type: infrastructure
 title: "Railway GitHub CI/CD and Infrastructure as Code"
 
-phase: implementation
-status: in_progress
+phase: complete
+status: complete
 gate: none
 
 design:
@@ -45,24 +45,30 @@ completed_slices:
   - github-main-validation
   - deployment-metadata-and-runbook
   - railway-github-autodeploy
+  - end-to-end-cicd-acceptance
 
 current_slice:
   id: end-to-end-cicd-acceptance
   name: "End-to-end CI/CD acceptance"
-  status: in_progress
+  status: approved
 
 latest_review:
-  path: docs/reviews/railway-ci-cd-iac/fix-rereview-15-railway-github-autodeploy.md
+  path: docs/reviews/railway-ci-cd-iac/fix-rereview-17-end-to-end-cicd-acceptance.md
   verdict: APPROVED
 
 blocking_findings: []
 
 next:
-  phase: implementation
-  action: implement-end-to-end-cicd-acceptance
+  phase: complete
+  action: none
   human_approval_required: false
 
 notes:
+  - "On 2026-09-27 the owner explicitly approved the current work_item_completion gate. The final approved end-to-end-cicd-acceptance slice is recorded in completed_slices and remains visible as current_slice for auditability. The railway-ci-cd-iac work item is now in the canonical terminal state. This approval authorized only the workflow-state transition; no Railway, GitHub, application, IaC, database, deployment, variable, source, or infrastructure change was performed."
+  - "Fix Re-Review 17 verifies MEDIUM-04 as fixed and approves the final end-to-end-cicd-acceptance slice. The mutable plan now authorizes only the already reviewed and executed 0 add / 0 unrelated change / 1 approved destroy cleanup whose sole target was guitar-mastering-web-production.DEPLOYMENT_VERSION, preserves separate explicit human approval, forbids every other destroy, and records the two identical 0/0/1 plans plus healthy post-apply and final clean no-op verification. Full validation passed: pnpm lint; pnpm test (73 passed, 19 skipped); pnpm test:browser (10 passed); pnpm test:postgres (19 passed); pnpm build; workflow and closure assertions; and git diff --check. No Railway or GitHub mutation occurred. This is the final approved slice, so explicit work_item_completion approval is required before terminal completion."
+  - "The documentation-only MEDIUM-04 fix reconciles the mutable acceptance plan with the already reviewed, explicitly approved, executed, and verified DEPLOYMENT_VERSION retirement. The plan now permits exactly 0 additions, 0 unrelated changes, and 1 approved destroy whose sole target is guitar-mastering-web-production.DEPLOYMENT_VERSION; it forbids every other destroy and preserves the requirement for separate explicit human approval. It records the two semantically identical 0/0/1 plans, the exact approval, healthy post-apply verification, and final clean no-op plan. No immutable review artifact, application code, IaC behavior, workflow scope, GitHub setting, or Railway state changed. MEDIUM-04 remains active only pending targeted re-review."
+  - "Implementation Review 16 accepts the positive, protected-branch negative, recovery, exact-SHA verifier, static-variable retirement, health, and clean-IaC results but requires the documentation-only MEDIUM-04 fix. The top-level acceptance plan permits only a no-add/no-destroy retirement plan, while the separately reviewed and explicitly approved execution correctly used 0 add / 0 change / 1 destroy to delete only production DEPLOYMENT_VERSION. Reconcile that authorization record without changing application code, IaC, GitHub settings, Railway state, variables, deployments, or immutable review artifacts. This is the final approved slice; an eventual approved fix re-review must route to work_item_completion human approval."
+  - "The final end-to-end-cicd-acceptance slice is implemented and ready for implementation review. Positive, protected-branch negative, and recovery acceptance passed. Owner-approved PR 11 merged as 398ef93595f92196fc522edf0e9fec32c4931e83 after green PR validation; distinct push Validate run 36247805042/job 108420135186 passed, and Railway deployment eddc69af-1960-42d3-a67f-fbab038ce2f3 waited for CI then reached SUCCESS with exact-SHA verifier-before-migration evidence and clean smoke. A fresh saved plan remained exactly 0 add / 0 change / 1 destroy, deleting only guitar-mastering-web-production.DEPLOYMENT_VERSION, and that pinned plan was applied under explicit approval. Filtered read-back proves the variable absent. Apply-triggered deployment 2ad9e615-2f2e-458d-8e95-932c7ef2b6e4 reached SUCCESS; verifier, server_started, and readiness retained the exact Git SHA through RAILWAY_GIT_COMMIT_SHA, production smoke passed, metrics showed zero 5xx, source/main/Wait for CI/autodeploy were unchanged, and the final IaC plan is clean. No other Railway variable, source, service, database, volume, domain, Wait for CI, autodeploy, or deployment setting changed. Evidence: docs/operations/railway-end-to-end-cicd-acceptance-evidence-2026-09-26.md and docs/operations/railway-deployment-version-retirement-plan.md."
   - "On 2026-09-26 the owner explicitly approved the current next_slice_approval gate for entry into the final end-to-end-cicd-acceptance slice. The approved railway-github-autodeploy slice is archived in completed_slices and acceptance implementation is now authorized only within the authoritative positive and protected-branch negative acceptance plan. Branch protection must not be weakened, production failure-path evidence remains mandatory, and unresolved acceptance evidence blocks completion."
   - "Fix Re-Review 15 verifies HIGH-04 and MEDIUM-03 as fixed and approves railway-github-autodeploy. The Railway IaC source declaration preserves olegkirienko/guitar-mastering, main, and Wait for CI; a fresh authenticated Railway CLI 5.57.7 read-only plan under Node 24.7.0 returned 'Your Railway configuration is already up to date' with unchanged production identity and topology. The authoritative design and operator record explicitly preserve the failed first-link rehearsal and reconcile the owner-directed source stage/commit as a one-time deviation without claiming the original proof requirement was satisfied. Full validation passed: pnpm lint; pnpm test (73 passed, 19 skipped); pnpm test:browser (10 passed); pnpm test:postgres (19 passed); pnpm build; workflow-state assertions; and git diff --check. No Railway or GitHub mutation, apply, acceptance commit, push, migration, or deployment occurred. The later approved end-to-end-cicd-acceptance slice exists, so explicit next_slice_approval is required before it begins."
   - "Targeted fixes for HIGH-04 and MEDIUM-03 are complete and ready for fix re-review. .railway/railway.ts now represents the effective production source olegkirienko/guitar-mastering, branch main, and Wait for CI checkSuites true while preserving autodeploy behavior, verifier/pre-deploy settings, service identity, and topology. A fresh authenticated read-only Railway CLI 5.57.7 plan under Node 24.7.0 at 2026-09-26T11:22:33Z returned 'Your Railway configuration is already up to date' with no add, change, destroy, source, branch, Wait-for-CI, variable, command, identity, or topology mutation; no apply or other provider mutation followed. The authoritative design and operator record now explicitly reconcile that the approved first-link proof was not obtained: after the isolated rehearsal failed, the owner manually staged and committed the production source without redeploy as a one-time deviation; no source-link deployment was created; the exact-SHA predeploy verifier and previously proven fail-closed behavior were already active; and post-link read-only checks verified source, branch, Wait for CI, autodeploy, production health, and deployment history. This does not claim or retroactively satisfy the original first-link proof requirement. Node 24.7.0 validation passed: pnpm lint; pnpm test (73 passed, 19 skipped); pnpm test:browser (10 passed); pnpm test:postgres (19 passed); pnpm build; and git diff --check. HIGH-04 and MEDIUM-03 remain active only pending targeted re-review. No remote Railway mutation, acceptance commit, push, migration, or deployment occurred, and end-to-end-cicd-acceptance remains unauthorized."
