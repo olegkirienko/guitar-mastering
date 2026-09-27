@@ -1,4 +1,4 @@
-version: 2
+version: 3
 
 work_item_id: feature-<name>
 work_item_type: technical_feature
@@ -10,7 +10,6 @@ gate: none
 
 design:
   path: docs/technical-designs/feature-<name>.md
-  status: draft
 
 context:
   - AGENTS.md
@@ -20,18 +19,11 @@ completed_slices: []
 current_slice:
   id: design
   name: "Technical architecture design"
-  status: ready
 
 latest_review:
   path: null
-  verdict: null
 
 blocking_findings: []
 
 next:
-  phase: design
   action: create-or-revise-design
-  human_approval_required: false
-
-notes:
-  - "Define goals, non-goals, architecture, security, data model, deployment implications, validation, risks, and implementation slices before implementation."

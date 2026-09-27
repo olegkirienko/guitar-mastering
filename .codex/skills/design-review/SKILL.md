@@ -25,9 +25,11 @@ Additional dimensions:
 
 Use stable finding IDs.
 
+Classify each actionable finding as `design_defect`, `implementation_defect`, `documentation_defect`, or `state_sync_defect`. Include impact, evidence, correction, and verification. A reconciliation-eligible finding must also pin allowed paths, forbidden changes, acceptance checks, and post-repair destination. Ambiguity is a design defect.
+
 Verdict:
 - `APPROVED`
-- `APPROVED WITH MINOR FIXES`
+- `APPROVED WITH RECONCILIATION`
 - `CHANGES REQUIRED`
 
 Write:
@@ -35,3 +37,7 @@ Write:
 `docs/reviews/<work-item-id>/design-review-XX.md`
 
 Transition deterministically from verdict.
+
+Design defects return to `design`. Exact documentation/state repairs may route to `reconciliation`. Never edit an earlier review artifact.
+
+For `APPROVED`, enter `human_gate` with `status: awaiting_approval`, `gate: design_approval`, `next.action: approve-design`, and `next.on_approval` pinned to the first approved slice. For `APPROVED WITH RECONCILIATION`, install the exact reconciliation contract and destination. For `CHANGES REQUIRED`, enter `design` with `next.action: create-or-revise-design`.

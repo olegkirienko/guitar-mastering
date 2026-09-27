@@ -111,7 +111,7 @@ src/
 └── main.tsx
 ```
 
-# Codex Orchestration Layer v2.0
+# Codex Orchestration Layer v3
 
 The repository uses a deterministic, repo-local workflow for both lesson development and technical work.
 
@@ -125,11 +125,16 @@ Examples:
 - `refactor-progress-storage`
 - `infra-cloudflare-migration`
 
-Historical `lesson_id` workflows remain supported.
+New work items use the v3 contract. Completed v1/v2 workflows remain valid under
+their original contract and are not migrated merely for schema consistency.
+Historical `lesson_id`, `spec`, and `lesson_completion` fields remain readable.
+
+The complete state-machine, reconciliation, gate, migration, and compatibility
+contract is documented in [`docs/workflow/README.md`](docs/workflow/README.md).
 
 ## Workflow
 
-`design → design review → human gate → implementation → implementation review → fixes ↔ fix re-review → human gate → next slice or complete`
+`design → design review → human gate → implementation → implementation review → fixes / reconciliation → human gate → next slice or complete`
 
 ## Sources of truth
 
@@ -141,6 +146,12 @@ Historical `lesson_id` workflows remain supported.
 - `docs/technical-designs/` — technical architecture/design artifacts
 - `docs/reviews/` — immutable review artifacts
 - `docs/workflow/` — deterministic work-item state
+
+For an active v3 work item, its workflow YAML is the only mutable authority for
+the current `phase`, `status`, `gate`, active `blocking_findings`, and
+`next.action`. Designs own durable decisions and approved slices; reviews are
+immutable historical assessments; operator documents own bounded operations
+and evidence.
 
 ## Standard launcher
 
@@ -169,11 +180,17 @@ Approve the current human gate, then read and validate the workflow state and ex
 - targeted fixes — Terra / low
 - targeted re-review — Sol / high
 
+Reconciliation is a bounded skill-driven repair rather than a separate general
+implementation role.
+
 A fresh Codex session per workflow phase is recommended.
 
 ## Deterministic state
 
-Top-level `phase` in `docs/workflow/*.yaml` is canonical.
+Top-level `phase` in `docs/workflow/*.yaml` selects the legal transition family.
+`next.action` is the single action allowed now. Prospective destinations exist
+only as `next.on_approval` at a human gate or `next.on_success` during
+reconciliation.
 
 Contradictory state fails closed with:
 
@@ -182,12 +199,47 @@ WORKFLOW STATE INCONSISTENT
 ```
 
 The orchestrator must not guess the intended phase or silently repair the state.
+A state-only repair is legal only as a separately requested, bounded operation
+when immutable evidence or an unambiguous repository fact already determines
+the outcome.
 
 ## Reviews and fixes
 
 Review artifacts are immutable snapshots. Actionable findings use stable IDs such as `HIGH-01` or `MEDIUM-03`.
 
+V3 findings also carry one semantic class:
+
+- `design_defect`
+- `implementation_defect`
+- `documentation_defect`
+- `state_sync_defect`
+
+Design and implementation defects retain their full review loops. An exact,
+non-behavioral documentation or state repair may use reconciliation when its
+basis, allowed paths, forbidden effects, acceptance checks, and destination are
+already pinned. Ambiguous meaning or risk fails closed into review.
+
 Targeted fixes operate only on active blocking IDs. Targeted re-review verifies those findings plus direct regressions.
+
+Review verdicts are `APPROVED`, `APPROVED WITH RECONCILIATION`, or
+`CHANGES REQUIRED`.
+
+## Human gates
+
+Progression gates remain explicit:
+
+- `design_approval`
+- `next_slice_approval`
+- `work_item_completion`
+
+Risky operations use scoped gates when applicable:
+
+- `production_mutation_approval`
+- `destructive_action_approval`
+- `credential_change_approval`
+
+Approval is scoped, non-transitive, and single-use. A changed target, plan,
+destroy count, credential scope, or risk invalidates it.
 
 ## Completion
 
@@ -207,9 +259,7 @@ status: complete
 gate: none
 blocking_findings: []
 next:
-  phase: complete
   action: none
-  human_approval_required: false
 ```
 
 `complete` means the current work item is complete only.

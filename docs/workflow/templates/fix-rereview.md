@@ -1,4 +1,4 @@
-# <Lesson> — <Slice> Fix Re-Review
+# <Work Item> — <Slice> Fix Re-Review
 
 ## Review metadata
 - Review date:
@@ -9,7 +9,7 @@
 - Artifact identifier:
 
 ## Final verdict
-**APPROVED | APPROVED WITH MINOR FIXES | CHANGES REQUIRED**
+**APPROVED | APPROVED WITH RECONCILIATION | CHANGES REQUIRED**
 
 ## Finding verification
 ### <FINDING-ID>
@@ -20,7 +20,7 @@ None.
 
 ## What should remain unchanged
 ## Scope compliance
-## Accessibility / architecture assessment
+## Domain-specific / architecture assessment
 ## Validation results
 ## Slice status
 ## Recommended next action
