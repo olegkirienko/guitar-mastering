@@ -15,15 +15,19 @@ Per finding:
 
 Verdict:
 - `APPROVED`
-- `APPROVED WITH MINOR FIXES`
+- `APPROVED WITH RECONCILIATION`
 - `CHANGES REQUIRED`
 
 Create a new immutable review artifact.
 
 If changes remain → `fixes`.
 
+An exact documentation/state repair discovered by re-review may route to `reconciliation`; a behavioral defect remains in `fixes`.
+
 If approved:
 - later slice exists → `human_gate / next_slice_approval`
 - final slice → `human_gate / work_item_completion`
 
 Never invent a next slice.
+
+At a gate, set `status: awaiting_approval`, the exact gate, `next.action: approve-<gate>`, and a pinned `next.on_approval`. At reconciliation, install the exact repair contract and `next.on_success`.

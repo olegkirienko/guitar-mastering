@@ -16,4 +16,6 @@ work_item_type: lesson
 
 Do not rewrite completed historical workflows only for schema migration.
 
-New lesson workflows should prefer `work-orchestrator`.
+Validate legacy lesson state under its declared version. Migrate an active legacy lesson only at its next explicit orchestration action and only when the authoritative outcome is unambiguous.
+
+New lesson workflows use v3 through `work-orchestrator`.

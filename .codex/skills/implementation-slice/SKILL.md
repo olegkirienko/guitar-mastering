@@ -26,12 +26,11 @@ phase: implementation_review
 status: ready
 gate: none
 current_slice:
-  status: implemented
+  id: <slice-id>
+  name: <slice-name>
 blocking_findings: []
 next:
-  phase: implementation_review
   action: review-<slice-id>
-  human_approval_required: false
 ```
 
 Do not create your own review verdict.

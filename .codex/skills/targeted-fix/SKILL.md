@@ -26,11 +26,10 @@ phase: fix_rereview
 status: ready
 gate: none
 current_slice:
-  status: fixed
+  id: <slice-id>
+  name: <slice-name>
 blocking_findings:
-  - <same IDs pending verification>
+  - <same typed findings pending verification>
 next:
-  phase: fix_rereview
   action: rereview-<slice-id>
-  human_approval_required: false
 ```

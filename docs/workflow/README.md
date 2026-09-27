@@ -1,126 +1,136 @@
-# Generalized Work-Item Workflow
+# Work-Item Workflow v3
 
-The orchestration layer manages arbitrary repository work items using a finite deterministic state machine.
+The repository-local orchestration layer is a deterministic state machine for lessons, features, refactors, infrastructure, and maintenance. New work items use v3. Completed v1/v2 workflows remain valid and untouched.
 
-## Preferred schema
+## One mutable control plane
 
-```yaml
-version: 2
-work_item_id: feature-auth-persistence
-work_item_type: technical_feature
-title: "Authentication and persistence foundation"
-```
+For an active v3 work item, `docs/workflow/<work-item>.yaml` is the only mutable authority for current `phase`, `status`, `gate`, active `blocking_findings`, and `next.action`.
 
-Historical lesson workflows using `lesson_id` remain supported.
+Designs own durable decisions, risks, acceptance criteria, and approved slices. Reviews are immutable dated assessments. Operator plans own bounded operations and evidence. These artifacts must not declare the current route.
 
-## Authoritative design
+V3 removes competing mutable fields: `design.status`, `current_slice.status`, `latest_review.verdict`, `next.phase`, `next.human_approval_required`, and routing/status `notes`.
 
-Every workflow explicitly references its authoritative design/specification artifact:
+## Minimal state
 
 ```yaml
+version: 3
+work_item_id: example
+work_item_type: maintenance
+title: "Example"
+
+phase: design
+status: ready
+gate: none
+
 design:
-  path: docs/technical-designs/feature-auth-persistence.md
-  status: draft
+  path: docs/technical-designs/example.md
+context: []
+completed_slices: []
+current_slice:
+  id: design
+  name: "Work item design"
+latest_review:
+  path: null
+blocking_findings: []
+next:
+  action: create-or-revise-design
 ```
 
-Historical lesson workflows may still use `spec:`.
-
-## Optional context
-
-```yaml
-context:
-  - AGENTS.md
-  - README.md
-```
-
-Do not use transient chat history as required workflow context.
-
-## Canonical routing
-
-Top-level `phase` is canonical.
-
-Supported phases:
-
-- `design`
-- `design_review`
-- `human_gate`
-- `implementation`
-- `implementation_review`
-- `fixes`
-- `fix_rereview`
-- `complete`
-
-Normally `next.phase == phase` after a completed transition.
-
-At `human_gate`, `next.phase` names the phase unlocked only by explicit approval.
-
-## Fail closed
-
-If workflow state is contradictory:
-
-```text
-WORKFLOW STATE INCONSISTENT
-```
-
-The orchestrator stops and must not infer or silently repair the intended transition.
+`ready` permits the recorded action. `blocked` permits only a named non-mutating `supply-<blocker>` action. `awaiting_approval` is valid only at `human_gate`. `complete` is terminal. `gate` is `none` outside `human_gate`.
 
 ## State machine
 
-`design → design_review → human_gate → implementation → implementation_review → fixes ↔ fix_rereview → human_gate → next slice or complete`
+| Phase | Legal action family | Normal successful destination |
+| --- | --- | --- |
+| `design` | `create-or-revise-design` | `design_review` |
+| `design_review` | `review-design` | design approval, reconciliation, or `design` |
+| `implementation` | `implement-<slice>` | `implementation_review` or a pinned risky-action gate |
+| `implementation_review` | `review-<slice>` | slice/completion gate, fixes, reconciliation, or `design` |
+| `fixes` | `fix-<finding-ids>` | `fix_rereview` |
+| `fix_rereview` | `rereview-<slice>` | slice/completion gate, fixes, or reconciliation |
+| `reconciliation` | `reconcile-<id>` | exact `next.on_success` destination |
+| `human_gate` | `approve-<gate>` | exact `next.on_approval` destination |
+| `complete` | `none` | terminal |
 
-## Gates
+Prospective destination payloads are permitted only at `reconciliation` and `human_gate`; they do not compete with the current top-level phase.
+
+## Findings and routes
+
+Each active finding records a stable ID, semantic class, immutable source, and summary:
+
+```yaml
+blocking_findings:
+  - id: MEDIUM-01
+    class: documentation_defect
+    source: docs/reviews/example/implementation-review-02-slice.md
+    summary: "Mutable plan contradicts the accepted execution record."
+```
+
+| Class | Route |
+| --- | --- |
+| `design_defect` | design and renewed review/approval when meaning changes |
+| `implementation_defect` | targeted fixes and immutable re-review |
+| `documentation_defect` | reconciliation only with an exact repair contract; otherwise design review |
+| `state_sync_defect` | reconciliation or separately requested state repair; otherwise fail closed |
+
+Classification follows semantic effect, not extension. If any behavioral finding is active, it takes precedence and all findings stay in the full fix/re-review path.
+
+## Reconciliation
+
+Reconciliation repairs already-decided documentation or state without a redundant review:
+
+```yaml
+phase: reconciliation
+status: ready
+gate: none
+reconciliation:
+  id: RECON-01
+  kind: documentation_defect
+  basis:
+    path: docs/reviews/example/implementation-review-02-slice.md
+    finding_ids: [MEDIUM-01]
+  allowed_paths:
+    - docs/operations/example-plan.md
+    - docs/workflow/example.yaml
+  acceptance:
+    - "Replace the stale target with the reviewed target; do not change scope."
+next:
+  action: reconcile-MEDIUM-01
+  on_success:
+    phase: human_gate
+    gate: next_slice_approval
+    action: approve-next-slice
+```
+
+The repair may touch only allowed paths, close only named findings, and change no behavior, architecture, approved risk, scope, target identity, provider state, credential, database, verdict, or immutable artifact. Success installs the exact recorded destination atomically and may record a compact `last_reconciliation`.
+
+Obvious nonsemantic typo, formatting, broken-link, or evidence-wording maintenance outside an active finding may be direct. Any active-routing meaning requires reconciliation. Any ambiguity returns to review.
+
+## Human gates
 
 - `design_approval`
 - `next_slice_approval`
-- `work_item_completion`
-- legacy `lesson_completion`
+- `work_item_completion` (legacy `lesson_completion` remains readable)
+- `production_mutation_approval`
+- `destructive_action_approval`
+- `credential_change_approval`
 
-For new workflows prefer `work_item_completion`.
+Approval is scoped, single-use, and non-transitive. Operational gates pin provider, environment, targets, exact plan/operation, and rollback/stop conditions; destructive and credential gates add their specific recovery/count or owner/scope/lifecycle requirements. Any material scope change invalidates approval.
 
-## Transition table
+## Fail closed and state repair
 
-| Completed phase/gate | Outcome | New canonical phase | Gate |
-|---|---|---|---|
-| `design` | ready | `design_review` | `none` |
-| `design_review` | approved | `human_gate` | `design_approval` |
-| `design_review` | changes required | `design` | `none` |
-| `design_approval` | human approved | `implementation` | `none` |
-| `implementation` | success | `implementation_review` | `none` |
-| `implementation_review` | changes required | `fixes` | `none` |
-| `implementation_review` | approved + later slice | `human_gate` | `next_slice_approval` |
-| `implementation_review` | approved + final slice | `human_gate` | `work_item_completion` |
-| `fixes` | success | `fix_rereview` | `none` |
-| `fix_rereview` | changes required | `fixes` | `none` |
-| `fix_rereview` | approved + later slice | `human_gate` | `next_slice_approval` |
-| `fix_rereview` | approved + final slice | `human_gate` | `work_item_completion` |
-| `next_slice_approval` | human approved | `implementation` | `none` |
-| `work_item_completion` | human approved | `complete` | `none` |
-| legacy `lesson_completion` | human approved | `complete` | `none` |
+Ordinary inconsistent execution stops with exactly `WORKFLOW STATE INCONSISTENT`, lists conflicts and expected values, and makes no application/provider mutation. It never silently repairs state while executing another phase.
 
-Never invent a new slice from numbering conventions.
+A separately requested `repair-state` operation is permitted only when existing immutable evidence or an unambiguous repository fact fixes the outcome; only workflow state and explicitly named nonsemantic mutable wording may change. It cannot change behavior, architecture, risk, scope, target identity, verdict, provider state, credentials, databases, or historical evidence.
 
-## Complete-transition rule
+## Migration and compatibility
 
-A phase/gate is not complete until all relevant fields are updated together:
-
-- `phase`
-- `status`
-- `gate`
-- `current_slice`
-- `completed_slices`
-- `latest_review`
-- `blocking_findings`
-- `next.phase`
-- `next.action`
-- `next.human_approval_required`
-
-## Reviews
-
-Review artifacts live under:
-
-`docs/reviews/<work-item-id>/`
-
-They are immutable snapshots.
+- Validators select rules by declared version.
+- Completed v1/v2 workflows and immutable artifacts are never bulk migrated.
+- At an active legacy work item's next explicit action, first validate its current version. A consistent state may migrate atomically before the behavioral phase.
+- A repairable stale state uses the bounded state-repair rules.
+- Ambiguous outcome, risk, target, slice, or approval fails closed.
+- New workflows use v3; `lesson_id`, `spec`, and `lesson_completion` remain legacy-readable.
 
 ## Terminal state
 
@@ -130,21 +140,7 @@ status: complete
 gate: none
 blocking_findings: []
 next:
-  phase: complete
   action: none
-  human_approval_required: false
 ```
 
-The final approved slice remains visible in `current_slice` and is recorded in `completed_slices`.
-
-`complete` applies only to the current work item.
-
-## Backward compatibility
-
-Do not rewrite completed historical workflows merely to migrate:
-
-- `lesson_id` → `work_item_id`
-- `spec` → `design`
-- `lesson_completion` → `work_item_completion`
-
-New workflows should use v2 names.
+The final approved slice stays in `current_slice` and appears in `completed_slices`.

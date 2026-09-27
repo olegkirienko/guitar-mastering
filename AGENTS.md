@@ -82,7 +82,7 @@ Each workflow state must explicitly reference its authoritative design/specifica
 
 ### Generic workflow
 
-`design → design review → human gate → implementation → implementation review → targeted fixes → targeted re-review → human gate → next slice or complete`
+`design → design review → human gate → implementation → implementation review → targeted fixes / reconciliation → human gate → next slice or complete`
 
 Do not skip a blocking review gate.
 
@@ -111,6 +111,15 @@ Completed review files are immutable snapshots. Never rewrite a previous review 
 
 Every actionable finding must receive a stable identifier such as `CRITICAL-01`, `HIGH-01`, `MEDIUM-01`, or `LOW-01`.
 
+Every v3 finding must also be classified as one of:
+
+- `design_defect`
+- `implementation_defect`
+- `documentation_defect`
+- `state_sync_defect`
+
+Classification follows semantic effect, not file type. Ambiguous documentation or state findings fail closed into design or implementation review.
+
 Fix tasks must reference active finding IDs and remain limited to those findings.
 
 ### Scope discipline
@@ -119,6 +128,7 @@ Fix tasks must reference active finding IDs and remain limited to those findings
 - Implementation agents must implement only the approved slice.
 - Fix agents must not expand scope beyond selected finding IDs.
 - Re-review agents must not reopen resolved findings unless the latest changes introduced a direct regression.
+- Reconciliation agents may make only the exact non-behavioral repair authorized by workflow state.
 - Avoid speculative abstractions and unrelated refactors.
 - Do not implement future slices merely because doing so would make the current change easier.
 
@@ -135,6 +145,9 @@ Supported gates:
 - `design_approval`
 - `next_slice_approval`
 - `work_item_completion`
+- `production_mutation_approval`
+- `destructive_action_approval`
+- `credential_change_approval`
 - legacy `lesson_completion`
 
 For new workflows prefer `work_item_completion`.
@@ -149,12 +162,30 @@ Use the Node version specified by the project environment / `.nvmrc`.
 
 `docs/workflow/*.yaml` is a deterministic control-plane contract.
 
-### Canonical routing
+### V3 source of truth
 
-- Top-level `phase` is canonical.
-- Normally `next.phase` must match `phase` after a completed transition.
-- At `phase: human_gate`, `next.phase` names the phase that becomes legal only after explicit approval.
-- `next.action` describes the concrete action for that phase.
+For active v3 work items, the workflow YAML is the only mutable authority for:
+
+- `phase`
+- `status`
+- `gate`
+- active `blocking_findings`
+- `next.action`
+
+Designs own durable decisions and approved slices. Reviews are immutable historical assessments. Operator plans own bounded operations and evidence. None of those artifacts may claim the current route.
+
+V3 deliberately omits duplicate mutable fields: `design.status`, `current_slice.status`, `latest_review.verdict`, `next.phase`, `next.human_approval_required`, and routing/status `notes`.
+
+Top-level `phase` selects the legal transition family. `next.action` is the only action allowed now. Prospective destinations are legal only as `next.on_approval` at `human_gate` and `next.on_success` at `reconciliation`.
+
+The status vocabulary is:
+
+- `ready` for an executable active phase;
+- `blocked` for a named missing input, with a non-mutating `supply-<blocker>` action;
+- `awaiting_approval` for `human_gate` only;
+- `complete` for `complete` only.
+
+`gate` must be `none` outside `human_gate`.
 
 Never infer routing from contradictory workflow fields.
 
@@ -171,7 +202,7 @@ If inconsistent:
 5. do not modify application code;
 6. do not silently repair state as part of another phase.
 
-A state-only repair may be performed only when explicitly requested.
+A state-only repair may be performed only when explicitly requested and an immutable review, explicit approval, approved design, or unambiguous repository fact already determines the outcome. It must change no behavior, architecture, accepted risk, slice scope, target identity, review verdict, provider state, credentials, database, or historical evidence. Record the bounded repair as `last_reconciliation`; otherwise fail closed.
 
 ### Complete transitions
 
@@ -184,11 +215,10 @@ Update all relevant fields together, including when applicable:
 - `gate`
 - `current_slice`
 - `completed_slices`
-- `latest_review`
+- `latest_review.path`
 - `blocking_findings`
-- `next.phase`
 - `next.action`
-- `next.human_approval_required`
+- `next.on_approval` or `next.on_success`
 
 Never leave `phase` pointing at a phase that has already completed.
 
@@ -216,9 +246,7 @@ gate: none
 blocking_findings: []
 
 next:
-  phase: complete
   action: none
-  human_approval_required: false
 ```
 
 The final approved slice must be recorded in `completed_slices` and remain visible in `current_slice` for auditability.
@@ -227,7 +255,7 @@ The final approved slice must be recorded in `completed_slices` and remain visib
 
 ### Repo-local Codex skills
 
-Primary v2 skills:
+Primary v3 skills:
 
 - `work-orchestrator`
 - `work-design`
@@ -236,6 +264,9 @@ Primary v2 skills:
 - `implementation-review`
 - `targeted-fix`
 - `targeted-rereview`
+- `reconciliation`
+
+New workflows use v3. Active v1/v2 workflows are validated under their declared version and migrate only at the next explicitly requested orchestration action. Completed historical workflows and immutable artifacts remain unchanged and valid under their original contract.
 
 Compatibility:
 

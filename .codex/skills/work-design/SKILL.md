@@ -13,6 +13,8 @@ Read:
 
 Use `work_item_type` only to select relevant concerns; explicit requirements remain authoritative.
 
+Designs own durable decisions, constraints, acceptance criteria, risks, and approved slices. They must not claim the current workflow phase, gate, active finding, or next authorized action.
+
 ## lesson
 
 Cover pedagogy, discovery sequence, terminology, accessibility, lesson-state boundaries, mobile behavior, and implementation slices.
@@ -54,7 +56,5 @@ phase: design_review
 status: ready
 gate: none
 next:
-  phase: design_review
   action: review-design
-  human_approval_required: false
 ```

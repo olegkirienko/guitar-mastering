@@ -1,4 +1,4 @@
-# <Lesson> — <Slice> Implementation Review
+# <Work Item> — <Slice> Implementation Review
 
 ## Review metadata
 - Review date:
@@ -9,9 +9,15 @@
 - Artifact identifier:
 
 ## Final verdict
-**APPROVED | APPROVED WITH MINOR FIXES | CHANGES REQUIRED**
+**APPROVED | APPROVED WITH RECONCILIATION | CHANGES REQUIRED**
 
 ## Findings
+For each finding record: stable ID, severity, semantic class, impact, evidence,
+required correction, and verification. For reconciliation also record exact
+allowed paths, forbidden changes, acceptance checks, and post-repair destination.
+Class must be `design_defect`, `implementation_defect`, `documentation_defect`,
+or `state_sync_defect`.
+
 ### Critical
 None.
 ### High
@@ -23,7 +29,7 @@ None.
 
 ## What is good and should remain unchanged
 ## Scope compliance
-## Accessibility assessment
+## Domain-specific assessment
 ## Architecture assessment
 ## Validation results
 ## Recommended next action
