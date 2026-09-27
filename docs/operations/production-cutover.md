@@ -61,9 +61,10 @@ Amendment 05 passes review and explicit approval.
    structured `server_started` and `request_completed` log
    `deploymentVersion`, and run
    `pnpm smoke:production -- https://<production-origin>`. GitHub-triggered
-   deployments must log `RAILWAY_GIT_COMMIT_SHA`. Preserve the production
-   `DEPLOYMENT_VERSION` fallback until end-to-end acceptance proves Git
-   metadata and a separate reviewed configuration change retires the variable.
+   deployments must log `RAILWAY_GIT_COMMIT_SHA`. Production retired the
+   static `DEPLOYMENT_VERSION` variable only after end-to-end acceptance and a
+   separately reviewed exact-plan apply proved Git metadata remained effective;
+   preserve the application fallback for compatible rollback images and tests.
 7. Inspect application logs plus HTTP, CPU, memory, network, and volume metrics.
    Any leak, unexplained restart/5xx, database failure, saturation, or failed
    migration blocks cutover.

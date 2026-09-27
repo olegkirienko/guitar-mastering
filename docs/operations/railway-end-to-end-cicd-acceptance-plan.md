@@ -76,9 +76,26 @@ health drift is a stop condition.
 6. Only after the full-SHA proof, prepare a separate reviewed configuration
    change to retire the production `DEPLOYMENT_VERSION` variable. Do not remove
    the application fallback needed by CLI rollback images and local/test
-   fixtures. Apply only an exact reviewed no-add/no-destroy plan, read back the
-   variable-name set without values, and verify no unplanned deployment or
-   health change.
+   fixtures. The final acceptance cleanup permits exactly `0 additions`,
+   `0 unrelated changes`, and `1 approved destroy`. The sole permitted destroy
+   target is
+   `guitar-mastering-web-production.DEPLOYMENT_VERSION`; no other destroy is
+   allowed. Apply only after separate explicit human approval of that exact
+   destructive action, read back the variable-name set without values, and
+   verify no unplanned deployment or health change.
+
+### Completed narrow destructive exception
+
+This wording reconciles the plan with the narrow destructive exception that
+was already separately reviewed, explicitly approved, executed, and verified;
+it does not authorize an arbitrary or future destroy. The candidate plan and
+the fresh saved plan generated from merged `main` were semantically identical:
+`0 add / 0 change / 1 destroy`, with the sole action deleting
+`guitar-mastering-web-production.DEPLOYMENT_VERSION`. The owner explicitly
+approved that exact deletion before the pinned plan was applied. Post-apply
+verification found the variable absent, production healthy, and the final IaC
+plan a clean no-op. The immutable execution evidence and detailed operator
+record retain the deployment, smoke, metric, and exact-SHA verification.
 
 ## Protected-branch negative test and prepared recovery
 

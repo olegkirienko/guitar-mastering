@@ -3,7 +3,7 @@
 **Work item:** `railway-ci-cd-iac`  
 **Slice:** `end-to-end-cicd-acceptance`  
 **Plan:** `docs/operations/railway-end-to-end-cicd-acceptance-plan.md`  
-**Status:** positive, protected-branch negative, and recovery acceptance passed; static version-variable retirement pending separate approval
+**Status:** acceptance and static version-variable retirement passed; ready for implementation review
 
 ## Preflight
 
@@ -155,15 +155,49 @@ trigger `37dfea95-f342-49fa-af20-08dfbb9d3607` retained
 `checkSuites: true` with one valid suite, autodeploy remained enabled and
 eligible, and a fresh IaC plan reported no changes.
 
-## Static production version-variable retirement
+## Static production version-variable retirement — passed
 
-The successful positive and recovery deployments prove Railway Git metadata
-end to end. A separate candidate removes only production
-`DEPLOYMENT_VERSION` ownership from `.railway/railway.ts`; the application
-fallback remains for earlier CLI rollback images and local/test fixtures. The
-redacted provider plan returned `0 add / 0 change / 1 destroy`; the sole
-destructive action is deletion of
-`guitar-mastering-web-production.DEPLOYMENT_VERSION`. No other resource,
-variable, or field appears. Explicit approval of that exact deletion is still
-required before apply. See
-`docs/operations/railway-deployment-version-retirement-plan.md`.
+The owner explicitly approved merge of draft PR 11 and the exact Railway plan
+with `0 add / 0 change / 1 destroy`, limited to deleting
+`guitar-mastering-web-production.DEPLOYMENT_VERSION`. Immediately before
+merge, PR 11 remained at reviewed head
+`4b41e091c435cd3dfc01bcb285fad808be08ce33`, contained only the four reviewed
+retirement artifacts, was mergeable, and had its required PR `validate` check
+green (run `36244525376`, job `108411121049`). A fresh redacted plan contained
+only the authorized deletion.
+
+PR 11 merged normally at `2026-09-26T14:14:00Z` as
+`398ef93595f92196fc522edf0e9fec32c4931e83`. Its distinct push `Validate` run
+`36247805042`, job `108420135186`, passed every required step for that exact
+SHA. Railway deployment `eddc69af-1960-42d3-a67f-fbab038ce2f3` was observed
+`WAITING` for CI and reached `SUCCESS` with image digest
+`sha256:0b0141d5b42126691f564940bb26c45743fb69f0d7f282d3e80066f01b5f7ebd`.
+The verifier passed before migration; `server_started` and readiness logged the
+same full SHA. Pre-apply production smoke passed.
+
+On merged `main`, a saved Railway CLI 5.57.7 plan again reported exactly
+`0 to add, 0 to change, 1 to destroy` and only the approved variable deletion.
+The pinned plan was applied on 2026-09-27. A filtered variable-name read-back
+reported `DEPLOYMENT_VERSION_present: false`; no value was printed.
+
+The apply created deployment `2ad9e615-2f2e-458d-8e95-932c7ef2b6e4` for the
+same Git SHA. It reached `SUCCESS` with image digest
+`sha256:3f640c92d111af0ac607c2c35714648108ae29f93fd2780206141671ef71dcf6`.
+At `2026-09-27T08:40:15.338Z` the verifier passed for run `36247805042` and
+job `108420135186`; migration followed and had nothing pending. At
+`08:40:31.999Z`, `server_started` logged full `deploymentVersion`
+`398ef93595f92196fc522edf0e9fec32c4931e83`, and readiness logged the same
+value, proving `RAILWAY_GIT_COMMIT_SHA` remained effective without the static
+variable.
+
+Post-apply smoke returned health 200, readiness 200, unknown API 404, and root
+200. The 30-minute metrics snapshot recorded zero 5xx, HTTP p95 19 ms, current
+CPU 0 vCPU, and current memory about 149 MB of 8192 MB. Source remained
+`olegkirienko/guitar-mastering` on `main`; deployment trigger
+`37dfea95-f342-49fa-af20-08dfbb9d3607` retained `checkSuites: true` and one
+valid suite; autodeploy remained enabled and eligible. The final Railway IaC
+plan reported the configuration already up to date. No other Railway variable,
+source, service, database, volume, domain, Wait for CI, autodeploy, or
+deployment setting was changed. The application fallback remains intact for
+earlier CLI rollback images and local/test fixtures. Detailed operator evidence
+is in `docs/operations/railway-deployment-version-retirement-plan.md`.
