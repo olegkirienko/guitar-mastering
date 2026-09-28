@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: implementation_review
+phase: design
 status: ready
 gate: none
 
@@ -37,7 +37,7 @@ current_slice:
   name: "Require workflow-contract validation in GitHub CI"
 
 latest_review:
-  path: docs/reviews/ci-workflow-contract-validation/design-review-01.md
+  path: docs/reviews/ci-workflow-contract-validation/implementation-review-01-ci-required-workflow-validation.md
 
 validation:
   result: passed
@@ -55,7 +55,11 @@ validation:
   postgres_tests: "19 passed"
   environment_note: "Initial sandboxed pnpm test failed because localhost bind returned EPERM; the unrestricted rerun passed without code changes."
 
-blocking_findings: []
+blocking_findings:
+  - id: HIGH-01
+    class: design_defect
+    source: docs/reviews/ci-workflow-contract-validation/implementation-review-01-ci-required-workflow-validation.md
+    summary: "The CI command does not discover or validate the repository's active workflow states."
 
 next:
-  action: review-ci-required-workflow-validation
+  action: create-or-revise-design
