@@ -1,0 +1,45 @@
+version: 3.1
+
+work_item_id: ci-workflow-contract-validation
+work_item_type: infrastructure
+title: "CI Workflow Contract Validation"
+
+phase: work_item_init
+status: ready
+gate: none
+
+git:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/ci-workflow-contract-validation
+  lifecycle_generation: 510922a8-9930-43b8-8abc-09d94523828c
+  lifecycle_anchor_sha: null
+  pr_number: null
+  head_sha: null
+  merged_sha: null
+
+delivery:
+  evidence_path: null
+
+design:
+  path: docs/technical-designs/ci-workflow-contract-validation.md
+
+context:
+  - AGENTS.md
+  - .github/workflows/ci.yml
+  - package.json
+  - scripts/validate-workflow-contract.mjs
+  - docs/workflow/README.md
+
+completed_slices: []
+
+current_slice:
+  id: design
+  name: "Work item design"
+
+latest_review:
+  path: null
+
+blocking_findings: []
+
+next:
+  action: initialize-work-item
