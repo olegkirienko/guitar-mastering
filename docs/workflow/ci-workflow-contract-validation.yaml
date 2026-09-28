@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: implementation
+phase: implementation_review
 status: ready
 gate: none
 
@@ -42,6 +42,7 @@ latest_review:
 validation:
   result: passed
   node_version: 24.7.0
+  repository_workflows: "8 verified"
   commands:
     - "pnpm validate:workflow"
     - "pnpm lint"
@@ -53,9 +54,8 @@ validation:
   unit_tests: "73 passed, 19 skipped"
   browser_tests: "10 passed"
   postgres_tests: "19 passed"
-  environment_note: "Initial sandboxed pnpm test failed because localhost bind returned EPERM; the unrestricted rerun passed without code changes."
 
 blocking_findings: []
 
 next:
-  action: implement-ci-required-workflow-validation
+  action: review-ci-required-workflow-validation
