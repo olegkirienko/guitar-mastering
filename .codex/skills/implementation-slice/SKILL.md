@@ -15,6 +15,12 @@ Read:
 
 Implement only the current slice.
 
+For v3.1, operate only from the resolved canonical work branch after its unique
+annotated lifecycle registration, bootstrap anchor, workflow claims, and
+ancestry agree. Meaningful checkpoints update the single Draft PR; never create
+a routine second PR or push directly to `main`. Reject missing/ambiguous
+identity and terminal refs.
+
 Do not implement future slices, speculative abstractions, or unrelated cleanup.
 
 Run repository validation required by the design and AGENTS.md.

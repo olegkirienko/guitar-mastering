@@ -144,6 +144,7 @@ Supported gates:
 
 - `design_approval`
 - `next_slice_approval`
+- `merge_approval`
 - `work_item_completion`
 - `production_mutation_approval`
 - `destructive_action_approval`
@@ -162,7 +163,7 @@ Use the Node version specified by the project environment / `.nvmrc`.
 
 `docs/workflow/*.yaml` is a deterministic control-plane contract.
 
-### V3 source of truth
+### V3 / v3.1 source of truth
 
 For active v3 work items, the workflow YAML is the only mutable authority for:
 
@@ -188,6 +189,25 @@ The status vocabulary is:
 `gate` must be `none` outside `human_gate`.
 
 Never infer routing from contradictory workflow fields.
+
+V3.1 adds the Git/GitHub delivery lifecycle. For a Git-managed v3.1 work item,
+`work/<work-item-id>` is the sole executable control-plane branch from
+initialization through pushed terminal completion. Resolve the workflow from
+`refs/remotes/origin/work/<work-item-id>` and its unique annotated lifecycle
+registration, then bind repository, work-item ID, branch, lifecycle generation,
+bootstrap anchor, and ancestry before dispatch. Never fall back to `main`, the
+current checkout, another ref, or a stale workflow snapshot.
+
+Fresh initialization is a separate path from resume: it starts from clean,
+synchronized `main`, requires the branch and every authoritative same-ID claim
+to be absent, generates a fresh lifecycle identity, and creates the bootstrap
+commit and annotated registration. It does not require an existing branch or
+generation. Resume requires both the remote branch and exactly one matching
+registration; absence or mismatch fails closed and cannot fall back to
+initialization. A retained terminal work branch is immutable, non-executable
+history. A non-terminal work branch must not be deleted; deletion becomes
+eligible only after the exact terminal state is committed and visible on the
+remote canonical branch.
 
 ### Fail closed
 
@@ -222,13 +242,38 @@ Update all relevant fields together, including when applicable:
 
 Never leave `phase` pointing at a phase that has already completed.
 
+### V3.1 delivery transitions
+
+The normal v3.1 route is:
+
+`work_item_init → design → design_review → design_approval → implementation ↔ review/fixes → merge_approval → delivery_verification → work_item_completion → complete`
+
+Use one early Draft PR for the work item. Do not routinely push directly to
+`main`. The final approved slice routes to a scoped `merge_approval`, not to
+completion. Merge approval pins the canonical branch, lifecycle generation,
+PR, `main` target, exact full head SHA, and successful validation run.
+
+After protected merge, record the exact resulting full `main` SHA as delivery
+truth. `delivery_verification` must correlate that SHA across GitHub push CI,
+Railway deployment metadata, the pre-deploy verifier, migration,
+startup/readiness, and production smoke. Only successful immutable delivery
+evidence may route to `work_item_completion`.
+
+Provider outages, flaky CI, and exact documentation/state mismatches use the
+smallest retry or reconciliation route that preserves scope. Evidence of an
+actual design or implementation defect returns to its full reviewed loop.
+
 ### Final-slice rule
 
 Before `next_slice_approval`, prove that another approved implementation slice exists in the authoritative design/specification.
 
 If another slice exists, use `next_slice_approval`.
 
-If the current slice is final, use `work_item_completion`.
+If the current slice is final under v3, use `work_item_completion`.
+
+If the current slice is final under v3.1, use `merge_approval`; successful
+delivery verification is the only route from that merge to
+`work_item_completion`.
 
 Existing historical lesson workflows may use `lesson_completion`.
 
@@ -255,7 +300,7 @@ The final approved slice must be recorded in `completed_slices` and remain visib
 
 ### Repo-local Codex skills
 
-Primary v3 skills:
+Primary v3 / v3.1 skills:
 
 - `work-orchestrator`
 - `work-design`
@@ -265,8 +310,12 @@ Primary v3 skills:
 - `targeted-fix`
 - `targeted-rereview`
 - `reconciliation`
+- `delivery-verification`
 
-New workflows use v3. Active v1/v2 workflows are validated under their declared version and migrate only at the next explicitly requested orchestration action. Completed historical workflows and immutable artifacts remain unchanged and valid under their original contract.
+New workflows use v3.1. Active v1/v2/v3 workflows are validated under their
+declared version and migrate only through an explicit compatible action.
+Completed historical workflows and immutable artifacts remain unchanged and
+valid under their original contract.
 
 Compatibility:
 

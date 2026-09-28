@@ -13,6 +13,8 @@ Preflight must prove:
 - the workflow records one reconciliation ID, exact basis and finding IDs, allowed paths, acceptance checks, and `next.on_success`;
 - the repair introduces no decision and changes no behavior, architecture, accepted risk, scope, target identity, review verdict, provider state, credential, database, or immutable artifact;
 - no design or implementation defect is active.
+- for v3.1 Git recovery, exact repository/ref/generation/ancestry evidence is
+  pinned and no fallback to `main` or another ref is permitted.
 
 If any condition is uncertain, stop and promote to design or implementation review. Do not guess.
 

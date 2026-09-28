@@ -104,6 +104,8 @@ function parseWorkflow(source) {
   if (onApproval) state.next.on_approval = onApproval;
   if (onSuccess) state.next.on_success = onSuccess;
   if (/^gate_scope:/m.test(source)) state.gate_scope = sectionMap(source, "gate_scope");
+  if (/^git:/m.test(source)) state.git = sectionMap(source, "git");
+  if (/^delivery:/m.test(source)) state.delivery = sectionMap(source, "delivery");
   if (/^reconciliation:/m.test(source)) {
     const reconciliationBody = section(source, "reconciliation").body;
     state.reconciliation = Object.fromEntries(
@@ -153,6 +155,23 @@ function renderWorkflow(state) {
     "",
   ];
 
+  if (String(state.version) === "3.1") {
+    lines.push(
+      "git:",
+      `  repository: ${state.git.repository}`,
+      `  branch: ${state.git.branch}`,
+      `  lifecycle_generation: ${state.git.lifecycle_generation}`,
+      `  lifecycle_anchor_sha: ${value(state.git.lifecycle_anchor_sha)}`,
+      `  pr_number: ${value(state.git.pr_number)}`,
+      `  head_sha: ${value(state.git.head_sha)}`,
+      `  merged_sha: ${value(state.git.merged_sha)}`,
+      "",
+      "delivery:",
+      `  evidence_path: ${value(state.delivery.evidence_path)}`,
+      "",
+    );
+  }
+
   if (state.blocking_findings.length) {
     lines.push("blocking_findings:");
     for (const finding of state.blocking_findings) {
@@ -192,6 +211,7 @@ function renderWorkflow(state) {
 }
 
 const actionPatterns = {
+  work_item_init: /^initialize-work-item$/,
   design: /^create-or-revise-design$/,
   design_review: /^review-design$/,
   implementation: /^implement-.+$/,
@@ -199,6 +219,7 @@ const actionPatterns = {
   fixes: /^fix-.+$/,
   fix_rereview: /^rereview-.+$/,
   reconciliation: /^reconcile-.+$/,
+  delivery_verification: /^(verify-delivery|retry-delivery-.+)$/,
   human_gate: /^approve-.+$/,
   complete: /^none$/,
 };
@@ -217,6 +238,7 @@ const gateActions = {
   production_mutation_approval: "approve-production-mutation",
   destructive_action_approval: "approve-destructive-action",
   credential_change_approval: "approve-credential-change",
+  merge_approval: "approve-merge",
 };
 
 const findingClasses = new Set([
@@ -227,6 +249,21 @@ const findingClasses = new Set([
 ]);
 
 function validateGateScope(gate, scope) {
+  if (gate === "merge_approval") {
+    assert.match(scope.branch, /^work\/.+$/);
+    assert.match(scope.lifecycle_generation, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    assert.ok(Number.isInteger(scope.pr_number) && scope.pr_number > 0);
+    assert.equal(scope.target_branch, "main");
+    assert.match(scope.head_sha, /^[0-9a-f]{40}$/);
+    assert.ok(scope.validation_run_id);
+    assert.equal(scope.required_checks_passed, true);
+    assert.equal(scope.clean_tree, true);
+    assert.equal(scope.branch_retained, true);
+    assert.equal(scope.auto_delete_disabled, true);
+    assert.equal(scope.cleanup_deletion_blocked, true);
+    assert.equal(scope.diff_scope_verified, true);
+    assert.equal(scope.unresolved_findings, "none");
+  }
   if (gate === "production_mutation_approval" || gate === "destructive_action_approval") {
     assert.ok(scope.provider);
     assert.ok(scope.environment_id);
@@ -247,8 +284,27 @@ function validateGateScope(gate, scope) {
   }
 }
 
+function validateGitIdentity(state) {
+  assert.ok(state.git);
+  assert.match(state.git.repository, /^github\.com\/[a-z0-9_.-]+\/[a-z0-9_.-]+$/i);
+  assert.equal(state.git.branch, `work/${state.work_item_id}`);
+  assert.match(state.git.lifecycle_generation, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  assert.ok(state.git.lifecycle_anchor_sha === null || /^[0-9a-f]{40}$/.test(state.git.lifecycle_anchor_sha));
+  assert.ok(state.git.pr_number === null || (Number.isInteger(state.git.pr_number) && state.git.pr_number > 0));
+  for (const name of ["head_sha", "merged_sha"]) {
+    assert.ok(state.git[name] === null || /^[0-9a-f]{40}$/.test(state.git[name]));
+  }
+  assert.ok(state.delivery && Object.hasOwn(state.delivery, "evidence_path"));
+  assert.ok(state.delivery.evidence_path === null || /^docs\/delivery-evidence\/.+\/delivery-\d+\.md$/.test(state.delivery.evidence_path));
+  for (const duplicatedRoute of ["phase", "status", "gate", "blocking_findings", "next"]) {
+    assert.equal(duplicatedRoute in state.git, false);
+    assert.equal(duplicatedRoute in state.delivery, false);
+  }
+}
+
 function validateState(state) {
-  assert.equal(state.version, 3);
+  const isV31 = String(state.version) === "3.1";
+  assert.ok(state.version === 3 || isV31);
   assert.ok(state.work_item_id);
   assert.ok(state.design?.path);
   assert.equal("status" in state.design, false);
@@ -263,6 +319,13 @@ function validateState(state) {
   assert.equal("notes" in state, false);
   assert.ok(actionPatterns[state.phase]);
   assert.ok(Object.hasOwn(gateActions, state.gate) || state.gate === "none");
+  if (isV31) validateGitIdentity(state);
+  else {
+    assert.equal("git" in state, false);
+    assert.equal("delivery" in state, false);
+    assert.equal(["work_item_init", "delivery_verification"].includes(state.phase), false);
+    assert.notEqual(state.gate, "merge_approval");
+  }
 
   const findingIds = new Set();
   for (const finding of state.blocking_findings) {
@@ -287,6 +350,19 @@ function validateState(state) {
     if (state.gate === "work_item_completion" || state.gate === "lesson_completion") {
       assert.equal(state.next.on_approval.phase, "complete");
       assert.equal(state.next.on_approval.action, "none");
+      if (isV31) {
+        assert.ok(state.git.merged_sha);
+        assert.ok(state.delivery.evidence_path);
+        assert.equal(state.gate_scope?.merged_sha, state.git.merged_sha);
+        assert.equal(state.gate_scope?.evidence_path, state.delivery.evidence_path);
+      }
+    } else if (state.gate === "merge_approval") {
+      assert.equal(state.next.on_approval.phase, "delivery_verification");
+      assert.equal(state.next.on_approval.action, "verify-delivery");
+      assert.equal(state.gate_scope.branch, state.git.branch);
+      assert.equal(state.gate_scope.lifecycle_generation, state.git.lifecycle_generation);
+      assert.equal(state.gate_scope.pr_number, state.git.pr_number);
+      assert.equal(state.gate_scope.head_sha, state.git.head_sha);
     } else {
       assert.equal(state.next.on_approval.phase, "implementation");
       assert.match(state.next.on_approval.action, /^(implement|resume)-.+$/);
@@ -321,7 +397,7 @@ function validateState(state) {
   if (state.blocking_findings.length === 0) {
     assert.equal(["fixes", "fix_rereview", "reconciliation"].includes(state.phase), false);
   } else if (route === "design") {
-    assert.equal(state.phase, "design");
+    assert.ok(state.phase === "design" || state.phase === "design_review");
   } else if (route === "fixes") {
     assert.ok(state.phase === "fixes" || state.phase === "fix_rereview");
   } else {
@@ -331,11 +407,30 @@ function validateState(state) {
   if (state.phase === "human_gate" || state.phase === "complete") {
     assert.deepEqual(state.blocking_findings, []);
   }
-  if (operationalGates.has(state.gate)) {
+  if (operationalGates.has(state.gate) || state.gate === "merge_approval") {
     assert.ok(state.gate_scope);
     validateGateScope(state.gate, state.gate_scope);
+  } else if (isV31 && state.gate === "work_item_completion") {
+    assert.ok(state.gate_scope);
   } else {
     assert.equal("gate_scope" in state, false);
+  }
+
+  if (isV31) {
+    if (state.phase === "work_item_init") {
+      assert.equal(state.git.lifecycle_anchor_sha, null);
+      assert.equal(state.git.pr_number, null);
+      assert.equal(state.git.head_sha, null);
+      assert.equal(state.git.merged_sha, null);
+      assert.equal(state.delivery.evidence_path, null);
+    } else {
+      assert.match(state.git.lifecycle_anchor_sha, /^[0-9a-f]{40}$/);
+    }
+    const afterMerge = state.phase === "delivery_verification"
+      || (state.phase === "human_gate" && state.gate === "work_item_completion")
+      || state.phase === "complete";
+    if (afterMerge) assert.ok(state.git.merged_sha);
+    if (state.phase === "complete") assert.ok(state.delivery.evidence_path);
   }
 }
 
@@ -352,11 +447,37 @@ const base = {
   blocking_findings: [],
 };
 
+const shaA = "a".repeat(40);
+const shaB = "b".repeat(40);
+const shaC = "c".repeat(40);
+const generation = "123e4567-e89b-42d3-a456-426614174000";
+const v31Base = {
+  ...base,
+  version: "3.1",
+  git: {
+    repository: "github.com/owner/repository",
+    branch: "work/fixture",
+    lifecycle_generation: generation,
+    lifecycle_anchor_sha: shaA,
+    pr_number: 17,
+    head_sha: shaA,
+    merged_sha: null,
+  },
+  delivery: { evidence_path: null },
+};
+
 const implementationFinding = {
   id: "MEDIUM-01",
   class: "implementation_defect",
   source: "docs/reviews/fixture.md",
   summary: "Implementation does not satisfy the approved contract.",
+};
+
+const designFinding = {
+  id: "HIGH-01",
+  class: "design_defect",
+  source: "docs/reviews/fixture.md",
+  summary: "The design contract requires revision.",
 };
 
 const legal = [
@@ -368,6 +489,8 @@ const legal = [
 
 legal.push({ ...base, phase: "fixes", blocking_findings: [implementationFinding], next: { action: "fix-MEDIUM-01" } });
 legal.push({ ...base, phase: "fix_rereview", blocking_findings: [implementationFinding], next: { action: "rereview-slice-a" } });
+legal.push({ ...base, phase: "design", blocking_findings: [designFinding], next: { action: "create-or-revise-design" } });
+legal.push({ ...base, phase: "design_review", blocking_findings: [designFinding], next: { action: "review-design" } });
 
 legal.push({
   ...base,
@@ -433,11 +556,96 @@ legal.push({ ...base, phase: "implementation", status: "blocked", next: { action
 legal.forEach(validateState);
 legal.forEach((state) => validateState(parseWorkflow(renderWorkflow(state))));
 
+const v31Legal = [
+  {
+    ...v31Base,
+    phase: "work_item_init",
+    git: { ...v31Base.git, lifecycle_anchor_sha: null, pr_number: null, head_sha: null },
+    next: { action: "initialize-work-item" },
+  },
+  ...[
+    ["design", "create-or-revise-design"],
+    ["design_review", "review-design"],
+    ["implementation", "implement-slice-a"],
+    ["implementation_review", "review-slice-a"],
+  ].map(([phase, action]) => ({ ...v31Base, phase, next: { action } })),
+  {
+    ...v31Base,
+    phase: "human_gate",
+    status: "awaiting_approval",
+    gate: "merge_approval",
+    gate_scope: {
+      branch: "work/fixture",
+      lifecycle_generation: generation,
+      pr_number: 17,
+      target_branch: "main",
+      head_sha: shaA,
+      validation_run_id: 991,
+      required_checks_passed: true,
+      clean_tree: true,
+      branch_retained: true,
+      auto_delete_disabled: true,
+      cleanup_deletion_blocked: true,
+      diff_scope_verified: true,
+      unresolved_findings: "none",
+    },
+    next: { action: "approve-merge", on_approval: { phase: "delivery_verification", action: "verify-delivery" } },
+  },
+  {
+    ...v31Base,
+    phase: "delivery_verification",
+    git: { ...v31Base.git, merged_sha: shaB },
+    next: { action: "verify-delivery" },
+  },
+  {
+    ...v31Base,
+    phase: "delivery_verification",
+    status: "blocked",
+    git: { ...v31Base.git, merged_sha: shaB },
+    next: { action: "supply-provider-observation" },
+  },
+  {
+    ...v31Base,
+    phase: "human_gate",
+    status: "awaiting_approval",
+    gate: "work_item_completion",
+    git: { ...v31Base.git, merged_sha: shaB },
+    delivery: { evidence_path: "docs/delivery-evidence/fixture/delivery-01.md" },
+    gate_scope: { merged_sha: shaB, evidence_path: "docs/delivery-evidence/fixture/delivery-01.md" },
+    next: { action: "approve-work-item-completion", on_approval: { phase: "complete", action: "none" } },
+  },
+  {
+    ...v31Base,
+    phase: "complete",
+    status: "complete",
+    completed_slices: ["slice-a"],
+    git: { ...v31Base.git, merged_sha: shaB },
+    delivery: { evidence_path: "docs/delivery-evidence/fixture/delivery-01.md" },
+    next: { action: "none" },
+  },
+];
+v31Legal.forEach(validateState);
+v31Legal.forEach((state) => validateState(parseWorkflow(renderWorkflow(state))));
+
 const invalid = [
   { ...base, phase: "design", gate: "design_approval", next: { action: "create-or-revise-design" } },
   { ...base, phase: "human_gate", next: { action: "approve-design" } },
   { ...base, phase: "complete", status: "ready", next: { action: "none" } },
   { ...base, phase: "implementation", next: { action: "review-slice-a" } },
+  { ...base, phase: "implementation", blocking_findings: [designFinding], next: { action: "implement-slice-a" } },
+  {
+    ...base,
+    phase: "human_gate",
+    status: "awaiting_approval",
+    gate: "design_approval",
+    blocking_findings: [designFinding],
+    next: {
+      action: "approve-design",
+      on_approval: { phase: "implementation", action: "implement-slice-a" },
+    },
+  },
+  { ...v31Base, phase: "implementation", git: { ...v31Base.git, branch: "work/other" }, next: { action: "implement-slice-a" } },
+  { ...v31Base, phase: "delivery_verification", next: { action: "verify-delivery" } },
 ];
 invalid.forEach((state) => assert.throws(() => validateState(state)));
 
@@ -460,6 +668,7 @@ assert.equal(routeFor([
 ], true), "fixes");
 
 const transitionTargets = {
+  work_item_init: new Set(["design"]),
   design: new Set(["design_review"]),
   design_review: new Set(["human_gate", "reconciliation", "design"]),
   implementation: new Set(["implementation_review", "human_gate"]),
@@ -467,11 +676,18 @@ const transitionTargets = {
   fixes: new Set(["fix_rereview"]),
   fix_rereview: new Set(["human_gate", "fixes", "reconciliation"]),
   reconciliation: new Set(),
+  delivery_verification: new Set(["human_gate", "fixes", "reconciliation", "design"]),
   human_gate: new Set(),
   complete: new Set(),
 };
 
-function validateTransition(from, to, { finalSlice = false, laterSlice = false } = {}) {
+function validateTransition(from, to, {
+  finalSlice = false,
+  laterSlice = false,
+  terminalPushed = false,
+  deliveryEvidence,
+  observedMerge,
+} = {}) {
   validateState(from);
   validateState(to);
 
@@ -487,20 +703,39 @@ function validateTransition(from, to, { finalSlice = false, laterSlice = false }
   }
 
   if (to.phase === "human_gate" && to.gate === "next_slice_approval") assert.equal(laterSlice, true);
+  if (to.phase === "human_gate" && to.gate === "merge_approval") {
+    assert.equal(String(to.version), "3.1");
+    assert.equal(finalSlice, true);
+  }
   if (to.phase === "human_gate" && (to.gate === "work_item_completion" || to.gate === "lesson_completion")) {
     assert.equal(finalSlice, true);
     assert.deepEqual(to.blocking_findings, []);
+    if (String(to.version) === "3.1") {
+      assert.equal(from.phase, "delivery_verification");
+      const verified = verifyDelivery(from, deliveryEvidence);
+      assert.equal(verified.mergedSha, from.git.merged_sha);
+      assert.equal(to.git.merged_sha, from.git.merged_sha, "completion changed the authoritative merged SHA");
+      assert.equal(to.gate_scope.merged_sha, from.git.merged_sha, "completion gate is bound to another merged SHA");
+      assert.equal(to.delivery.evidence_path, verified.evidencePath, "completion points to different delivery evidence");
+      assert.equal(to.gate_scope.evidence_path, verified.evidencePath, "completion gate points to different delivery evidence");
+    }
+  }
+  if (from.phase === "human_gate" && from.gate === "merge_approval") {
+    validateMergeResult(from, to, observedMerge);
   }
   if (from.phase === "human_gate" && (from.gate === "work_item_completion" || from.gate === "lesson_completion")) {
     assert.equal(finalSlice, true);
     assert.equal(to.phase, "complete");
     assert.ok(to.completed_slices.includes(to.current_slice.id));
+    if (String(from.version) === "3.1") assert.equal(terminalPushed, true);
   }
 }
 
 const implementationReviewState = legal.find((state) => state.phase === "implementation_review");
 const fixesState = legal.find((state) => state.phase === "fixes");
 const fixRereviewState = legal.find((state) => state.phase === "fix_rereview");
+const designReviewWithFindingsState = legal.find((state) => state.phase === "design_review" && state.blocking_findings.length > 0);
+const designApprovalGateState = legal.find((state) => state.gate === "design_approval");
 const completionGateState = legal.find((state) => state.gate === "work_item_completion");
 const completeState = legal.find((state) => state.phase === "complete");
 const reconciliationToReview = {
@@ -512,6 +747,7 @@ const reconciliationToReview = {
 };
 
 const validTransitions = [
+  [designReviewWithFindingsState, designApprovalGateState],
   [implementationReviewState, fixesState],
   [fixesState, fixRereviewState],
   [fixRereviewState, fixesState],
@@ -523,6 +759,861 @@ validateTransition(fixRereviewState, completionGateState, { finalSlice: true });
 validateTransition(completionGateState, completeState, { finalSlice: true });
 assert.throws(() => validateTransition(implementationReviewState, completionGateState));
 assert.throws(() => validateTransition(legal.find((state) => state.phase === "implementation"), completeState));
+
+const v31ImplementationReview = v31Legal.find((state) => state.phase === "implementation_review");
+const mergeGateState = v31Legal.find((state) => state.gate === "merge_approval");
+const deliveryState = v31Legal.find((state) => state.phase === "delivery_verification" && state.status === "ready");
+const v31CompletionGate = v31Legal.find((state) => state.gate === "work_item_completion");
+const v31Complete = v31Legal.find((state) => state.phase === "complete");
+const observedMergeProof = {
+  repositoryMergeStrategy: "merge",
+  prNumber: 17,
+  sourceHeadSha: shaA,
+  resultSha: shaB,
+  protectedMainSha: shaB,
+  parentShas: [shaC, shaA],
+  providerAttributed: true,
+};
+const authoritativeDeliveryEvidence = {
+  evidencePath: "docs/delivery-evidence/fixture/delivery-01.md",
+  authoritativeMergedSha: shaB,
+  mainSha: shaB,
+  prMergeSha: shaB,
+  githubRunSha: shaB,
+  railwayDeploymentSha: shaB,
+  railwayGitCommitSha: shaB,
+  exactShaVerifierSha: shaB,
+  githubEvent: "push",
+  githubConclusion: "success",
+  railwayWaitingObserved: true,
+  railwayObservedState: "SUCCESS",
+  verifierBeforeMigration: true,
+  timestampsOrdered: true,
+  migrationSucceeded: true,
+  readinessSucceeded: true,
+  smokeSucceeded: true,
+  identitiesUnchanged: true,
+};
+validateTransition(v31ImplementationReview, mergeGateState, { finalSlice: true });
+validateTransition(mergeGateState, deliveryState, { finalSlice: true, observedMerge: observedMergeProof });
+validateTransition(deliveryState, v31CompletionGate, { finalSlice: true, deliveryEvidence: authoritativeDeliveryEvidence });
+validateTransition(v31CompletionGate, v31Complete, { finalSlice: true, terminalPushed: true });
+assert.throws(() => validateTransition(v31ImplementationReview, v31CompletionGate, { finalSlice: true }));
+assert.throws(() => validateTransition(deliveryState, v31CompletionGate, { finalSlice: true }));
+assert.throws(() => validateTransition(v31CompletionGate, v31Complete, { finalSlice: true }));
+
+const safeWorkItemIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const reservedRefComponents = new Set([
+  "head", "heads", "tags", "remotes", "origin", "orchestration", "work",
+]);
+
+function validateWorkItemId(workItemId) {
+  assert.equal(typeof workItemId, "string", "work-item ID must be a string");
+  assert.ok(workItemId.length > 0 && workItemId.length <= 80, "work-item ID length is unsafe");
+  assert.match(workItemId, safeWorkItemIdPattern, "work-item ID must be lowercase kebab-case");
+  for (const component of workItemId.split("-")) {
+    assert.equal(reservedRefComponents.has(component), false, "work-item ID contains a reserved ref component");
+  }
+  return workItemId;
+}
+
+function deriveLifecycleRefs(workItemId, lifecycleGeneration) {
+  validateWorkItemId(workItemId);
+  assert.match(lifecycleGeneration, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  const branch = `work/${workItemId}`;
+  const branchRef = `refs/heads/${branch}`;
+  const registrationRef = `refs/tags/orchestration/${workItemId}/${lifecycleGeneration}`;
+  for (const ref of [branchRef, registrationRef]) {
+    assert.doesNotMatch(ref, /(?:\.\.|@\{|\\|\s|[~^:?*\[]|\.$|\/\.|\.\/|\/\/)/, "derived Git ref is unsafe");
+    assert.equal(ref.endsWith(".lock"), false, "derived Git ref uses a reserved suffix");
+  }
+  return { branch, branchRef, registrationRef };
+}
+
+function initializeWorkItem(input) {
+  assert.equal(input.currentBranch, "main", "initialization requires main");
+  assert.equal(input.clean, true, "initialization requires a clean tree");
+  assert.equal(input.originRepository, input.expectedRepository, "origin identity mismatch");
+  assert.equal(input.fetchSucceeded, true, "fetch failed");
+  assert.equal(input.mainRelation, "synchronized", "main is ahead or divergent");
+  assert.equal(input.fastForwardPull, true, "fast-forward-only pull failed");
+  assert.equal(input.localBranchExists, false, "canonical local branch already exists");
+  assert.equal(input.remoteBranchExists, false, "canonical remote branch already exists");
+  assert.deepEqual(input.lifecycleRegistrations, [], "lifecycle registration already exists");
+  assert.deepEqual(input.sameIdClaims, [], "work-item identity is already claimed");
+  if (input.inheritedLifecycleGeneration) {
+    assert.notEqual(input.lifecycleGeneration, input.inheritedLifecycleGeneration, "fresh init inherited a lifecycle generation");
+  }
+  assert.match(input.mainSha, /^[0-9a-f]{40}$/, "main must resolve to a full SHA");
+  assert.match(input.bootstrapSha, /^[0-9a-f]{40}$/, "bootstrap commit must resolve to a full SHA");
+  assert.notEqual(input.bootstrapSha, input.mainSha, "bootstrap commit must be a new commit");
+  assert.deepEqual(input.bootstrapParentShas, [input.mainSha], "bootstrap commit must be based directly on synchronized main");
+  const refs = deriveLifecycleRefs(input.workItemId, input.lifecycleGeneration);
+  const bootstrapIdentity = {
+    repository: input.expectedRepository,
+    workItemId: input.workItemId,
+    branch: refs.branch,
+    lifecycleGeneration: input.lifecycleGeneration,
+  };
+  return {
+    baseSha: input.mainSha,
+    bootstrapSha: input.bootstrapSha,
+    branch: refs.branch,
+    branchRef: refs.branchRef,
+    lifecycleGeneration: input.lifecycleGeneration,
+    bootstrapIdentity,
+    registrationRef: refs.registrationRef,
+    registration: {
+      ref: refs.registrationRef,
+      workItemId: input.workItemId,
+      lifecycleGeneration: input.lifecycleGeneration,
+      annotated: true,
+      targetSha: input.bootstrapSha,
+      annotation: bootstrapIdentity,
+      bootstrapIdentity,
+    },
+  };
+}
+
+function publishInitialization(plan, publication) {
+  assert.equal(publication.atomicPushSupported, true, "remote cannot publish lifecycle refs atomically");
+  assert.equal(publication.atomicPushSucceeded, true, "atomic lifecycle publication failed");
+  assert.deepEqual(
+    [...publication.publishedRefs].sort(),
+    [plan.branchRef, plan.registrationRef].sort(),
+    "lifecycle publication was partial or included another ref",
+  );
+  assert.match(publication.remoteBranchSha, /^[0-9a-f]{40}$/, "published branch head is not a full SHA");
+  assert.equal(publication.remoteBranchAncestors.includes(plan.bootstrapSha), true, "published branch does not descend from the bootstrap commit");
+  assert.equal(publication.remoteRegistration.ref, plan.registrationRef, "published registration ref mismatch");
+  assert.equal(publication.remoteRegistration.annotated, true, "published registration is not annotated");
+  assert.equal(publication.remoteRegistration.targetSha, plan.bootstrapSha, "published registration targets another commit");
+  assert.deepEqual(publication.remoteRegistration.annotation, plan.bootstrapIdentity, "published registration annotation mismatch");
+  assert.deepEqual(publication.remoteRegistration.bootstrapIdentity, plan.bootstrapIdentity, "published bootstrap identity mismatch");
+  assert.equal(publication.remoteState.work_item_id, plan.bootstrapIdentity.workItemId, "published workflow ID mismatch");
+  assert.equal(publication.remoteState.git.repository, plan.bootstrapIdentity.repository, "published workflow repository mismatch");
+  assert.equal(publication.remoteState.git.branch, plan.bootstrapIdentity.branch, "published workflow branch mismatch");
+  assert.equal(publication.remoteState.git.lifecycle_generation, plan.lifecycleGeneration, "published workflow generation mismatch");
+  assert.equal(publication.remoteState.git.lifecycle_anchor_sha, plan.bootstrapSha, "published workflow anchor mismatch");
+  return {
+    branchRef: plan.branchRef,
+    branchSha: publication.remoteBranchSha,
+    branchAncestors: publication.remoteBranchAncestors,
+    registration: publication.remoteRegistration,
+    remoteState: publication.remoteState,
+  };
+}
+
+const safeInit = {
+  currentBranch: "main",
+  clean: true,
+  originRepository: "github.com/owner/repository",
+  expectedRepository: "github.com/owner/repository",
+  fetchSucceeded: true,
+  mainRelation: "synchronized",
+  fastForwardPull: true,
+  lifecycleRegistrations: [],
+  sameIdClaims: [],
+  localBranchExists: false,
+  remoteBranchExists: false,
+  lifecycleGeneration: generation,
+  mainSha: shaA,
+  bootstrapSha: shaB,
+  bootstrapParentShas: [shaA],
+  workItemId: "fixture",
+};
+const safeInitPlan = initializeWorkItem(safeInit);
+assert.deepEqual(safeInitPlan, {
+  baseSha: shaA,
+  bootstrapSha: shaB,
+  branch: "work/fixture",
+  branchRef: "refs/heads/work/fixture",
+  lifecycleGeneration: generation,
+  bootstrapIdentity: {
+    repository: "github.com/owner/repository",
+    workItemId: "fixture",
+    branch: "work/fixture",
+    lifecycleGeneration: generation,
+  },
+  registrationRef: `refs/tags/orchestration/fixture/${generation}`,
+  registration: {
+    ref: `refs/tags/orchestration/fixture/${generation}`,
+    workItemId: "fixture",
+    lifecycleGeneration: generation,
+    annotated: true,
+    targetSha: shaB,
+    annotation: {
+      repository: "github.com/owner/repository",
+      workItemId: "fixture",
+      branch: "work/fixture",
+      lifecycleGeneration: generation,
+    },
+    bootstrapIdentity: {
+      repository: "github.com/owner/repository",
+      workItemId: "fixture",
+      branch: "work/fixture",
+      lifecycleGeneration: generation,
+    },
+  },
+});
+for (const unsafe of [
+  { clean: false },
+  { currentBranch: "feature/other" },
+  { mainRelation: "ahead" },
+  { mainRelation: "diverged" },
+  { localBranchExists: true },
+  { remoteBranchExists: true },
+  { lifecycleRegistrations: [`refs/tags/orchestration/fixture/${generation}`] },
+  { sameIdClaims: ["refs/heads/main:docs/workflow/fixture.yaml"] },
+  { inheritedLifecycleGeneration: generation },
+  { mainSha: "main" },
+  { bootstrapSha: shaA },
+  { bootstrapParentShas: [shaC] },
+  { lifecycleGeneration: `${generation}/refs` },
+]) {
+  assert.throws(() => initializeWorkItem({ ...safeInit, ...unsafe }));
+}
+for (const workItemId of [
+  "../fixture", "fixture/topic", "fixture..topic", "fixture.lock", "Fixture",
+  "fixture@{one}", "fixture--topic", "refs-heads-fixture", "work-fixture", "head",
+]) {
+  assert.throws(() => initializeWorkItem({ ...safeInit, workItemId }));
+}
+
+function identityTuple(entry) {
+  return {
+    repository: entry.repository,
+    workItemId: entry.workItemId,
+    branch: entry.branch,
+    lifecycleGeneration: entry.lifecycleGeneration,
+  };
+}
+
+function validatePrAndMergeLineage(selected, registration) {
+  const state = selected.state;
+  if (state.git.pr_number === null) {
+    assert.equal(selected.pr, null, "unexpected PR metadata before primary PR creation");
+    assert.equal(state.git.merged_sha, null, "workflow cannot be merged without a primary PR");
+    return;
+  }
+
+  assert.ok(selected.pr, "primary PR metadata is missing");
+  assert.equal(selected.pr.number, state.git.pr_number, "primary PR number mismatch");
+  assert.equal(selected.pr.headRef, state.git.branch, "primary PR head is not the canonical branch");
+  assert.equal(selected.pr.baseRef, "main", "primary PR does not target main");
+  assert.equal(selected.pr.headSha, state.git.head_sha, "primary PR head SHA mismatch");
+  assert.equal(selected.pr.headAncestors.includes(registration.targetSha), true, "PR head does not descend from the bootstrap anchor");
+  assert.equal(selected.bootstrapAncestors.includes(selected.pr.headSha), true, "PR head is outside canonical branch ancestry");
+  assert.equal(selected.pr.mergeStrategy, selected.repositoryMergeStrategy, "PR lineage uses a merge strategy different from repository configuration");
+
+  if (state.git.merged_sha === null) {
+    assert.equal(selected.pr.mergedSha, null, "provider reports a merge absent from workflow state");
+    return;
+  }
+
+  assert.equal(selected.pr.mergedSha, state.git.merged_sha, "merged main SHA does not match primary PR result");
+  assert.ok(selected.pr.mergeLineage, "merge lineage evidence is missing");
+  assert.equal(selected.pr.mergeLineage.resultSha, state.git.merged_sha, "merge lineage result differs from workflow merged SHA");
+  assert.equal(selected.pr.mergeLineage.prNumber, state.git.pr_number, "merge lineage belongs to another PR");
+  assert.equal(selected.pr.mergeLineage.sourceHeadSha, state.git.head_sha, "merge lineage belongs to another PR head");
+  if (selected.pr.mergeStrategy === "merge") {
+    assert.equal(selected.pr.mergeLineage.parentShas.includes(state.git.head_sha), true, "merge commit does not contain the approved PR head");
+  } else if (selected.pr.mergeStrategy === "squash" || selected.pr.mergeStrategy === "rebase") {
+    assert.equal(selected.pr.mergeLineage.providerAttributed, true, `${selected.pr.mergeStrategy} result is not attributed to the approved PR`);
+  } else {
+    assert.fail("unsupported or missing repository merge strategy");
+  }
+}
+
+function resolveExecutableRef({ requestedId, expectedRepository, executionRef, refs, registrations }) {
+  validateWorkItemId(requestedId);
+  const expectedRef = `refs/remotes/origin/work/${requestedId}`;
+  assert.equal(executionRef, expectedRef, "workflow copies on another ref are non-executable");
+  const exact = refs.filter((entry) => entry.ref === expectedRef);
+  assert.equal(exact.length, 1, "missing or ambiguous canonical work branch");
+  const selected = exact[0];
+
+  const sameIdRegistrations = registrations.filter((entry) => entry.workItemId === requestedId);
+  assert.equal(sameIdRegistrations.length, 1, "missing or duplicate lifecycle registration");
+  const registration = sameIdRegistrations[0];
+  const expectedTag = `refs/tags/orchestration/${requestedId}/${registration.lifecycleGeneration}`;
+  assert.equal(registration.ref, expectedTag, "lifecycle registration namespace mismatch");
+  assert.equal(registration.annotated, true, "lifecycle registration must be annotated");
+  assert.match(registration.targetSha, /^[0-9a-f]{40}$/);
+  assert.deepEqual(registration.annotation, {
+    repository: expectedRepository,
+    workItemId: requestedId,
+    branch: `work/${requestedId}`,
+    lifecycleGeneration: registration.lifecycleGeneration,
+  }, "lifecycle annotation identity mismatch");
+  assert.deepEqual(registration.bootstrapIdentity, registration.annotation, "bootstrap identity mismatch");
+
+  const selectedIdentity = identityTuple(registration.annotation);
+  for (const candidate of registrations) {
+    const claimsSelectedIdentity = candidate.workItemId === requestedId
+      || candidate.lifecycleGeneration === registration.lifecycleGeneration;
+    if (!claimsSelectedIdentity) continue;
+    assert.deepEqual(identityTuple(candidate.annotation), selectedIdentity, "conflicting lifecycle registration identity");
+    assert.deepEqual(identityTuple(candidate.bootstrapIdentity), selectedIdentity, "conflicting bootstrap registration identity");
+    assert.equal(candidate.ref, expectedTag, "same identity is registered under another lifecycle ref");
+    assert.equal(candidate.targetSha, registration.targetSha, "same identity has conflicting bootstrap anchors");
+  }
+
+  validateState(selected.state);
+  assert.equal(String(selected.state.version), "3.1");
+  assert.equal(selected.state.work_item_id, requestedId);
+  assert.equal(selected.state.git.repository, expectedRepository);
+  assert.equal(selected.state.git.branch, `work/${requestedId}`);
+  assert.equal(selected.state.git.lifecycle_generation, registration.lifecycleGeneration, "lifecycle generation mismatch");
+  assert.equal(selected.state.git.lifecycle_anchor_sha, registration.targetSha, "lifecycle anchor mismatch");
+  assert.equal(selected.bootstrapAncestors.includes(registration.targetSha), true, "bootstrap anchor is outside canonical ancestry");
+  if (selected.state.git.head_sha !== null) assert.equal(selected.headSha, selected.state.git.head_sha);
+  for (const candidate of refs) {
+    if (candidate === selected || !candidate.state || String(candidate.state.version) !== "3.1") continue;
+    const claimsSelectedIdentity = candidate.state.work_item_id === requestedId
+      || candidate.state.git?.lifecycle_generation === registration.lifecycleGeneration;
+    if (!claimsSelectedIdentity) continue;
+    const inertMainSnapshot = candidate.ref === "refs/remotes/origin/main"
+      && candidate.state.work_item_id === requestedId
+      && candidate.state.git.repository === expectedRepository
+      && candidate.state.git.branch === selected.state.git.branch
+      && candidate.state.git.lifecycle_generation === registration.lifecycleGeneration
+      && candidate.state.git.lifecycle_anchor_sha === registration.targetSha;
+    assert.equal(inertMainSnapshot, true, "conflicting same-ID or same-generation claim exists on another ref");
+  }
+  validatePrAndMergeLineage(selected, registration);
+  assert.notEqual(selected.state.phase, "complete", "terminal retained branch is non-executable");
+  return { selected, registration };
+}
+
+function enterWorkItem(mode, input) {
+  if (mode === "initialize") return initializeWorkItem(input);
+  if (mode === "resume") return resolveExecutableRef(input);
+  assert.fail("entry path must be explicitly initialize or resume");
+}
+
+const executableRef = {
+  ref: "refs/remotes/origin/work/fixture",
+  repositoryMergeStrategy: "merge",
+  bootstrapAncestors: [shaA],
+  headSha: shaA,
+  pr: {
+    number: 17,
+    headRef: "work/fixture",
+    baseRef: "main",
+    headSha: shaA,
+    headAncestors: [shaA],
+    mergedSha: null,
+    mergeStrategy: "merge",
+    mergeLineage: null,
+  },
+  state: { ...v31Base, phase: "implementation", next: { action: "implement-slice-a" } },
+};
+const lifecycleRegistration = {
+  ref: `refs/tags/orchestration/fixture/${generation}`,
+  workItemId: "fixture",
+  lifecycleGeneration: generation,
+  annotated: true,
+  targetSha: shaA,
+  annotation: {
+    repository: "github.com/owner/repository",
+    workItemId: "fixture",
+    branch: "work/fixture",
+    lifecycleGeneration: generation,
+  },
+  bootstrapIdentity: {
+    repository: "github.com/owner/repository",
+    workItemId: "fixture",
+    branch: "work/fixture",
+    lifecycleGeneration: generation,
+  },
+};
+const publishedLifecycle = publishInitialization(safeInitPlan, {
+  atomicPushSupported: true,
+  atomicPushSucceeded: true,
+  publishedRefs: [safeInitPlan.branchRef, safeInitPlan.registrationRef],
+  remoteBranchSha: shaC,
+  remoteBranchAncestors: [safeInitPlan.bootstrapSha],
+  remoteRegistration: safeInitPlan.registration,
+  remoteState: {
+    ...v31Base,
+    phase: "design",
+    git: {
+      ...v31Base.git,
+      lifecycle_anchor_sha: safeInitPlan.bootstrapSha,
+      pr_number: null,
+      head_sha: shaC,
+    },
+    next: { action: "create-or-revise-design" },
+  },
+});
+const initializedExecutableRef = {
+  ref: "refs/remotes/origin/work/fixture",
+  bootstrapAncestors: [safeInitPlan.bootstrapSha, shaC],
+  headSha: shaC,
+  pr: null,
+  state: publishedLifecycle.remoteState,
+};
+assert.equal(publishedLifecycle.registration.targetSha, safeInitPlan.bootstrapSha);
+assert.equal(resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: initializedExecutableRef.ref,
+  refs: [initializedExecutableRef],
+  registrations: [publishedLifecycle.registration],
+}).selected.ref, initializedExecutableRef.ref);
+for (const failedPublication of [
+  { atomicPushSupported: false, atomicPushSucceeded: false, publishedRefs: [] },
+  { atomicPushSupported: true, atomicPushSucceeded: false, publishedRefs: [] },
+  { atomicPushSupported: true, atomicPushSucceeded: true, publishedRefs: [safeInitPlan.branchRef] },
+  { atomicPushSupported: true, atomicPushSucceeded: true, publishedRefs: [safeInitPlan.registrationRef] },
+]) {
+  assert.throws(() => publishInitialization(safeInitPlan, {
+    remoteBranchSha: shaC,
+    remoteBranchAncestors: [safeInitPlan.bootstrapSha],
+    remoteRegistration: safeInitPlan.registration,
+    remoteState: initializedExecutableRef.state,
+    ...failedPublication,
+  }));
+}
+for (const invalidPublishedIdentity of [
+  { remoteBranchAncestors: [] },
+  { remoteRegistration: { ...safeInitPlan.registration, annotated: false } },
+  { remoteRegistration: { ...safeInitPlan.registration, targetSha: shaA } },
+  {
+    remoteRegistration: {
+      ...safeInitPlan.registration,
+      annotation: { ...safeInitPlan.registration.annotation, repository: "github.com/other/repository" },
+    },
+  },
+  {
+    remoteState: {
+      ...initializedExecutableRef.state,
+      git: { ...initializedExecutableRef.state.git, lifecycle_anchor_sha: shaA },
+    },
+  },
+]) {
+  assert.throws(() => publishInitialization(safeInitPlan, {
+    atomicPushSupported: true,
+    atomicPushSucceeded: true,
+    publishedRefs: [safeInitPlan.branchRef, safeInitPlan.registrationRef],
+    remoteBranchSha: shaC,
+    remoteBranchAncestors: [safeInitPlan.bootstrapSha],
+    remoteRegistration: safeInitPlan.registration,
+    remoteState: initializedExecutableRef.state,
+    ...invalidPublishedIdentity,
+  }));
+}
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: initializedExecutableRef.ref,
+  refs: [initializedExecutableRef],
+  registrations: [],
+}), /missing or duplicate lifecycle registration/);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: initializedExecutableRef.ref,
+  refs: [],
+  registrations: [safeInitPlan.registration],
+}), /missing or ambiguous canonical work branch/);
+const staleMainSnapshot = {
+  ...executableRef,
+  ref: "refs/remotes/origin/main",
+};
+assert.equal(resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [staleMainSnapshot, executableRef],
+  registrations: [lifecycleRegistration],
+}).selected.ref, executableRef.ref);
+
+const conflictingRef = {
+  ...executableRef,
+  ref: "refs/remotes/origin/work/fixture-copy",
+};
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [executableRef, conflictingRef],
+  registrations: [lifecycleRegistration],
+}), /conflicting same-ID or same-generation claim/);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [executableRef, {
+    ...conflictingRef,
+    state: { ...conflictingRef.state, git: { ...conflictingRef.state.git, lifecycle_anchor_sha: shaB } },
+  }],
+  registrations: [lifecycleRegistration],
+}), /conflicting same-ID or same-generation claim/);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [executableRef, {
+    ...conflictingRef,
+    state: { ...conflictingRef.state, git: { ...conflictingRef.state.git, repository: "github.com/other/repository" } },
+  }],
+  registrations: [lifecycleRegistration],
+}), /conflicting same-ID or same-generation claim/);
+const reusedGenerationRegistration = {
+  ...lifecycleRegistration,
+  ref: `refs/tags/orchestration/other/${generation}`,
+  workItemId: "other",
+  annotation: {
+    repository: "github.com/owner/repository",
+    workItemId: "other",
+    branch: "work/other",
+    lifecycleGeneration: generation,
+  },
+  bootstrapIdentity: {
+    repository: "github.com/owner/repository",
+    workItemId: "other",
+    branch: "work/other",
+    lifecycleGeneration: generation,
+  },
+};
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [executableRef],
+  registrations: [lifecycleRegistration, reusedGenerationRegistration],
+}), /conflicting lifecycle registration identity/);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [{ ...executableRef, pr: { ...executableRef.pr, headAncestors: [] } }],
+  registrations: [lifecycleRegistration],
+}), /PR head does not descend/);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [{
+    ...executableRef,
+    headSha: shaB,
+    state: { ...executableRef.state, git: { ...executableRef.state.git, head_sha: shaB } },
+    pr: { ...executableRef.pr, headSha: shaB, headAncestors: [shaA] },
+  }],
+  registrations: [lifecycleRegistration],
+}), /PR head is outside canonical branch ancestry/);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [{ ...executableRef, pr: { ...executableRef.pr, mergeStrategy: "squash" } }],
+  registrations: [lifecycleRegistration],
+}), /different from repository configuration/);
+
+const mergedExecutableRef = {
+  ...executableRef,
+  bootstrapAncestors: [shaA],
+  state: {
+    ...v31Base,
+    phase: "delivery_verification",
+    git: { ...v31Base.git, merged_sha: shaB },
+    next: { action: "verify-delivery" },
+  },
+  pr: {
+    ...executableRef.pr,
+    mergedSha: shaB,
+    mergeLineage: {
+      resultSha: shaB,
+      prNumber: 17,
+      sourceHeadSha: shaA,
+      parentShas: [shaC, shaA],
+      providerAttributed: true,
+    },
+  },
+};
+assert.equal(resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: mergedExecutableRef.ref,
+  refs: [mergedExecutableRef],
+  registrations: [lifecycleRegistration],
+}).selected.state.git.merged_sha, shaB);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: mergedExecutableRef.ref,
+  refs: [{
+    ...mergedExecutableRef,
+    pr: {
+      ...mergedExecutableRef.pr,
+      mergeLineage: { ...mergedExecutableRef.pr.mergeLineage, parentShas: [shaC] },
+    },
+  }],
+  registrations: [lifecycleRegistration],
+}), /merge commit does not contain/);
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [staleMainSnapshot],
+  registrations: [lifecycleRegistration],
+}));
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [executableRef],
+  registrations: [],
+}));
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [executableRef],
+  registrations: [lifecycleRegistration, { ...lifecycleRegistration, targetSha: shaB }],
+}));
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [{ ...executableRef, state: {
+    ...executableRef.state,
+    git: { ...executableRef.state.git, lifecycle_anchor_sha: shaB },
+  } }],
+  registrations: [lifecycleRegistration],
+}));
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [{ ...executableRef, state: {
+    ...executableRef.state,
+    git: { ...executableRef.state.git, lifecycle_generation: "123e4567-e89b-42d3-a456-426614174001" },
+  } }],
+  registrations: [lifecycleRegistration],
+}));
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [{ ...executableRef, bootstrapAncestors: [] }],
+  registrations: [lifecycleRegistration],
+}));
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: "refs/remotes/origin/work/copied-snapshot",
+  refs: [executableRef, { ...executableRef, ref: "refs/remotes/origin/work/copied-snapshot" }],
+  registrations: [lifecycleRegistration],
+}));
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [{ ...executableRef, state: v31Complete, headSha: shaA }],
+  registrations: [lifecycleRegistration],
+}));
+
+const installerWorkflow = parseWorkflow(read("docs/workflow/maintenance-orchestration-git-lifecycle-v3-1.yaml"));
+assert.equal(installerWorkflow.version, 3);
+assert.equal("git" in installerWorkflow, false);
+assert.equal("delivery" in installerWorkflow, false);
+validateState(installerWorkflow);
+
+assert.throws(() => resolveExecutableRef({
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [executableRef],
+  registrations: [],
+}), /missing or duplicate lifecycle registration/);
+assert.throws(() => enterWorkItem("resume", {
+  requestedId: "fixture",
+  expectedRepository: "github.com/owner/repository",
+  executionRef: executableRef.ref,
+  refs: [],
+  registrations: [],
+}), /missing or ambiguous canonical work branch/);
+assert.throws(() => enterWorkItem("initialize", {
+  ...safeInit,
+  remoteBranchExists: true,
+  lifecycleRegistrations: [lifecycleRegistration.ref],
+}), /canonical remote branch already exists/);
+
+function branchDeletionEligible({
+  state,
+  terminalCommitSha,
+  remoteHeadSha,
+  terminalCommitPushed,
+  destructiveApproval,
+  recoveryEvidence,
+  lifecycleGeneration,
+  prHistory,
+}) {
+  return state.phase === "complete"
+    && state.status === "complete"
+    && terminalCommitPushed === true
+    && /^[0-9a-f]{40}$/.test(terminalCommitSha)
+    && remoteHeadSha === terminalCommitSha
+    && destructiveApproval === true
+    && Boolean(recoveryEvidence)
+    && lifecycleGeneration === state.git.lifecycle_generation
+    && Array.isArray(prHistory)
+    && prHistory.includes(state.git.pr_number);
+}
+const deletionProof = {
+  state: v31Complete,
+  terminalCommitSha: shaA,
+  remoteHeadSha: shaA,
+  terminalCommitPushed: true,
+  destructiveApproval: true,
+  recoveryEvidence: "refs/pull/17 + terminal commit",
+  lifecycleGeneration: generation,
+  prHistory: [17],
+};
+assert.equal(branchDeletionEligible({ ...deletionProof, state: executableRef.state }), false);
+assert.equal(branchDeletionEligible({ ...deletionProof, terminalCommitPushed: false }), false);
+assert.equal(branchDeletionEligible({ ...deletionProof, remoteHeadSha: shaB }), false);
+assert.equal(branchDeletionEligible({ ...deletionProof, destructiveApproval: false }), false);
+assert.equal(branchDeletionEligible(deletionProof), true);
+
+function validateMergeResult(from, to, observation) {
+  assert.ok(observation, "protected merge observation is required");
+  assert.equal(observation.prNumber, from.git.pr_number, "merge result belongs to another PR");
+  assert.equal(observation.sourceHeadSha, from.gate_scope.head_sha, "merge result belongs to another PR head");
+  assert.equal(observation.resultSha, observation.protectedMainSha, "merge result is not the observed protected-main SHA");
+  assert.match(observation.resultSha, /^[0-9a-f]{40}$/);
+  assert.equal(to.git.merged_sha, observation.resultSha, "delivery state did not record the observed merged-main SHA");
+  assert.equal(to.git.head_sha, from.git.head_sha, "merge transition changed the approved PR head");
+  if (observation.repositoryMergeStrategy === "merge") {
+    assert.equal(observation.parentShas.includes(from.git.head_sha), true, "merged main SHA is not descended from the approved PR head");
+  } else if (observation.repositoryMergeStrategy === "squash" || observation.repositoryMergeStrategy === "rebase") {
+    assert.equal(observation.providerAttributed, true, "merged main SHA is not attributed to the approved PR lineage");
+  } else {
+    assert.fail("unsupported or missing repository merge strategy");
+  }
+  return observation.resultSha;
+}
+
+function verifyDelivery(workflow, correlation) {
+  assert.ok(correlation, "delivery evidence is required");
+  const expected = workflow.git.merged_sha;
+  assert.match(expected, /^[0-9a-f]{40}$/);
+  assert.equal(correlation.authoritativeMergedSha, expected, "delivery evidence is bound to another workflow merged SHA");
+  assert.match(correlation.evidencePath, /^docs\/delivery-evidence\/.+\/delivery-\d+\.md$/);
+  for (const field of [
+    "mainSha",
+    "prMergeSha",
+    "githubRunSha",
+    "railwayDeploymentSha",
+    "railwayGitCommitSha",
+    "exactShaVerifierSha",
+  ]) {
+    assert.equal(correlation[field], expected, `${field} does not match merged SHA`);
+  }
+  assert.equal(correlation.githubEvent, "push");
+  assert.equal(correlation.githubConclusion, "success");
+  assert.equal(correlation.railwayWaitingObserved, true);
+  assert.ok(["WAITING", "SUCCESS"].includes(correlation.railwayObservedState));
+  assert.equal(correlation.verifierBeforeMigration, true);
+  assert.equal(correlation.timestampsOrdered, true);
+  for (const field of ["migrationSucceeded", "readinessSucceeded", "smokeSucceeded", "identitiesUnchanged"]) {
+    assert.equal(correlation[field], true, `${field} is not proven`);
+  }
+  return { mergedSha: expected, evidencePath: correlation.evidencePath };
+}
+assert.deepEqual(verifyDelivery(deliveryState, authoritativeDeliveryEvidence), {
+  mergedSha: shaB,
+  evidencePath: "docs/delivery-evidence/fixture/delivery-01.md",
+});
+assert.throws(() => verifyDelivery(deliveryState, {
+  ...authoritativeDeliveryEvidence,
+  authoritativeMergedSha: shaA,
+}), /another workflow merged SHA/);
+assert.throws(() => verifyDelivery(deliveryState, Object.fromEntries(
+  Object.entries(authoritativeDeliveryEvidence).map(([key, value]) => [
+    key,
+    key === "authoritativeMergedSha" || key.endsWith("Sha") ? shaA : value,
+  ]),
+)), /another workflow merged SHA/);
+for (const field of [
+  "githubRunSha",
+  "railwayDeploymentSha",
+  "railwayGitCommitSha",
+  "exactShaVerifierSha",
+]) {
+  assert.throws(() => verifyDelivery(deliveryState, { ...authoritativeDeliveryEvidence, [field]: shaA }));
+}
+assert.throws(() => validateMergeResult(mergeGateState, deliveryState, {
+  ...observedMergeProof,
+  resultSha: shaC,
+  protectedMainSha: shaC,
+}));
+assert.throws(() => validateMergeResult(mergeGateState, deliveryState, {
+  ...observedMergeProof,
+  parentShas: [shaC],
+}), /not descended from the approved PR head/);
+assert.throws(() => validateTransition(deliveryState, v31CompletionGate, {
+  finalSlice: true,
+  deliveryEvidence: { ...authoritativeDeliveryEvidence, authoritativeMergedSha: shaA },
+}));
+
+function deliveryFailureRoute(kind) {
+  return {
+    implementation_defect: "fixes",
+    design_defect: "design",
+    provider_transient: "delivery_verification",
+    evidence_mismatch: "reconciliation",
+    production_retry: "production_mutation_approval",
+  }[kind];
+}
+assert.equal(deliveryFailureRoute("implementation_defect"), "fixes");
+assert.equal(deliveryFailureRoute("design_defect"), "design");
+assert.equal(deliveryFailureRoute("provider_transient"), "delivery_verification");
+assert.equal(deliveryFailureRoute("evidence_mismatch"), "reconciliation");
+assert.equal(deliveryFailureRoute("production_retry"), "production_mutation_approval");
+
+for (const gateChange of [
+  { head_sha: shaB },
+  { target_branch: "release" },
+  { required_checks_passed: false },
+  { clean_tree: false },
+  { branch_retained: false },
+  { auto_delete_disabled: false },
+  { cleanup_deletion_blocked: false },
+  { diff_scope_verified: false },
+  { unresolved_findings: "LOW-01" },
+  { pr_number: 18 },
+]) {
+  assert.throws(() => validateState({
+    ...mergeGateState,
+    gate_scope: { ...mergeGateState.gate_scope, ...gateChange },
+  }));
+}
+
+function validatePrimaryPrPolicy({ draft, target, primaryPrCount, routineDirectMainPush, routineAdditionalPr }) {
+  assert.equal(draft, true);
+  assert.equal(target, "main");
+  assert.equal(primaryPrCount, 1);
+  assert.equal(routineDirectMainPush, false);
+  assert.equal(routineAdditionalPr, false);
+}
+validatePrimaryPrPolicy({
+  draft: true,
+  target: "main",
+  primaryPrCount: 1,
+  routineDirectMainPush: false,
+  routineAdditionalPr: false,
+});
+assert.throws(() => validatePrimaryPrPolicy({
+  draft: false,
+  target: "main",
+  primaryPrCount: 1,
+  routineDirectMainPush: false,
+  routineAdditionalPr: false,
+}));
 
 function reconciliationEligible(change) {
   return Boolean(change.exactBasis)
@@ -589,7 +1680,12 @@ for (const path of [
   "docs/workflow/templates/workflow-state.yaml",
 ]) {
   const template = read(path);
-  assert.match(template, /^version: 3/m);
+  assert.match(template, /^version: 3\.1$/m);
+  assert.match(template, /^phase: work_item_init$/m);
+  assert.match(template, /^  branch: work\//m);
+  assert.match(template, /^  lifecycle_generation: <uuid>$/m);
+  assert.match(template, /^  lifecycle_anchor_sha: null$/m);
+  assert.match(template, /^  evidence_path: null$/m);
   assert.doesNotMatch(template, /^ +status:/m);
   assert.doesNotMatch(template, /^ +verdict:/m);
   assert.doesNotMatch(template, /^ +phase:/m);
@@ -606,6 +1702,7 @@ for (const path of [
   ".codex/skills/targeted-fix/SKILL.md",
   ".codex/skills/targeted-rereview/SKILL.md",
   ".codex/skills/reconciliation/SKILL.md",
+  ".codex/skills/delivery-verification/SKILL.md",
 ]) {
   const instructions = read(path);
   assert.doesNotMatch(instructions, /next\.phase:/);
@@ -617,18 +1714,21 @@ assert.match(historical, /^version: 2/m);
 assert.match(historical, /^phase: complete/m);
 assert.match(historical, /^status: complete/m);
 
-const active = read("docs/workflow/maintenance-orchestration-simplification.yaml");
-const activeState = parseWorkflow(active);
-assert.equal(activeState.work_item_id, "maintenance-orchestration-simplification");
-validateState(activeState);
-for (const path of [activeState.design.path, ...activeState.context]) {
-  assert.ok(existsSync(new URL(path, root)), `missing active workflow artifact: ${path}`);
-}
-if (activeState.latest_review.path) {
-  assert.ok(existsSync(new URL(activeState.latest_review.path, root)), "missing latest review");
-}
-for (const finding of activeState.blocking_findings) {
-  assert.ok(existsSync(new URL(finding.source, root)), `missing finding source: ${finding.source}`);
+for (const workflowPath of [
+  "docs/workflow/maintenance-orchestration-simplification.yaml",
+  "docs/workflow/maintenance-orchestration-git-lifecycle-v3-1.yaml",
+]) {
+  const activeState = parseWorkflow(read(workflowPath));
+  validateState(activeState);
+  for (const path of [activeState.design.path, ...activeState.context]) {
+    assert.ok(existsSync(new URL(path, root)), `missing active workflow artifact: ${path}`);
+  }
+  if (activeState.latest_review.path) {
+    assert.ok(existsSync(new URL(activeState.latest_review.path, root)), "missing latest review");
+  }
+  for (const finding of activeState.blocking_findings) {
+    assert.ok(existsSync(new URL(finding.source, root)), `missing finding source: ${finding.source}`);
+  }
 }
 
-console.log(`workflow-contract: ${legal.length} legal states, ${invalid.length} illegal states, and ${validTransitions.length + 3} transitions verified`);
+console.log(`workflow-contract: ${legal.length + v31Legal.length} legal states, ${invalid.length} illegal states, and ${validTransitions.length + 11} transitions verified`);

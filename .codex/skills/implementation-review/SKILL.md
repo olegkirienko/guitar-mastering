@@ -44,7 +44,9 @@ If approved with reconciliation, record the exact repair contract, allowed paths
 
 If approved:
 - later approved slice exists → `human_gate / next_slice_approval`
-- final slice → `human_gate / work_item_completion`
+- final v3 slice → `human_gate / work_item_completion`
+- final v3.1 slice → commit/push the exact merge-ready checkpoint, prove PR
+  validation and branch retention, then `human_gate / merge_approval`
 
 Never invent a next slice.
 
