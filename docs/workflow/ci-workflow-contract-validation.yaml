@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: design
+phase: design_review
 status: ready
 gate: none
 
@@ -62,4 +62,4 @@ blocking_findings:
     summary: "The CI command does not discover or validate the repository's active workflow states."
 
 next:
-  action: create-or-revise-design
+  action: review-design

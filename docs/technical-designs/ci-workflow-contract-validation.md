@@ -2,18 +2,27 @@
 
 ## Purpose
 
-Make the repository workflow contract validator an explicit part of the normal
+Make repository workflow-state validation an explicit part of the normal
 GitHub `Validate` job so an invalid orchestration/control-plane state cannot
 pass otherwise-green application validation.
 
-The existing `pnpm validate:workflow` command and validator behavior are the
-contract being integrated. This work does not redesign either the CI pipeline
-or the validator.
+The existing `pnpm validate:workflow` command remains the public entry point.
+Its state-machine fixtures remain intact, but its repository boundary must be
+extended from a hard-coded pair of workflow files to deterministic discovery
+and declared-version validation of every direct `docs/workflow/*.yaml` file.
 
 ## Goals
 
 - Run `pnpm validate:workflow` on every pull request and every push to `main`
   through the existing `Validate` workflow.
+- Discover every direct workflow-state YAML under `docs/workflow/` without a
+  manually maintained allowlist and validate it under its declared version.
+- Validate active v3/v3.1 state with the current state-machine contract,
+  preserve completed v1/v2/v3 snapshots under their historical contract, and
+  validate the current active v1 compatibility gate without rewriting it.
+- Fail closed with a path-specific diagnostic when a discovered workflow has
+  an unsupported version/state, invalid route, duplicate identity, or missing
+  authoritative design, context, review, or finding-source artifact.
 - Make validator failure fail the existing `validate` job and therefore the
   existing required `Validate / validate` check.
 - Run the check early enough to stop expensive application, browser, database,
@@ -23,8 +32,11 @@ or the validator.
 
 ## Non-goals
 
-- Changing workflow-validator parsing, validation rules, fixtures, output, or
-  exit behavior unless implementation uncovers a real compatibility defect.
+- Rewriting completed historical workflow YAML or migrating the active legacy
+  lesson workflow as a side effect of CI validation.
+- Redesigning v3/v3.1 phase, gate, finding, reconciliation, delivery, or Git
+  lifecycle semantics beyond applying the existing validator to discovered
+  repository states.
 - Renaming or splitting the `validate` job, adding a workflow, changing
   branch-protection settings, or otherwise redesigning CI.
 - Changing Railway configuration, pre-deploy verification, deployment
@@ -52,6 +64,14 @@ or third-party runtime package. The command therefore has all required runtime
 support once the existing Node and pnpm setup has completed; no dependency or
 lockfile change is needed.
 
+The current repository boundary is incomplete. The script validates extensive
+in-memory state/transition fixtures, reads the completed v3 installer workflow,
+and then hard-codes only two completed v3 workflow paths. It does not discover
+or read the active `ci-workflow-contract-validation.yaml` state carried by this
+work item, and it omits the active historical `stage-01-lesson-02.yaml` state.
+Adding the command to CI without correcting that boundary would not achieve
+the stated fail-closed goal.
+
 The production exact-SHA verifier in `server/verify-ci.ts` already requires a
 successful completed `Validate` workflow run and successful `validate` job.
 Consequently, a failed workflow-contract step prevents the run and job success
@@ -59,6 +79,47 @@ that Railway accepts. The verifier additionally checks a stable subset of the
 existing application steps and permits extra successful steps, so neither it
 nor its tests need to change. Keeping its required-step list unchanged avoids
 altering Railway behavior while preserving the stronger overall CI gate.
+
+## Repository discovery and declared-version validation
+
+At startup, enumerate direct entries of `docs/workflow/`, retain regular files
+whose names end in `.yaml`, and sort their repository-relative paths
+lexicographically before validation. Direct-file discovery intentionally
+excludes `docs/workflow/templates/` without a name allowlist. An unreadable
+entry, duplicate identity, malformed required scalar, unsupported version, or
+validation failure must identify the workflow path and make the command exit
+nonzero.
+
+Apply these adapters:
+
+- **v3 and v3.1:** parse with the existing v3 parser and run the existing
+  `validateState` contract. Validate the authoritative design path, every
+  context path, the latest review when non-null, and every blocking-finding
+  source. This is static repository validation; remote ref, tag, PR, CI, and
+  provider observations remain orchestration preflight responsibilities.
+- **completed v1/v2:** preserve the historical files unchanged and validate
+  their compatibility envelope: declared version and identity, exact
+  `complete / complete / none` terminal route, approved current slice and
+  latest review, empty blocking findings, terminal `next` action, and existence
+  of referenced specification/design, context/course-map, review, and final
+  review artifacts. Do not reinterpret their duplicate historical status and
+  verdict fields as v3 authority.
+- **active v1:** accept only the repository's declared historical approval
+  envelope: lesson identity, `human_gate / approved / design_approval`, empty
+  findings, approved design review, and the explicit
+  `implementation / begin-approved-implementation / human_approval_required`
+  destination. Validate its specification, course-map, previous-lesson, and
+  review references. Any other active v1 shape fails closed pending migration
+  or an explicit compatibility design.
+- **active v2:** fail closed with an actionable unsupported-active-legacy
+  diagnostic. None exists in the repository; an active v2 item must be
+  explicitly migrated or given a reviewed compatibility contract rather than
+  silently accepted.
+
+Identity keys must be unique across discovered files (`lesson_id` for v1,
+`work_item_id` otherwise). Compatibility adapters are intentionally smaller
+than the v3 state machine: they preserve known historical validity without
+creating new executable legacy routes.
 
 ## CI placement and ordering
 
@@ -98,72 +159,93 @@ must leave all later validation behavior unchanged.
 
 ## Test and documentation impact
 
-Extend the existing CI-focused assertion in
-`build/foundation.acceptance.test.ts` to prove that:
+The existing CI-focused assertion in `build/foundation.acceptance.test.ts`
+must prove that `.github/workflows/ci.yml` invokes
+`pnpm validate:workflow` exactly once and places it after
+`pnpm install --frozen-lockfile` and before `pnpm lint`.
 
-- `.github/workflows/ci.yml` invokes `pnpm validate:workflow` exactly once; and
-- that invocation appears after `pnpm install --frozen-lockfile` and before
-  `pnpm lint`.
+The validator's own contract fixtures must additionally cover discovery and
+declared-version dispatch. Add isolated in-memory or temporary-directory cases
+proving that lexical discovery includes a newly added workflow, templates are
+excluded, duplicate identities fail, an invalid discovered active v3/v3.1
+state fails, the current active v1 approval envelope passes, unsupported active
+v2 fails, and supported completed v1/v2/v3 states pass without rewriting them.
+At least one negative discovered-workflow case must assert a failing validator
+outcome and include its path in the diagnostic.
 
-This is the existing test boundary for validation-only workflow invariants, so
-no new test file or framework is warranted. The validator's own contract
-fixtures already exercise its behavior and require no changes. The exact-SHA
-Railway verifier tests also require no changes because the verifier continues
-to accept extra steps and still rejects any unsuccessful job.
-
-No README, operator runbook, or deployment documentation needs an update. The
-CI YAML is the executable pipeline source, while this design and workflow state
-provide the durable rationale and orchestration record.
+No new test framework is warranted. The exact-SHA Railway verifier tests also
+require no change because the verifier continues to accept extra steps and
+still rejects any unsuccessful job. No README, operator runbook, or deployment
+documentation needs an update; the CI YAML, validator, this design, and
+workflow state provide the executable behavior and durable rationale.
 
 ## Infrastructure, security, and operations
 
 - **Topology and environments:** retain the single GitHub-hosted `validate` job
   and its existing PostgreSQL service. No environment is added or changed.
-- **Secrets and permissions:** retain `contents: read`; the validator needs no
-  token, secret, write permission, or external service.
-- **Deployment semantics:** retain the workflow triggers, job/check identity,
-  Railway Wait for CI behavior, exact-SHA pre-deploy verifier, migration order,
-  startup, readiness, and smoke checks.
-- **Observability:** GitHub exposes the named step and its existing validator
-  stdout/stderr in the job log. No additional telemetry is needed.
-- **Cost and limits:** the validator is a local Node process and runs before
-  expensive test/build stages. It adds negligible runner time and no service
-  or storage cost.
-- **Failure mode:** invalid workflow state or a validator process error fails
-  closed as a red `Validate / validate` check. A GitHub runner outage remains a
-  CI availability issue and does not justify bypassing the step.
+- **Secrets and permissions:** retain `contents: read`; discovery is confined
+  to repository files and needs no token, secret, write permission, or external
+  service.
+- **Deployment semantics:** retain workflow triggers, job/check identity,
+  Railway Wait for CI behavior, exact-SHA pre-deploy verification, migration
+  order, startup, readiness, and smoke checks.
+- **Observability:** failures name the discovered workflow path and contract
+  reason in the existing step log; no additional telemetry is needed.
+- **Cost and limits:** direct-file discovery and local validation add negligible
+  runner time and no service or storage cost.
+- **Failure mode:** invalid/unsupported state, missing evidence, discovery or
+  parser error, or validator process error fails closed as a red
+  `Validate / validate` check. A GitHub runner outage remains a CI availability
+  issue and does not justify bypassing the step.
 
 ## Acceptance criteria
 
-1. The existing `validate` job contains exactly one step named
+1. `pnpm validate:workflow` deterministically discovers every direct
+   `docs/workflow/*.yaml` state without a hard-coded file allowlist and excludes
+   the templates subdirectory.
+2. Every discovered workflow is dispatched by declared version, identities are
+   unique, supported active states and completed compatibility states validate,
+   and unsupported or malformed states fail closed with a path-specific error.
+3. The current v3.1 work item and active v1 lesson workflow are both validated;
+   completed v1/v2/v3 historical snapshots remain unchanged and valid.
+4. Referenced design/specification, context/course-map, latest-review,
+   blocking-finding, and completed-slice final-review artifacts required by the
+   applicable version adapter exist.
+5. The existing `validate` job contains exactly one step named
    `Validate workflow contracts` whose command is exactly
    `pnpm validate:workflow`.
-2. The step is after the frozen dependency install and before lint/typecheck.
-3. The step has no condition, retry, or `continue-on-error` behavior and a
+6. The step is after the frozen dependency install and before lint/typecheck.
+7. The step has no condition, retry, or `continue-on-error` behavior and a
    nonzero validator exit fails the existing job/check.
-4. Existing triggers, permissions, job name, PostgreSQL service, application
+8. Existing triggers, permissions, job name, PostgreSQL service, application
    validation steps, and production build step remain unchanged.
-5. `package.json`, the lockfile, validator implementation, Railway
-   configuration, exact-SHA verifier, and verifier tests remain unchanged
-   unless review confirms a concrete compatibility defect first.
-6. The existing foundation acceptance test covers presence, uniqueness, and
-   ordering of the command.
-7. `pnpm validate:workflow`, `pnpm lint`, `pnpm test`,
-   `pnpm test:browser`, `pnpm test:postgres`, `pnpm build`, and
-   `git diff --check` pass under the repository's configured Node version.
+9. `package.json`, the lockfile, Railway configuration, exact-SHA verifier, and
+   verifier tests remain unchanged.
+10. The validator contains regression coverage for discovery, version routing,
+    current repository states, referenced artifacts, and fail-closed behavior.
+11. The foundation acceptance test covers presence, uniqueness, and ordering
+    of the command.
+12. `pnpm validate:workflow`, `pnpm lint`, `pnpm test`,
+    `pnpm test:browser`, `pnpm test:postgres`, `pnpm build`, and
+    `git diff --check` pass under the repository's configured Node version.
 
 ## Rollback
 
-Before merge, revert the two scoped implementation edits in the work-item PR.
-After merge, a normal reviewed revert of the CI step and its matching acceptance
-assertion restores the prior pipeline. No data, credential, provider, Railway,
-or database rollback is involved.
+Before merge, revert the scoped CI, foundation-test, and validator edits in the
+work-item PR. After merge, a normal reviewed revert of those three changes
+restores the prior pipeline and validator boundary. The validator never writes
+workflow state, and no data, credential, provider, Railway, or database
+rollback is involved.
 
 ## Approved implementation slice
 
-1. **`ci-required-workflow-validation` — require workflow-contract validation
-   in GitHub CI.** Add the one named step to `.github/workflows/ci.yml` at the
-   specified position and extend `build/foundation.acceptance.test.ts` with the
-   focused presence/uniqueness/ordering assertions. Do not modify validator or
-   Railway behavior. Run the full acceptance command set above and record the
+1. **`ci-required-workflow-validation` — require real repository workflow-state
+   validation in GitHub CI.** Preserve the already implemented named CI step
+   and focused presence/uniqueness/ordering assertions. Extend
+   `scripts/validate-workflow-contract.mjs` with deterministic direct-file
+   discovery, unique identity checks, the existing v3/v3.1 validator path,
+   bounded v1/v2 compatibility adapters, referenced-artifact validation, and
+   the specified positive/negative regression fixtures. Do not modify
+   historical workflow YAML, package/lock files, Railway behavior, or the
+   exact-SHA verifier. Run the full acceptance command set above and record the
    result in workflow state before implementation review.
