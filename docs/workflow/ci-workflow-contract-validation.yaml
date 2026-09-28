@@ -13,7 +13,7 @@ git:
   branch: work/ci-workflow-contract-validation
   lifecycle_generation: 510922a8-9930-43b8-8abc-09d94523828c
   lifecycle_anchor_sha: 33b72f5b593a7dd28bb361021a0a7713467c73d3
-  pr_number: null
+  pr_number: 15
   head_sha: null
   merged_sha: null
 
