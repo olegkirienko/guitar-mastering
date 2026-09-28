@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: implementation
+phase: design_review
 status: ready
 gate: none
 
@@ -58,4 +58,4 @@ validation:
 blocking_findings: []
 
 next:
-  action: implement-ci-required-workflow-validation
+  action: review-design

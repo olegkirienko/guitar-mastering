@@ -22,7 +22,8 @@ and declared-version validation of every direct `docs/workflow/*.yaml` file.
   validate the current active v1 compatibility gate without rewriting it.
 - Fail closed with a path-specific diagnostic when a discovered workflow has
   an unsupported version/state, invalid route, duplicate identity, or missing
-  authoritative design, context, review, or finding-source artifact.
+  authoritative design/review evidence. Every referenced context path of an
+  active/non-terminal workflow must also exist.
 - Make validator failure fail the existing `validate` job and therefore the
   existing required `Validate / validate` check.
 - Run the check early enough to stop expensive application, browser, database,
@@ -34,6 +35,8 @@ and declared-version validation of every direct `docs/workflow/*.yaml` file.
 
 - Rewriting completed historical workflow YAML or migrating the active legacy
   lesson workflow as a side effect of CI validation.
+- Restoring files intentionally removed by completed work or requiring new
+  tombstone artifacts solely to preserve their historical context references.
 - Redesigning v3/v3.1 phase, gate, finding, reconciliation, delivery, or Git
   lifecycle semantics beyond applying the existing validator to discovered
   repository states.
@@ -93,17 +96,23 @@ nonzero.
 Apply these adapters:
 
 - **v3 and v3.1:** parse with the existing v3 parser and run the existing
-  `validateState` contract. Validate the authoritative design path, every
-  context path, the latest review when non-null, and every blocking-finding
-  source. This is static repository validation; remote ref, tag, PR, CI, and
-  provider observations remain orchestration preflight responsibilities.
+  `validateState` contract. Always validate the authoritative design path and
+  latest review when non-null. For non-terminal states, additionally require
+  every context path and blocking-finding source to exist. For terminal states,
+  context entries remain well-formed historical references but are not
+  existence requirements. This is static repository validation; remote ref,
+  tag, PR, CI, and provider observations remain orchestration preflight
+  responsibilities.
 - **completed v1/v2:** preserve the historical files unchanged and validate
   their compatibility envelope: declared version and identity, exact
   `complete / complete / none` terminal route, approved current slice and
-  latest review, empty blocking findings, terminal `next` action, and existence
-  of referenced specification/design, context/course-map, review, and final
-  review artifacts. Do not reinterpret their duplicate historical status and
-  verdict fields as v3 authority.
+  latest review, empty blocking findings, and terminal `next` action. Require
+  the authoritative specification/design, latest immutable review, and every
+  completed-slice final review to exist. Context, course-map, previous-work,
+  and other historical reference values must remain non-empty repository
+  paths, but their current targets may be absent when completed work removed
+  them. Do not reinterpret duplicate historical status/verdict fields as v3
+  authority or make completed workflows executable.
 - **active v1:** accept only the repository's declared historical approval
   envelope: lesson identity, `human_gate / approved / design_approval`, empty
   findings, approved design review, and the explicit
@@ -119,7 +128,18 @@ Apply these adapters:
 Identity keys must be unique across discovered files (`lesson_id` for v1,
 `work_item_id` otherwise). Compatibility adapters are intentionally smaller
 than the v3 state machine: they preserve known historical validity without
-creating new executable legacy routes.
+creating new executable legacy routes. Phase is evaluated before artifact
+existence: only a validated exact terminal envelope receives the historical
+context exception. A malformed or merely claimed terminal state does not.
+
+This policy deliberately distinguishes authoritative evidence from historical
+inputs. Workflow files are present because discovery reads them; their
+specification/design and immutable approval/final-review artifacts remain
+durable evidence and must exist. Context lists describe inputs that were valid
+while work executed and may name the very resources a completed retirement
+removed. Treating those paths as historical only after terminal validation
+preserves audit history without restoring retired files or maintaining a
+separate tombstone registry.
 
 ## CI placement and ordering
 
@@ -169,9 +189,12 @@ declared-version dispatch. Add isolated in-memory or temporary-directory cases
 proving that lexical discovery includes a newly added workflow, templates are
 excluded, duplicate identities fail, an invalid discovered active v3/v3.1
 state fails, the current active v1 approval envelope passes, unsupported active
-v2 fails, and supported completed v1/v2/v3 states pass without rewriting them.
-At least one negative discovered-workflow case must assert a failing validator
-outcome and include its path in the diagnostic.
+v2 fails, an active workflow with a missing context target fails, and supported
+completed v1/v2/v3 states pass without rewriting them even when a historical
+context target was intentionally removed. A completed workflow with a missing
+authoritative design or immutable review must still fail. At least one negative
+discovered-workflow case must assert a failing validator outcome and include
+its path in the diagnostic.
 
 No new test framework is warranted. The exact-SHA Railway verifier tests also
 require no change because the verifier continues to accept extra steps and
@@ -208,9 +231,11 @@ workflow state provide the executable behavior and durable rationale.
    and unsupported or malformed states fail closed with a path-specific error.
 3. The current v3.1 work item and active v1 lesson workflow are both validated;
    completed v1/v2/v3 historical snapshots remain unchanged and valid.
-4. Referenced design/specification, context/course-map, latest-review,
-   blocking-finding, and completed-slice final-review artifacts required by the
-   applicable version adapter exist.
+4. Every workflow's authoritative design/specification and immutable latest
+   and completed-slice final reviews exist. Every context/finding reference of
+   an active workflow exists. A completed workflow may retain a well-formed
+   historical context reference whose target was removed by completed work,
+   remains non-executable, and needs no restored file or tombstone artifact.
 5. The existing `validate` job contains exactly one step named
    `Validate workflow contracts` whose command is exactly
    `pnpm validate:workflow`.
@@ -244,8 +269,9 @@ rollback is involved.
    and focused presence/uniqueness/ordering assertions. Extend
    `scripts/validate-workflow-contract.mjs` with deterministic direct-file
    discovery, unique identity checks, the existing v3/v3.1 validator path,
-   bounded v1/v2 compatibility adapters, referenced-artifact validation, and
-   the specified positive/negative regression fixtures. Do not modify
+   bounded v1/v2 compatibility adapters, phase-aware authoritative/context
+   artifact validation, and the specified positive/negative regression
+   fixtures. Do not modify
    historical workflow YAML, package/lock files, Railway behavior, or the
    exact-SHA verifier. Run the full acceptance command set above and record the
    result in workflow state before implementation review.
