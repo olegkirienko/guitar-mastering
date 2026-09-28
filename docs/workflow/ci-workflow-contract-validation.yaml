@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: implementation_review
+phase: design
 status: ready
 gate: none
 
@@ -37,7 +37,7 @@ current_slice:
   name: "Require workflow-contract validation in GitHub CI"
 
 latest_review:
-  path: docs/reviews/ci-workflow-contract-validation/design-review-03.md
+  path: docs/reviews/ci-workflow-contract-validation/implementation-review-02-ci-required-workflow-validation.md
 
 validation:
   result: passed
@@ -55,7 +55,11 @@ validation:
   browser_tests: "10 passed"
   postgres_tests: "19 passed"
 
-blocking_findings: []
+blocking_findings:
+  - id: HIGH-02
+    class: design_defect
+    source: docs/reviews/ci-workflow-contract-validation/implementation-review-02-ci-required-workflow-validation.md
+    summary: "Persisting the current PR head in its own merge-gate transition makes the v3.1 merge-ready checkpoint self-referential and immediately stale."
 
 next:
-  action: review-ci-required-workflow-validation
+  action: create-or-revise-design
