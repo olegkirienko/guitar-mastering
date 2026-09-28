@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: design_review
+phase: reconciliation
 status: ready
 gate: none
 
@@ -41,7 +41,7 @@ current_slice:
   name: "Require workflow-contract validation in GitHub CI"
 
 latest_review:
-  path: docs/reviews/ci-workflow-contract-validation/implementation-review-02-ci-required-workflow-validation.md
+  path: docs/reviews/ci-workflow-contract-validation/design-review-04.md
 
 validation:
   result: passed
@@ -60,10 +60,27 @@ validation:
   postgres_tests: "19 passed"
 
 blocking_findings:
-  - id: HIGH-02
-    class: design_defect
-    source: docs/reviews/ci-workflow-contract-validation/implementation-review-02-ci-required-workflow-validation.md
-    summary: "Persisting the current PR head in its own merge-gate transition makes the v3.1 merge-ready checkpoint self-referential and immediately stale."
+  - id: LOW-01
+    class: documentation_defect
+    source: docs/reviews/ci-workflow-contract-validation/design-review-04.md
+    summary: "The design both requires and disclaims the workflow README update."
+
+reconciliation:
+  id: reconcile-LOW-01-readme-scope
+  kind: documentation_defect
+  basis:
+    path: docs/reviews/ci-workflow-contract-validation/design-review-04.md
+    finding_ids: [LOW-01]
+  allowed_paths:
+    - docs/technical-designs/ci-workflow-contract-validation.md
+    - docs/workflow/ci-workflow-contract-validation.yaml
+  acceptance:
+    - "Replace only the contradictory README sentence with the exact reviewed scope; do not change behavior, architecture, risk, slice scope, identity, verdict, provider state, credentials, database, immutable evidence, or other design wording."
+    - "Run pnpm validate:workflow and git diff --check."
 
 next:
-  action: review-design
+  action: reconcile-LOW-01
+  on_success:
+    phase: human_gate
+    gate: design_approval
+    action: approve-design
