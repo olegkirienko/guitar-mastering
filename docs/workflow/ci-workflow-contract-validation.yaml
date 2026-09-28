@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: design
+phase: design_review
 status: ready
 gate: none
 
@@ -25,10 +25,14 @@ design:
 
 context:
   - AGENTS.md
+  - .codex/skills/work-orchestrator/SKILL.md
+  - .codex/skills/implementation-review/SKILL.md
   - .github/workflows/ci.yml
   - package.json
   - scripts/validate-workflow-contract.mjs
   - docs/workflow/README.md
+  - docs/workflow/templates/work-item-state.yaml
+  - docs/technical-designs/maintenance-orchestration-git-lifecycle-v3-1.md
 
 completed_slices: []
 
@@ -62,4 +66,4 @@ blocking_findings:
     summary: "Persisting the current PR head in its own merge-gate transition makes the v3.1 merge-ready checkpoint self-referential and immediately stale."
 
 next:
-  action: create-or-revise-design
+  action: review-design
