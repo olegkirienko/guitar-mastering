@@ -43,7 +43,17 @@ describe("production artifact acceptance", () => {
 
   it("keeps CI validation-only and builds the production artifact", async () => {
     const workflow = await readFile(path.join(repositoryRoot, ".github/workflows/ci.yml"), "utf8");
+    const workflowValidationCommands = [...workflow.matchAll(/^\s+run: pnpm validate:workflow$/gm)];
+    const frozenInstallPosition = workflow.indexOf("run: pnpm install --frozen-lockfile");
+    const lintPosition = workflow.indexOf("run: pnpm lint");
+
     expect(workflow).toContain("pnpm build");
+    expect(workflow).toContain("- name: Validate workflow contracts\n        run: pnpm validate:workflow");
+    expect(workflowValidationCommands).toHaveLength(1);
+    expect(frozenInstallPosition).toBeGreaterThanOrEqual(0);
+    expect(lintPosition).toBeGreaterThanOrEqual(0);
+    expect(workflowValidationCommands[0].index).toBeGreaterThan(frozenInstallPosition);
+    expect(workflowValidationCommands[0].index).toBeLessThan(lintPosition);
     expect(workflow).toMatch(/\n  pull_request:\s*\n  push:\s*\n    branches:\s*\n      - main\s*\n/);
     expect(workflow).not.toContain("workflow_dispatch");
     expect(workflow).not.toContain("concurrency:");
