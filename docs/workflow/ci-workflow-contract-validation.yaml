@@ -4,9 +4,9 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: design_review
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: design_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -37,9 +37,12 @@ current_slice:
   name: "Work item design"
 
 latest_review:
-  path: null
+  path: docs/reviews/ci-workflow-contract-validation/design-review-01.md
 
 blocking_findings: []
 
 next:
-  action: review-design
+  action: approve-design
+  on_approval:
+    phase: implementation
+    action: implement-ci-required-workflow-validation
