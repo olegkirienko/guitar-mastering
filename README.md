@@ -111,7 +111,7 @@ src/
 └── main.tsx
 ```
 
-# Codex Orchestration Layer v3
+# Codex Orchestration Layer v3.1
 
 The repository uses a deterministic, repo-local workflow for both lesson development and technical work.
 
@@ -125,8 +125,11 @@ Examples:
 - `refactor-progress-storage`
 - `infra-cloudflare-migration`
 
-New work items use the v3 contract. Completed v1/v2 workflows remain valid under
-their original contract and are not migrated merely for schema consistency.
+Eligible work items created after v3.1 activation on canonical `main` use the
+v3.1 contract. Active pre-activation v3 items stay v3 unless an explicit,
+separately designed migration proves compatible provenance. Completed v1/v2/v3
+workflows remain valid under their original contract and are not migrated
+merely for schema consistency.
 Historical `lesson_id`, `spec`, and `lesson_completion` fields remain readable.
 
 The complete state-machine, reconciliation, gate, migration, and compatibility
@@ -134,7 +137,7 @@ contract is documented in [`docs/workflow/README.md`](docs/workflow/README.md).
 
 ## Workflow
 
-`design → design review → human gate → implementation → implementation review → fixes / reconciliation → human gate → next slice or complete`
+`work-item init → design → design review → implementation/review/fixes → merge approval → delivery verification → completion approval`
 
 ## Sources of truth
 
@@ -147,7 +150,7 @@ contract is documented in [`docs/workflow/README.md`](docs/workflow/README.md).
 - `docs/reviews/` — immutable review artifacts
 - `docs/workflow/` — deterministic work-item state
 
-For an active v3 work item, its workflow YAML is the only mutable authority for
+For an active work item, its workflow YAML is the only mutable authority for
 the current `phase`, `status`, `gate`, active `blocking_findings`, and
 `next.action`. Designs own durable decisions and approved slices; reviews are
 immutable historical assessments; operator documents own bounded operations
@@ -231,6 +234,7 @@ Progression gates remain explicit:
 - `design_approval`
 - `next_slice_approval`
 - `work_item_completion`
+- `merge_approval`
 
 Risky operations use scoped gates when applicable:
 
@@ -245,11 +249,17 @@ destroy count, credential scope, or risk invalidates it.
 
 Before starting another slice, the orchestrator verifies that the authoritative design actually defines one.
 
-If the approved slice is final:
+For v3, if the approved slice is final:
 
 `human_gate / work_item_completion → explicit human approval → complete`
 
 Existing historical lesson workflows may retain legacy `lesson_completion`.
+
+For v3.1, a final approved slice enters `merge_approval`. The one Draft PR must
+merge through protected `main`, and `delivery_verification` must positively
+correlate the exact merged SHA across GitHub CI and Railway before
+`work_item_completion` can be offered. The canonical work branch remains the
+only executable control plane until the terminal state is committed and pushed.
 
 Canonical terminal state:
 

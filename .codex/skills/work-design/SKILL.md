@@ -11,6 +11,11 @@ Read:
 - referenced `context`
 - relevant prior designs/reviews
 
+For new v3.1 work, initialization must already have established a clean,
+synchronized, non-divergent `main`, the deterministic canonical work branch,
+a fresh lifecycle generation, and its annotated bootstrap registration. Never
+inherit executable state from a stale workflow snapshot on `main`.
+
 Use `work_item_type` only to select relevant concerns; explicit requirements remain authoritative.
 
 Designs own durable decisions, constraints, acceptance criteria, risks, and approved slices. They must not claim the current workflow phase, gate, active finding, or next authorized action.

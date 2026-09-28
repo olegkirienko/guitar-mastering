@@ -7,13 +7,13 @@ description: Deterministically coordinate arbitrary repository work items throug
 
 ## Version selection and identity
 
-Validate a workflow under its declared version. Generate only v3. Never migrate a completed v1/v2 workflow merely for schema consistency.
+Validate a workflow under its declared version. Generate only v3.1. Never migrate a completed v1/v2/v3 workflow merely for schema consistency.
 
 Prefer `work_item_id` and `work_item_type`. For legacy state only, `lesson_id` implies `work_item_type: lesson`.
 
 At the next explicitly requested action for a consistent active v1/v2 workflow, migrate it atomically before the behavioral phase: set `version: 3`, remove duplicate mutable fields, classify active findings, and preserve design, review, context, and slice references. If the outcome, target, risk, slice, or approval is ambiguous, fail closed. Migration creates no authority.
 
-## V3 authority and preflight
+## V3 / v3.1 authority and preflight
 
 Workflow YAML is the only mutable authority for phase, status, gate, active findings, and next action. Designs own durable decisions and slices; reviews are immutable evidence; operator documents own operations and observations.
 
@@ -33,17 +33,38 @@ Validate before every action or gate consumption:
 
 V3 phases are `design`, `design_review`, `implementation`, `implementation_review`, `fixes`, `fix_rereview`, `reconciliation`, `human_gate`, and `complete`.
 
+V3.1 also permits `work_item_init` and `delivery_verification`. Fresh
+initialization and resume/execution are disjoint entry paths. A fresh
+`initialize-work-item` request starts from clean, synchronized `main`, requires
+the deterministic branch and every same-ID lifecycle registration or tombstone
+to be absent, generates a fresh lifecycle generation, creates the bootstrap
+commit, and atomically publishes the canonical branch plus its annotated
+lifecycle tag. It does not require an existing branch, generation, or anchor.
+
+Before dispatching any already-initialized v3.1 item, fetch and resolve only
+`refs/remotes/origin/work/<work-item-id>` plus the reserved lifecycle tags for
+that ID. Require exactly one annotated registration, resolve its bootstrap
+commit independently of workflow YAML, and verify repository, requested ID,
+deterministic branch, lifecycle generation, bootstrap anchor, current workflow
+claims, head/merge metadata, and ancestry. A missing canonical ref or
+registration, duplicate registration, conflicting identity, stale `main`
+snapshot, inherited copy, or terminal retained branch is non-executable and
+must fail closed. A failed resume never enters initialization and never
+substitutes the current checkout, `main`, another ref, or history.
+
 If inconsistent, stop with exactly `WORKFLOW STATE INCONSISTENT`, list conflicts and expected values, and make no application/provider mutation. Do not infer or silently repair. A state-only `repair-state` action is allowed only when separately requested and all bounded conditions in `AGENTS.md` are proven.
 
 ## Routing
 
 - `design` / `create-or-revise-design` → `work-design`
+- `work_item_init` / `initialize-work-item` → perform the ordered safe-init contract
 - `design_review` / `review-design` → `design-review`
 - `implementation` / `implement-<slice>` → `implementation-slice`
 - `implementation_review` / `review-<slice>` → `implementation-review`
 - `fixes` / `fix-<finding-ids>` → `targeted-fix`
 - `fix_rereview` / `rereview-<slice>` → `targeted-rereview`
 - `reconciliation` / `reconcile-<id>` → `reconciliation`
+- `delivery_verification` / `verify-delivery` or `retry-delivery-<id>` → `delivery-verification`
 - `human_gate` / `approve-<gate>` → stop unless matching explicit approval is supplied
 - `complete` / `none` → stop
 
@@ -59,12 +80,22 @@ Approval is scoped, non-transitive, and single-use. Consume only the currently r
 - `production_mutation_approval`: require provider, environment, target IDs, exact operation/plan, and rollback/stop conditions.
 - `destructive_action_approval`: additionally require pinned targets, recovery evidence, and allowed destroy count.
 - `credential_change_approval`: require owner, scope, destination, expiry/rotation, and secret-safe verification.
+- `merge_approval`: require the canonical branch and lifecycle generation,
+  primary PR targeting `main`, exact full head SHA, successful required checks,
+  clean tree, no findings, approved diff, and read-only branch-retention proof.
+  Re-verify all scope before protected merge, record the exact resulting
+  `main` SHA, and enter delivery verification on the retained work branch.
 
 Changed target IDs, plan contents, destroy counts, credential scope, or risk invalidate approval. Design approval never substitutes for an operational gate.
 
 ## Review outcomes
 
-After `APPROVED`, route to `next_slice_approval` when a later approved slice exists, otherwise `work_item_completion`. After `APPROVED WITH RECONCILIATION`, route only through the exact recorded reconciliation. Any active design or implementation defect takes precedence over reconciliation. Never invent a slice.
+After `APPROVED`, route to `next_slice_approval` when a later approved slice
+exists. For a final v3 slice route to `work_item_completion`; for a final v3.1
+slice route to `merge_approval`. After `APPROVED WITH RECONCILIATION`, route
+only through the exact recorded reconciliation. Any active design or
+implementation defect takes precedence over reconciliation. Never invent a
+slice.
 
 ## Terminal state
 

@@ -1,12 +1,24 @@
-version: 3
+version: 3.1
 
 work_item_id: <work-item-id>
 work_item_type: <lesson|technical_feature|refactor|infrastructure|maintenance>
 title: "<work item title>"
 
-phase: design
+phase: work_item_init
 status: ready
 gate: none
+
+git:
+  repository: github.com/<owner>/<repository>
+  branch: work/<work-item-id>
+  lifecycle_generation: <uuid>
+  lifecycle_anchor_sha: null
+  pr_number: null
+  head_sha: null
+  merged_sha: null
+
+delivery:
+  evidence_path: null
 
 design:
   path: <authoritative design/specification path>
@@ -25,4 +37,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: create-or-revise-design
+  action: initialize-work-item

@@ -7,6 +7,8 @@
 - Specification:
 - Previous review artifacts:
 - Artifact identifier:
+- Canonical branch / lifecycle generation:
+- Primary PR / exact head SHA:
 
 ## Final verdict
 **APPROVED | APPROVED WITH RECONCILIATION | CHANGES REQUIRED**
@@ -24,4 +26,6 @@ None.
 ## Validation results
 ## Slice status
 ## Recommended next action
+For a final v3.1 slice, pin merge readiness and route to `merge_approval`, not
+directly to completion.
 ## Handoff notes

@@ -1,12 +1,24 @@
-version: 3
+version: 3.1
 
 work_item_id: lesson-<id>
 work_item_type: lesson
 title: "<lesson title>"
 
-phase: design
+phase: work_item_init
 status: ready
 gate: none
+
+git:
+  repository: github.com/<owner>/<repository>
+  branch: work/lesson-<id>
+  lifecycle_generation: <uuid>
+  lifecycle_anchor_sha: null
+  pr_number: null
+  head_sha: null
+  merged_sha: null
+
+delivery:
+  evidence_path: null
 
 design:
   path: docs/lesson-designs/<lesson-spec>.md
@@ -27,4 +39,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: create-or-revise-design
+  action: initialize-work-item

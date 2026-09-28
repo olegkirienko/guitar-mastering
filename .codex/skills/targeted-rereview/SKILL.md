@@ -26,7 +26,9 @@ An exact documentation/state repair discovered by re-review may route to `reconc
 
 If approved:
 - later slice exists → `human_gate / next_slice_approval`
-- final slice → `human_gate / work_item_completion`
+- final v3 slice → `human_gate / work_item_completion`
+- final v3.1 slice → `human_gate / merge_approval` after the exact pushed head,
+  PR checks, clean tree, and branch-retention proof are pinned
 
 Never invent a next slice.
 
