@@ -70,6 +70,30 @@ If inconsistent, stop with exactly `WORKFLOW STATE INCONSISTENT`, list conflicts
 
 A `blocked` state permits only its named non-mutating `supply-<blocker>` action.
 
+## Automatic continuation
+
+After every successful non-human phase, re-resolve the authoritative workflow
+using the applicable identity rules and run the full preflight against that
+fresh state. If it records another ready deterministic non-human action,
+dispatch that action immediately in the same invocation and repeat this cycle.
+This applies to `work_item_init`, `design`, `design_review`, `implementation`,
+`implementation_review`, `fixes`, `fix_rereview`, `reconciliation`, and
+`delivery_verification`, including repeated review/fix cycles. Phase skills
+remain responsible only for their own phase and complete state transition.
+
+Before each dispatch, compare the fresh routing fingerprint—lifecycle identity,
+`phase`, `status`, `gate`, and `next.action`—with the fingerprint that produced
+the preceding successful dispatch. An unchanged fingerprint or an invalid or
+ambiguous transition is unsafe continuation: stop and use the existing
+fail-closed reporting instead of retrying blindly.
+
+Continue until the fresh preflight reaches an explicit human gate, a risky
+external mutation requiring its typed approval, blocked input that cannot be
+supplied safely, inconsistent or ambiguous state, unsafe or failed execution,
+or exact terminal completion. Ordinary phase completion is not a stop
+condition. Approval supplied for an earlier gate is never reused for a newly
+reached gate.
+
 ## Gates
 
 Approval is scoped, non-transitive, and single-use. Consume only the currently recorded gate and pinned scope.
