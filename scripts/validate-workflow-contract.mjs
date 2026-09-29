@@ -597,9 +597,7 @@ function validateState(state) {
     if (afterMerge) assert.ok(state.git.merged_sha);
     const requiresReviewedSha = (state.phase === "human_gate" && state.gate === "merge_approval") || afterMerge;
     if (requiresReviewedSha) assert.match(state.git.reviewed_sha, /^[0-9a-f]{40}$/);
-    if (["work_item_init", "design", "design_review", "implementation", "implementation_review", "fixes", "fix_rereview"].includes(state.phase)) {
-      assert.equal(state.git.reviewed_sha, null, "reviewed SHA must be cleared while behavioral work or review is active");
-    }
+    else assert.equal(state.git.reviewed_sha, null, "reviewed SHA must be null before final review approval or merge");
     if (state.phase === "complete") assert.ok(state.delivery.evidence_path);
   }
 }
@@ -743,6 +741,34 @@ const v31Legal = [
     ...v31Base,
     phase: "human_gate",
     status: "awaiting_approval",
+    gate: "design_approval",
+    next: { action: "approve-design", on_approval: { phase: "implementation", action: "implement-slice-a" } },
+  },
+  {
+    ...v31Base,
+    phase: "reconciliation",
+    blocking_findings: [{
+      id: "MEDIUM-01",
+      class: "documentation_defect",
+      source: "docs/reviews/fixture.md",
+      summary: "State text is stale.",
+    }],
+    reconciliation: {
+      id: "RECON-01",
+      kind: "documentation_defect",
+      basis: { path: "docs/reviews/fixture.md", finding_ids: ["MEDIUM-01"] },
+      allowed_paths: ["docs/workflow/fixture.yaml"],
+      acceptance: ["Synchronize the reviewed state."],
+    },
+    next: {
+      action: "reconcile-MEDIUM-01",
+      on_success: { phase: "implementation_review", action: "review-slice-a" },
+    },
+  },
+  {
+    ...v31Base,
+    phase: "human_gate",
+    status: "awaiting_approval",
     gate: "merge_approval",
     git: { ...v31Base.git, reviewed_sha: shaA },
     gate_scope: {
@@ -790,6 +816,16 @@ const v31Legal = [
 ];
 v31Legal.forEach(validateState);
 v31Legal.forEach((state) => validateState(parseWorkflow(renderWorkflow(state))));
+const v31DesignApproval = v31Legal.find((state) => state.gate === "design_approval");
+const v31Reconciliation = v31Legal.find((state) => state.phase === "reconciliation");
+assert.throws(() => validateState({
+  ...v31DesignApproval,
+  git: { ...v31DesignApproval.git, reviewed_sha: shaA },
+}), /reviewed SHA must be null/);
+assert.throws(() => validateState({
+  ...v31Reconciliation,
+  git: { ...v31Reconciliation.git, reviewed_sha: shaA },
+}), /reviewed SHA must be null/);
 
 const invalid = [
   { ...base, phase: "design", gate: "design_approval", next: { action: "create-or-revise-design" } },
@@ -964,6 +1000,7 @@ function validatePostReviewCommits(state, observation) {
 }
 
 function resolveMergeCandidate(state, observation) {
+  validateState(state);
   assert.equal(state.phase, "human_gate");
   assert.equal(state.gate, "merge_approval");
   assert.equal(observation.repository, state.git.repository, "merge candidate repository mismatch");
@@ -972,6 +1009,10 @@ function resolveMergeCandidate(state, observation) {
   assert.equal(observation.prNumber, state.git.pr_number, "merge candidate PR mismatch");
   assert.equal(observation.targetBranch, "main", "merge candidate does not target main");
   assert.match(observation.headSha, /^[0-9a-f]{40}$/, "current PR head is not a full SHA");
+  assert.match(observation.remoteBranchHeadSha, /^[0-9a-f]{40}$/, "canonical remote head is not a full SHA");
+  assert.match(observation.prHeadSha, /^[0-9a-f]{40}$/, "live PR head is not a full SHA");
+  assert.equal(observation.remoteBranchHeadSha, observation.headSha, "canonical remote head differs from presented head");
+  assert.equal(observation.prHeadSha, observation.headSha, "live PR head differs from presented head");
   validatePostReviewCommits(state, observation);
   assert.ok(observation.validationRunId, "required validation run is missing");
   assert.equal(observation.validationHeadSha, observation.headSha, "validation belongs to another PR head");
@@ -1015,6 +1056,8 @@ const mergeCandidateObservation = {
   prNumber: 17,
   targetBranch: "main",
   headSha: shaC,
+  remoteBranchHeadSha: shaC,
+  prHeadSha: shaC,
   headAncestors: [shaA, shaB],
   commitsAfterReviewed: [
     {
@@ -1890,6 +1933,14 @@ assert.throws(() => resolveMergeCandidate(mergeGateState, {
 }), /does not descend from reviewed SHA/);
 assert.throws(() => resolveMergeCandidate(mergeGateState, {
   ...mergeCandidateObservation,
+  remoteBranchHeadSha: shaB,
+}), /canonical remote head differs from presented head/);
+assert.throws(() => resolveMergeCandidate(mergeGateState, {
+  ...mergeCandidateObservation,
+  prHeadSha: shaB,
+}), /live PR head differs from presented head/);
+assert.throws(() => resolveMergeCandidate(mergeGateState, {
+  ...mergeCandidateObservation,
   commitsAfterReviewed: [
     ...mergeCandidateObservation.commitsAfterReviewed.slice(0, 1),
     {
@@ -1913,6 +1964,8 @@ assert.throws(() => resolveMergeCandidate(mergeGateState, {
 const changedHeadObservation = {
   ...mergeCandidateObservation,
   headSha: shaB,
+  remoteBranchHeadSha: shaB,
+  prHeadSha: shaB,
   headAncestors: [shaA],
   commitsAfterReviewed: mergeCandidateObservation.commitsAfterReviewed.slice(0, 1),
   validationRunId: 992,

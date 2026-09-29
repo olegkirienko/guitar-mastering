@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: fixes
+phase: fix_rereview
 status: ready
 gate: none
 
@@ -57,7 +57,7 @@ validation:
     - "git diff --check"
   unit_tests: "73 passed, 19 skipped"
   browser_tests: "10 passed"
-  postgres_tests: "19 passed on isolated rerun after one transient rate-limiter timing failure"
+  postgres_tests: "19 passed"
 
 blocking_findings:
   - id: MEDIUM-01
@@ -76,4 +76,4 @@ last_reconciliation:
   validation_result: passed
 
 next:
-  action: fix-MEDIUM-01-MEDIUM-02
+  action: rereview-ci-required-workflow-validation
