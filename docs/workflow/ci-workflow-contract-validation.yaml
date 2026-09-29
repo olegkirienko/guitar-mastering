@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: implementation_review
+phase: fixes
 status: ready
 gate: none
 
@@ -41,7 +41,7 @@ current_slice:
   name: "Require workflow-contract validation in GitHub CI"
 
 latest_review:
-  path: docs/reviews/ci-workflow-contract-validation/design-review-04.md
+  path: docs/reviews/ci-workflow-contract-validation/implementation-review-03-ci-required-workflow-validation.md
 
 validation:
   result: passed
@@ -59,7 +59,15 @@ validation:
   browser_tests: "10 passed"
   postgres_tests: "19 passed on isolated rerun after one transient rate-limiter timing failure"
 
-blocking_findings: []
+blocking_findings:
+  - id: MEDIUM-01
+    class: implementation_defect
+    source: docs/reviews/ci-workflow-contract-validation/implementation-review-03-ci-required-workflow-validation.md
+    summary: "Dynamic merge presentation does not prove canonical remote and live PR heads equal the presented SHA."
+  - id: MEDIUM-02
+    class: implementation_defect
+    source: docs/reviews/ci-workflow-contract-validation/implementation-review-03-ci-required-workflow-validation.md
+    summary: "Pre-review gates and reconciliation can retain a stale reviewed SHA."
 
 last_reconciliation:
   id: reconcile-LOW-01-readme-scope
@@ -68,4 +76,4 @@ last_reconciliation:
   validation_result: passed
 
 next:
-  action: review-ci-required-workflow-validation
+  action: fix-MEDIUM-01-MEDIUM-02
