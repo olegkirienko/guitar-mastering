@@ -4,9 +4,9 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: reconciliation
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: design_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -59,28 +59,17 @@ validation:
   browser_tests: "10 passed"
   postgres_tests: "19 passed"
 
-blocking_findings:
-  - id: LOW-01
-    class: documentation_defect
-    source: docs/reviews/ci-workflow-contract-validation/design-review-04.md
-    summary: "The design both requires and disclaims the workflow README update."
+blocking_findings: []
 
-reconciliation:
+last_reconciliation:
   id: reconcile-LOW-01-readme-scope
-  kind: documentation_defect
-  basis:
-    path: docs/reviews/ci-workflow-contract-validation/design-review-04.md
-    finding_ids: [LOW-01]
-  allowed_paths:
-    - docs/technical-designs/ci-workflow-contract-validation.md
-    - docs/workflow/ci-workflow-contract-validation.yaml
-  acceptance:
-    - "Replace only the contradictory README sentence with the exact reviewed scope; do not change behavior, architecture, risk, slice scope, identity, verdict, provider state, credentials, database, immutable evidence, or other design wording."
-    - "Run pnpm validate:workflow and git diff --check."
+  date: 2026-09-29
+  basis_path: docs/reviews/ci-workflow-contract-validation/design-review-04.md
+  validation_result: passed
 
 next:
-  action: reconcile-LOW-01
-  on_success:
-    phase: human_gate
-    gate: design_approval
-    action: approve-design
+  action: approve-design
+  on_approval:
+    phase: implementation
+    gate: none
+    action: implement-ci-required-workflow-validation

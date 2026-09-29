@@ -339,9 +339,8 @@ implementation checkpoint; no historical SHA is fabricated.
 
 No new test framework is warranted. The exact-SHA Railway verifier tests also
 require no change because the verifier continues to accept extra steps and
-still rejects any unsuccessful job. No README, operator runbook, or deployment
-documentation needs an update; the CI YAML, validator, this design, and
-workflow state provide the executable behavior and durable rationale.
+still rejects any unsuccessful job. Update the workflow README as specified
+above; no operator runbook or deployment documentation needs an update.
 
 ## Infrastructure, security, and operations
 
