@@ -27,8 +27,12 @@ An exact documentation/state repair discovered by re-review may route to `reconc
 If approved:
 - later slice exists → `human_gate / next_slice_approval`
 - final v3 slice → `human_gate / work_item_completion`
-- final v3.1 slice → `human_gate / merge_approval` after the exact pushed head,
-  PR checks, clean tree, and branch-retention proof are pinned
+- final v3.1 slice → persist the exact implementation `reviewed_sha`, then
+  commit/push only the immutable re-review and workflow transition. Prove the
+  dynamically resolved PR head descends from it with only approved same-item
+  control-plane commits, and present that exact head, its successful checks,
+  clean tree, and branch-retention proof at `human_gate / merge_approval`.
+  Never persist the current PR head or validation-run identity before merge.
 
 Never invent a next slice.
 

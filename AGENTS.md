@@ -251,7 +251,13 @@ The normal v3.1 route is:
 Use one early Draft PR for the work item. Do not routinely push directly to
 `main`. The final approved slice routes to a scoped `merge_approval`, not to
 completion. Merge approval pins the canonical branch, lifecycle generation,
-PR, `main` target, exact full head SHA, and successful validation run.
+PR, `main` target, and exact reviewed implementation SHA. The current PR head
+and successful validation run are resolved dynamically and presented to the
+human; they are not persisted before merge. The head must descend from the
+reviewed SHA, and every intervening commit must contain only approved
+control-plane artifacts. Re-resolve after approval and merge atomically only
+when the exact presented head is unchanged; any later implementation or
+application change requires review again.
 
 After protected merge, record the exact resulting full `main` SHA as delivery
 truth. `delivery_verification` must correlate that SHA across GitHub push CI,

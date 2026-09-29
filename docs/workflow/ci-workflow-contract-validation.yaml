@@ -1,0 +1,82 @@
+version: 3.1
+
+work_item_id: ci-workflow-contract-validation
+work_item_type: infrastructure
+title: "CI Workflow Contract Validation"
+
+phase: human_gate
+status: awaiting_approval
+gate: merge_approval
+
+git:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/ci-workflow-contract-validation
+  lifecycle_generation: 510922a8-9930-43b8-8abc-09d94523828c
+  lifecycle_anchor_sha: 33b72f5b593a7dd28bb361021a0a7713467c73d3
+  pr_number: 15
+  reviewed_sha: 3ac28286d836387c45882e6a44df9a5be605014d
+  merged_sha: null
+
+delivery:
+  evidence_path: null
+
+design:
+  path: docs/technical-designs/ci-workflow-contract-validation.md
+
+context:
+  - AGENTS.md
+  - .codex/skills/work-orchestrator/SKILL.md
+  - .codex/skills/implementation-review/SKILL.md
+  - .github/workflows/ci.yml
+  - package.json
+  - scripts/validate-workflow-contract.mjs
+  - docs/workflow/README.md
+  - docs/workflow/templates/work-item-state.yaml
+  - docs/technical-designs/maintenance-orchestration-git-lifecycle-v3-1.md
+
+completed_slices: []
+
+current_slice:
+  id: ci-required-workflow-validation
+  name: "Require workflow-contract validation in GitHub CI"
+
+latest_review:
+  path: docs/reviews/ci-workflow-contract-validation/fix-rereview-02-ci-required-workflow-validation.md
+
+validation:
+  result: passed
+  node_version: 24.7.0
+  repository_workflows: "8 verified"
+  commands:
+    - "pnpm validate:workflow"
+    - "pnpm lint"
+    - "pnpm test"
+    - "pnpm test:browser"
+    - "pnpm test:postgres"
+    - "pnpm build"
+    - "git diff --check"
+  unit_tests: "73 passed, 19 skipped"
+  browser_tests: "10 passed"
+  postgres_tests: "19 passed"
+
+blocking_findings: []
+
+gate_scope:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/ci-workflow-contract-validation
+  lifecycle_generation: 510922a8-9930-43b8-8abc-09d94523828c
+  pr_number: 15
+  target_branch: main
+  reviewed_sha: 3ac28286d836387c45882e6a44df9a5be605014d
+
+last_reconciliation:
+  id: reconcile-LOW-01-readme-scope
+  date: 2026-09-29
+  basis_path: docs/reviews/ci-workflow-contract-validation/design-review-04.md
+  validation_result: passed
+
+next:
+  action: approve-merge
+  on_approval:
+    phase: delivery_verification
+    action: verify-delivery

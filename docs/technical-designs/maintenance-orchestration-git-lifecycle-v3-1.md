@@ -99,7 +99,7 @@ git:
   lifecycle_generation: <uuid>
   lifecycle_anchor_sha: <full-bootstrap-commit-sha>
   pr_number: null
-  head_sha: null
+  reviewed_sha: null
   merged_sha: null
 ```
 
@@ -116,8 +116,10 @@ git:
   it matches that registration and the bootstrap commit's identity bindings.
 - `pr_number` is the one primary PR targeting `main`; it becomes non-null when
   the first meaningful checkpoint is pushed.
-- `head_sha` is the exact committed work-branch revision currently pinned by a
-  gate or delivery action. It is never the name `HEAD` or a short SHA.
+- `reviewed_sha` is the exact implementation revision approved by the final
+  implementation review or fix re-review. It is null until such approval and
+  whenever implementation/application behavior returns to review. It is never
+  the current merge-gate PR head, `HEAD`, or a short SHA.
 - `merged_sha` is null until the primary PR is merged, then records the exact
   resulting full SHA on `main`. It is not overwritten by a Railway deployment
   ID or a later local state-only commit.
@@ -223,7 +225,9 @@ already-initialized v3.1 item, the resolver must, in order:
    repository, ID, branch, generation, and `lifecycle_anchor_sha` claims against
    the authoritative registration;
 7. verify ref/PR ancestry and available branch metadata agree with
-   `git.head_sha`, `git.merged_sha`, and the workflow's canonical Git metadata;
+   `git.reviewed_sha`, `git.merged_sha`, and the workflow's canonical Git
+   metadata; when `reviewed_sha` is non-null, require it in current canonical
+   branch and PR ancestry without requiring it to equal the current head;
 8. reject copied workflows on any other ref and reject a terminal workflow
    before checkout or action dispatch; and
 9. only then check out or execute the single `next.action` from that ref.
@@ -390,12 +394,17 @@ For non-final approved slices, v3.1 retains
 `implementation_review` and `fix_rereview` route to
 `human_gate / merge_approval`, never directly to completion.
 
-Before entering the gate, commit and push the gate state, wait for required PR
-checks, then pin the resulting full head SHA. The gate is valid only when:
+Before entering the gate, persist the exact implementation `reviewed_sha`,
+then commit and push only the new immutable review and workflow transition.
+Resolve the resulting current PR head dynamically and wait for its required
+checks. The gate is valid only when:
 
 - branch is exactly `work/<work-item-id>`;
 - PR number and target `main` are verified read-only from GitHub;
-- `git.head_sha` equals the local, remote-branch, and PR head SHA;
+- `git.reviewed_sha` equals the implementation SHA named by the approving
+  immutable review and is an ancestor of the remote branch and current PR head;
+- every commit after `reviewed_sha` changes only the same work item's workflow
+  YAML and a new immutable implementation-review or fix-rereview artifact;
 - the PR diff matches the approved work-item scope;
 - required `Validate` checks for that exact head succeeded;
 - unresolved review findings are empty;
@@ -406,9 +415,11 @@ checks, then pin the resulting full head SHA. The gate is valid only when:
   branch, and no cleanup action can delete it before completion;
 - the final approved slice is recorded in `current_slice`.
 
-The approval presentation must include branch, PR number, target, exact head
-SHA, check names/conclusions, “unresolved findings: none”, clean-tree proof, and
-a high-level diff summary. The gate scope pins all of them:
+The approval presentation must include branch, PR number, target, exact
+dynamically resolved head SHA, reviewed SHA, check run and conclusions,
+“unresolved findings: none”, clean-tree proof, control-plane lineage proof,
+retention proof, and a high-level diff summary. Repository gate scope persists
+only the stable values:
 
 ```yaml
 phase: human_gate
@@ -416,12 +427,12 @@ status: awaiting_approval
 gate: merge_approval
 
 gate_scope:
+  repository: github.com/<owner>/<repository>
   branch: work/<work-item-id>
   lifecycle_generation: <uuid>
   pr_number: <number>
   target_branch: main
-  head_sha: <full-sha>
-  validation_run_id: <id>
+  reviewed_sha: <full-reviewed-implementation-sha>
 
 next:
   action: approve-merge
@@ -430,19 +441,26 @@ next:
     action: verify-delivery
 ```
 
-Any new commit, force update, changed target, changed PR, failed/replaced
-required check, dirty tree, or new active finding invalidates approval.
+The current head SHA and validation-run identity are live evidence and must not
+be written into repository state before merge. Any force update, changed
+target, changed PR, failed/replaced required check, dirty tree, new finding, or
+implementation/application change after `reviewed_sha` invalidates approval.
+An allowed control-plane commit requires a newly presented exact head.
 
 ## Merge procedure
 
 On explicit matching approval, the orchestrator:
 
-1. re-verifies the complete gate scope, executable-ref identity, current
-   branch-protection result, and read-only proof that merge will retain the
-   work branch;
-2. marks the PR ready for review if it remains Draft;
-3. waits for every required check on the pinned head to pass;
-4. uses the repository's enabled/approved merge strategy;
+1. fetches and re-resolves the current PR head and requires it to equal the
+   exact full SHA presented to the human;
+2. re-verifies stable gate scope, executable-ref identity, `reviewed_sha`
+   ancestry, every intervening control-plane-only commit, successful required
+   checks for that unchanged head, current branch protection, and read-only
+   proof that merge will retain the work branch;
+3. marks the PR ready for review if it remains Draft;
+4. invokes the repository's enabled/approved merge strategy with GitHub's
+   atomic expected-head facility (`expectedHeadOid` or equivalent) set to that
+   unchanged presented SHA;
 5. does not bypass protection, dismiss required review, force push, or push
    directly to `main`;
 6. resolves and records the resulting exact full `main` SHA as
@@ -455,7 +473,8 @@ pushed to the same canonical ref, the orchestrator records no successful phase
 transition and fails closed into explicit recovery/reconciliation. It never
 substitutes the merge-time workflow snapshot on `main`.
 
-If the pinned head cannot merge, no merged SHA is invented. A clean stale-base
+If the presented head changed or cannot merge atomically, no merge occurs and
+no merged SHA is invented. A clean stale-base
 sync routes through bounded branch reconciliation and then requires fresh PR
 validation and a new `merge_approval`. A semantic conflict routes to the
 appropriate design or implementation path.
@@ -530,7 +549,7 @@ remediation PR from the retained work branch (or a deterministic
 the primary PR and failure evidence. This is not a normal phase PR and is
 allowed only after immutable delivery failure evidence identifies the defect.
 It repeats targeted fix/re-review, merge approval, exact-SHA merge, and delivery
-verification. The workflow's `git.pr_number`, `head_sha`, and `merged_sha`
+verification. The workflow's `git.pr_number`, `reviewed_sha`, and `merged_sha`
 advance to the current remediation attempt; prior values remain only in
 immutable delivery evidence. No force push or branch-protection bypass is
 allowed.
@@ -709,8 +728,10 @@ partially installed.
 - Meaningful checkpoint policy replaces per-phase commit noise.
 - One early Draft PR is the normal integration point through final merge.
 - Final implementation approval routes to `merge_approval`, not completion.
-- Merge approval pins and presents branch, PR, target, full head SHA, successful
-  checks, no findings, clean tree, and diff summary.
+- Merge approval persists branch, PR, target, and reviewed SHA, then dynamically
+  presents the exact descendant PR head, successful checks, control-plane-only
+  lineage, no findings, clean tree, retention proof, and diff summary. It
+  re-resolves after approval and atomically merges only the unchanged head.
 - Merge never bypasses protection and records the exact resulting `main` SHA.
 - Delivery verification correlates that SHA through GitHub push CI, Railway
   metadata and `WAITING`, `RAILWAY_GIT_COMMIT_SHA`, verifier, migration,

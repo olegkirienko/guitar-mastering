@@ -45,8 +45,12 @@ If approved with reconciliation, record the exact repair contract, allowed paths
 If approved:
 - later approved slice exists → `human_gate / next_slice_approval`
 - final v3 slice → `human_gate / work_item_completion`
-- final v3.1 slice → commit/push the exact merge-ready checkpoint, prove PR
-  validation and branch retention, then `human_gate / merge_approval`
+- final v3.1 slice → persist the exact implementation `reviewed_sha`,
+  commit/push only the immutable review and workflow transition, then prove the
+  dynamically resolved PR head descends from it with only approved same-item
+  control-plane commits; present that exact head, its successful validation,
+  and branch-retention proof at `human_gate / merge_approval`. Do not persist
+  the current PR head or validation-run identity before merge.
 
 Never invent a next slice.
 

@@ -81,10 +81,15 @@ Approval is scoped, non-transitive, and single-use. Consume only the currently r
 - `destructive_action_approval`: additionally require pinned targets, recovery evidence, and allowed destroy count.
 - `credential_change_approval`: require owner, scope, destination, expiry/rotation, and secret-safe verification.
 - `merge_approval`: require the canonical branch and lifecycle generation,
-  primary PR targeting `main`, exact full head SHA, successful required checks,
-  clean tree, no findings, approved diff, and read-only branch-retention proof.
-  Re-verify all scope before protected merge, record the exact resulting
-  `main` SHA, and enter delivery verification on the retained work branch.
+  primary PR targeting `main`, exact reviewed implementation SHA, clean tree,
+  no findings, approved diff, and read-only branch-retention proof. Resolve and
+  present the current full PR head and its successful required checks without
+  persisting either value. Prove the head descends from `reviewed_sha` and each
+  intervening commit changes only approved same-item control-plane artifacts.
+  After approval, re-resolve all scope and fail closed if the head changed;
+  merge atomically with that unchanged expected head, record the exact
+  resulting `main` SHA, and enter delivery verification on the retained work
+  branch. Any post-review implementation/application change requires review.
 
 Changed target IDs, plan contents, destroy counts, credential scope, or risk invalidate approval. Design approval never substitutes for an operational gate.
 
