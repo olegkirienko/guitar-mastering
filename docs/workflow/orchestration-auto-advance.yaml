@@ -4,7 +4,7 @@ work_item_id: orchestration-auto-advance
 work_item_type: maintenance
 title: "Orchestration Auto-Advance"
 
-phase: implementation
+phase: implementation_review
 status: ready
 gate: none
 
@@ -40,4 +40,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: implement-auto-advance-orchestrator
+  action: review-auto-advance-orchestrator

@@ -2092,6 +2092,16 @@ for (const path of [
   assert.doesNotMatch(instructions, /human_approval_required:/);
 }
 
+const orchestratorInstructions = read(".codex/skills/work-orchestrator/SKILL.md");
+assert.match(orchestratorInstructions, /After every successful non-human phase, re-resolve the authoritative workflow/);
+assert.match(orchestratorInstructions, /run the full preflight against that\nfresh state/);
+assert.match(orchestratorInstructions, /dispatch that action immediately in the same invocation/);
+assert.match(orchestratorInstructions, /fresh routing fingerprint—lifecycle identity/);
+assert.match(orchestratorInstructions, /An unchanged fingerprint or an invalid or\nambiguous transition is unsafe continuation/);
+assert.match(orchestratorInstructions, /explicit human gate, a risky\nexternal mutation requiring its typed approval, blocked input/);
+assert.match(orchestratorInstructions, /Ordinary phase completion is not a stop\ncondition/);
+assert.match(orchestratorInstructions, /Approval supplied for an earlier gate is never reused/);
+
 const fakeEntry = (name, file) => ({ name, isFile: () => file });
 assert.deepEqual(workflowPathsFromEntries([
   fakeEntry("z-new.yaml", true),
