@@ -4,9 +4,9 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: fix_rereview
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: merge_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -14,7 +14,7 @@ git:
   lifecycle_generation: 510922a8-9930-43b8-8abc-09d94523828c
   lifecycle_anchor_sha: 33b72f5b593a7dd28bb361021a0a7713467c73d3
   pr_number: 15
-  reviewed_sha: null
+  reviewed_sha: 3ac28286d836387c45882e6a44df9a5be605014d
   merged_sha: null
 
 delivery:
@@ -41,7 +41,7 @@ current_slice:
   name: "Require workflow-contract validation in GitHub CI"
 
 latest_review:
-  path: docs/reviews/ci-workflow-contract-validation/fix-rereview-01-ci-required-workflow-validation.md
+  path: docs/reviews/ci-workflow-contract-validation/fix-rereview-02-ci-required-workflow-validation.md
 
 validation:
   result: passed
@@ -59,11 +59,15 @@ validation:
   browser_tests: "10 passed"
   postgres_tests: "19 passed"
 
-blocking_findings:
-  - id: MEDIUM-03
-    class: implementation_defect
-    source: docs/reviews/ci-workflow-contract-validation/fix-rereview-01-ci-required-workflow-validation.md
-    summary: "The targeted re-review skill still instructs agents to pin the current pushed head before merge approval."
+blocking_findings: []
+
+gate_scope:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/ci-workflow-contract-validation
+  lifecycle_generation: 510922a8-9930-43b8-8abc-09d94523828c
+  pr_number: 15
+  target_branch: main
+  reviewed_sha: 3ac28286d836387c45882e6a44df9a5be605014d
 
 last_reconciliation:
   id: reconcile-LOW-01-readme-scope
@@ -72,4 +76,7 @@ last_reconciliation:
   validation_result: passed
 
 next:
-  action: rereview-ci-required-workflow-validation
+  action: approve-merge
+  on_approval:
+    phase: delivery_verification
+    action: verify-delivery
