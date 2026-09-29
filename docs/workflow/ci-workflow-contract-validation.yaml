@@ -4,7 +4,7 @@ work_item_id: ci-workflow-contract-validation
 work_item_type: infrastructure
 title: "CI Workflow Contract Validation"
 
-phase: fixes
+phase: fix_rereview
 status: ready
 gate: none
 
@@ -72,4 +72,4 @@ last_reconciliation:
   validation_result: passed
 
 next:
-  action: fix-MEDIUM-03
+  action: rereview-ci-required-workflow-validation
