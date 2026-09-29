@@ -4,9 +4,9 @@ work_item_id: orchestration-auto-advance
 work_item_type: maintenance
 title: "Orchestration Auto-Advance"
 
-phase: human_gate
-status: awaiting_approval
-gate: design_approval
+phase: implementation
+status: ready
+gate: none
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -31,8 +31,8 @@ context:
 completed_slices: []
 
 current_slice:
-  id: design
-  name: "Work item design"
+  id: auto-advance-orchestrator
+  name: "Auto-advance orchestrator"
 
 latest_review:
   path: docs/reviews/orchestration-auto-advance/design-review-01.md
@@ -40,7 +40,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: approve-design
-  on_approval:
-    phase: implementation
-    action: implement-auto-advance-orchestrator
+  action: implement-auto-advance-orchestrator
