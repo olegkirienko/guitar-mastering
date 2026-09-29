@@ -1,0 +1,43 @@
+version: 3.1
+
+work_item_id: orchestration-auto-advance
+work_item_type: maintenance
+title: "Orchestration Auto-Advance"
+
+phase: work_item_init
+status: ready
+gate: none
+
+git:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/orchestration-auto-advance
+  lifecycle_generation: bacbb575-84c4-4e22-90d4-ffcdcf9dbab1
+  lifecycle_anchor_sha: null
+  pr_number: null
+  reviewed_sha: null
+  merged_sha: null
+
+delivery:
+  evidence_path: null
+
+design:
+  path: docs/technical-designs/orchestration-auto-advance.md
+
+context:
+  - AGENTS.md
+  - .codex/skills/work-orchestrator/SKILL.md
+  - docs/workflow/README.md
+
+completed_slices: []
+
+current_slice:
+  id: design
+  name: "Work item design"
+
+latest_review:
+  path: null
+
+blocking_findings: []
+
+next:
+  action: initialize-work-item
