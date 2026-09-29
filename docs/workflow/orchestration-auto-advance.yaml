@@ -13,7 +13,7 @@ git:
   branch: work/orchestration-auto-advance
   lifecycle_generation: bacbb575-84c4-4e22-90d4-ffcdcf9dbab1
   lifecycle_anchor_sha: 6176df6f4e48f45cc69c52b1397e3d62c8241cf3
-  pr_number: null
+  pr_number: 16
   reviewed_sha: null
   merged_sha: null
 
