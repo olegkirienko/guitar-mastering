@@ -322,7 +322,7 @@ function renderWorkflow(state) {
       `  lifecycle_generation: ${state.git.lifecycle_generation}`,
       `  lifecycle_anchor_sha: ${value(state.git.lifecycle_anchor_sha)}`,
       `  pr_number: ${value(state.git.pr_number)}`,
-      `  head_sha: ${value(state.git.head_sha)}`,
+      `  reviewed_sha: ${value(state.git.reviewed_sha)}`,
       `  merged_sha: ${value(state.git.merged_sha)}`,
       "",
       "delivery:",
@@ -409,19 +409,23 @@ const findingClasses = new Set([
 
 function validateGateScope(gate, scope) {
   if (gate === "merge_approval") {
+    assert.match(scope.repository, /^github\.com\/[a-z0-9_.-]+\/[a-z0-9_.-]+$/i);
     assert.match(scope.branch, /^work\/.+$/);
     assert.match(scope.lifecycle_generation, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     assert.ok(Number.isInteger(scope.pr_number) && scope.pr_number > 0);
     assert.equal(scope.target_branch, "main");
-    assert.match(scope.head_sha, /^[0-9a-f]{40}$/);
-    assert.ok(scope.validation_run_id);
-    assert.equal(scope.required_checks_passed, true);
-    assert.equal(scope.clean_tree, true);
-    assert.equal(scope.branch_retained, true);
-    assert.equal(scope.auto_delete_disabled, true);
-    assert.equal(scope.cleanup_deletion_blocked, true);
-    assert.equal(scope.diff_scope_verified, true);
-    assert.equal(scope.unresolved_findings, "none");
+    assert.match(scope.reviewed_sha, /^[0-9a-f]{40}$/);
+    for (const dynamicField of [
+      "head_sha",
+      "validation_run_id",
+      "required_checks_passed",
+      "clean_tree",
+      "branch_retained",
+      "auto_delete_disabled",
+      "cleanup_deletion_blocked",
+      "diff_scope_verified",
+      "unresolved_findings",
+    ]) assert.equal(dynamicField in scope, false, `${dynamicField} must be resolved dynamically`);
   }
   if (gate === "production_mutation_approval" || gate === "destructive_action_approval") {
     assert.ok(scope.provider);
@@ -450,7 +454,8 @@ function validateGitIdentity(state) {
   assert.match(state.git.lifecycle_generation, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   assert.ok(state.git.lifecycle_anchor_sha === null || /^[0-9a-f]{40}$/.test(state.git.lifecycle_anchor_sha));
   assert.ok(state.git.pr_number === null || (Number.isInteger(state.git.pr_number) && state.git.pr_number > 0));
-  for (const name of ["head_sha", "merged_sha"]) {
+  assert.equal("head_sha" in state.git, false, "v3.1 must not persist the current PR head");
+  for (const name of ["reviewed_sha", "merged_sha"]) {
     assert.ok(state.git[name] === null || /^[0-9a-f]{40}$/.test(state.git[name]));
   }
   assert.ok(state.delivery && Object.hasOwn(state.delivery, "evidence_path"));
@@ -518,10 +523,11 @@ function validateState(state) {
     } else if (state.gate === "merge_approval") {
       assert.equal(state.next.on_approval.phase, "delivery_verification");
       assert.equal(state.next.on_approval.action, "verify-delivery");
+      assert.equal(state.gate_scope.repository, state.git.repository);
       assert.equal(state.gate_scope.branch, state.git.branch);
       assert.equal(state.gate_scope.lifecycle_generation, state.git.lifecycle_generation);
       assert.equal(state.gate_scope.pr_number, state.git.pr_number);
-      assert.equal(state.gate_scope.head_sha, state.git.head_sha);
+      assert.equal(state.gate_scope.reviewed_sha, state.git.reviewed_sha);
     } else {
       assert.equal(state.next.on_approval.phase, "implementation");
       assert.match(state.next.on_approval.action, /^(implement|resume)-.+$/);
@@ -579,7 +585,7 @@ function validateState(state) {
     if (state.phase === "work_item_init") {
       assert.equal(state.git.lifecycle_anchor_sha, null);
       assert.equal(state.git.pr_number, null);
-      assert.equal(state.git.head_sha, null);
+      assert.equal(state.git.reviewed_sha, null);
       assert.equal(state.git.merged_sha, null);
       assert.equal(state.delivery.evidence_path, null);
     } else {
@@ -589,6 +595,11 @@ function validateState(state) {
       || (state.phase === "human_gate" && state.gate === "work_item_completion")
       || state.phase === "complete";
     if (afterMerge) assert.ok(state.git.merged_sha);
+    const requiresReviewedSha = (state.phase === "human_gate" && state.gate === "merge_approval") || afterMerge;
+    if (requiresReviewedSha) assert.match(state.git.reviewed_sha, /^[0-9a-f]{40}$/);
+    if (["work_item_init", "design", "design_review", "implementation", "implementation_review", "fixes", "fix_rereview"].includes(state.phase)) {
+      assert.equal(state.git.reviewed_sha, null, "reviewed SHA must be cleared while behavioral work or review is active");
+    }
     if (state.phase === "complete") assert.ok(state.delivery.evidence_path);
   }
 }
@@ -619,7 +630,7 @@ const v31Base = {
     lifecycle_generation: generation,
     lifecycle_anchor_sha: shaA,
     pr_number: 17,
-    head_sha: shaA,
+    reviewed_sha: null,
     merged_sha: null,
   },
   delivery: { evidence_path: null },
@@ -719,7 +730,7 @@ const v31Legal = [
   {
     ...v31Base,
     phase: "work_item_init",
-    git: { ...v31Base.git, lifecycle_anchor_sha: null, pr_number: null, head_sha: null },
+    git: { ...v31Base.git, lifecycle_anchor_sha: null, pr_number: null, reviewed_sha: null },
     next: { action: "initialize-work-item" },
   },
   ...[
@@ -733,34 +744,28 @@ const v31Legal = [
     phase: "human_gate",
     status: "awaiting_approval",
     gate: "merge_approval",
+    git: { ...v31Base.git, reviewed_sha: shaA },
     gate_scope: {
+      repository: "github.com/owner/repository",
       branch: "work/fixture",
       lifecycle_generation: generation,
       pr_number: 17,
       target_branch: "main",
-      head_sha: shaA,
-      validation_run_id: 991,
-      required_checks_passed: true,
-      clean_tree: true,
-      branch_retained: true,
-      auto_delete_disabled: true,
-      cleanup_deletion_blocked: true,
-      diff_scope_verified: true,
-      unresolved_findings: "none",
+      reviewed_sha: shaA,
     },
     next: { action: "approve-merge", on_approval: { phase: "delivery_verification", action: "verify-delivery" } },
   },
   {
     ...v31Base,
     phase: "delivery_verification",
-    git: { ...v31Base.git, merged_sha: shaB },
+    git: { ...v31Base.git, reviewed_sha: shaA, merged_sha: shaB },
     next: { action: "verify-delivery" },
   },
   {
     ...v31Base,
     phase: "delivery_verification",
     status: "blocked",
-    git: { ...v31Base.git, merged_sha: shaB },
+    git: { ...v31Base.git, reviewed_sha: shaA, merged_sha: shaB },
     next: { action: "supply-provider-observation" },
   },
   {
@@ -768,7 +773,7 @@ const v31Legal = [
     phase: "human_gate",
     status: "awaiting_approval",
     gate: "work_item_completion",
-    git: { ...v31Base.git, merged_sha: shaB },
+    git: { ...v31Base.git, reviewed_sha: shaA, merged_sha: shaB },
     delivery: { evidence_path: "docs/delivery-evidence/fixture/delivery-01.md" },
     gate_scope: { merged_sha: shaB, evidence_path: "docs/delivery-evidence/fixture/delivery-01.md" },
     next: { action: "approve-work-item-completion", on_approval: { phase: "complete", action: "none" } },
@@ -778,7 +783,7 @@ const v31Legal = [
     phase: "complete",
     status: "complete",
     completed_slices: ["slice-a"],
-    git: { ...v31Base.git, merged_sha: shaB },
+    git: { ...v31Base.git, reviewed_sha: shaA, merged_sha: shaB },
     delivery: { evidence_path: "docs/delivery-evidence/fixture/delivery-01.md" },
     next: { action: "none" },
   },
@@ -846,6 +851,7 @@ function validateTransition(from, to, {
   terminalPushed = false,
   deliveryEvidence,
   observedMerge,
+  reviewedSha,
 } = {}) {
   validateState(from);
   validateState(to);
@@ -865,6 +871,8 @@ function validateTransition(from, to, {
   if (to.phase === "human_gate" && to.gate === "merge_approval") {
     assert.equal(String(to.version), "3.1");
     assert.equal(finalSlice, true);
+    assert.match(reviewedSha, /^[0-9a-f]{40}$/, "approved implementation SHA is required");
+    assert.equal(to.git.reviewed_sha, reviewedSha, "merge gate records another reviewed implementation SHA");
   }
   if (to.phase === "human_gate" && (to.gate === "work_item_completion" || to.gate === "lesson_completion")) {
     assert.equal(finalSlice, true);
@@ -924,10 +932,128 @@ const mergeGateState = v31Legal.find((state) => state.gate === "merge_approval")
 const deliveryState = v31Legal.find((state) => state.phase === "delivery_verification" && state.status === "ready");
 const v31CompletionGate = v31Legal.find((state) => state.gate === "work_item_completion");
 const v31Complete = v31Legal.find((state) => state.phase === "complete");
+
+function validatePostReviewCommits(state, observation) {
+  const reviewedSha = state.git.reviewed_sha;
+  assert.match(reviewedSha, /^[0-9a-f]{40}$/, "merge gate requires a reviewed SHA");
+  assert.equal(
+    observation.headSha === reviewedSha || observation.headAncestors.includes(reviewedSha),
+    true,
+    "current PR head does not descend from reviewed SHA",
+  );
+  assert.ok(Array.isArray(observation.commitsAfterReviewed), "post-review commit evidence is required");
+  const workflowPath = `docs/workflow/${state.work_item_id}.yaml`;
+  const reviewPattern = new RegExp(`^docs/reviews/${state.work_item_id}/(?:implementation-review|fix-rereview)-.+\\.md$`);
+  let expectedParent = reviewedSha;
+  for (const commit of observation.commitsAfterReviewed) {
+    assert.match(commit.sha, /^[0-9a-f]{40}$/, "post-review commit SHA is invalid");
+    assert.equal(commit.parentSha, expectedParent, "post-review commits are not a contiguous first-parent chain");
+    assert.ok(Array.isArray(commit.changes) && commit.changes.length > 0, "post-review commit has no auditable changes");
+    for (const change of commit.changes) {
+      assert.equal(change.previousPath, undefined, "post-review renames are forbidden");
+      if (change.path === workflowPath) {
+        assert.equal(change.status, "modified", "workflow control-plane file may only be modified");
+      } else {
+        assert.match(change.path, reviewPattern, "post-review implementation/application path requires review again");
+        assert.equal(change.status, "added", "post-review evidence must be a new immutable review");
+      }
+    }
+    expectedParent = commit.sha;
+  }
+  assert.equal(expectedParent, observation.headSha, "post-review evidence does not end at the current PR head");
+}
+
+function resolveMergeCandidate(state, observation) {
+  assert.equal(state.phase, "human_gate");
+  assert.equal(state.gate, "merge_approval");
+  assert.equal(observation.repository, state.git.repository, "merge candidate repository mismatch");
+  assert.equal(observation.branch, state.git.branch, "merge candidate branch mismatch");
+  assert.equal(observation.lifecycleGeneration, state.git.lifecycle_generation, "merge candidate generation mismatch");
+  assert.equal(observation.prNumber, state.git.pr_number, "merge candidate PR mismatch");
+  assert.equal(observation.targetBranch, "main", "merge candidate does not target main");
+  assert.match(observation.headSha, /^[0-9a-f]{40}$/, "current PR head is not a full SHA");
+  validatePostReviewCommits(state, observation);
+  assert.ok(observation.validationRunId, "required validation run is missing");
+  assert.equal(observation.validationHeadSha, observation.headSha, "validation belongs to another PR head");
+  assert.equal(observation.requiredChecksPassed, true, "required checks did not pass");
+  assert.equal(observation.cleanTree, true, "working tree is dirty");
+  assert.equal(observation.diffScopeVerified, true, "approved diff scope is not proven");
+  assert.equal(observation.unresolvedFindings, "none", "review findings remain active");
+  assert.equal(observation.branchRetained, true, "merge path may delete the canonical branch");
+  assert.equal(observation.autoDeleteDisabled, true, "automatic branch deletion is enabled");
+  assert.equal(observation.cleanupDeletionBlocked, true, "cleanup can delete a non-terminal branch");
+  return {
+    repository: observation.repository,
+    branch: observation.branch,
+    lifecycleGeneration: observation.lifecycleGeneration,
+    reviewedSha: state.git.reviewed_sha,
+    headSha: observation.headSha,
+    validationRunId: observation.validationRunId,
+    requiredChecksPassed: observation.requiredChecksPassed,
+    prNumber: observation.prNumber,
+    targetBranch: observation.targetBranch,
+    controlPlaneLineageVerified: true,
+    cleanTree: observation.cleanTree,
+    diffScopeVerified: observation.diffScopeVerified,
+    unresolvedFindings: observation.unresolvedFindings,
+    branchRetained: observation.branchRetained,
+    autoDeleteDisabled: observation.autoDeleteDisabled,
+    cleanupDeletionBlocked: observation.cleanupDeletionBlocked,
+  };
+}
+
+function consumeMergeApproval(state, presentation, currentObservation) {
+  const current = resolveMergeCandidate(state, currentObservation);
+  assert.deepEqual(current, presentation, "merge-gate evidence changed after approval");
+  return { expectedHeadOid: current.headSha, prNumber: current.prNumber };
+}
+
+const mergeCandidateObservation = {
+  repository: "github.com/owner/repository",
+  branch: "work/fixture",
+  lifecycleGeneration: generation,
+  prNumber: 17,
+  targetBranch: "main",
+  headSha: shaC,
+  headAncestors: [shaA, shaB],
+  commitsAfterReviewed: [
+    {
+      sha: shaB,
+      parentSha: shaA,
+      changes: [
+        { path: "docs/reviews/fixture/implementation-review-01-slice-a.md", status: "added" },
+        { path: "docs/workflow/fixture.yaml", status: "modified" },
+      ],
+    },
+    {
+      sha: shaC,
+      parentSha: shaB,
+      changes: [{ path: "docs/workflow/fixture.yaml", status: "modified" }],
+    },
+  ],
+  validationRunId: 991,
+  validationHeadSha: shaC,
+  requiredChecksPassed: true,
+  cleanTree: true,
+  diffScopeVerified: true,
+  unresolvedFindings: "none",
+  branchRetained: true,
+  autoDeleteDisabled: true,
+  cleanupDeletionBlocked: true,
+};
+const mergePresentation = resolveMergeCandidate(mergeGateState, mergeCandidateObservation);
+assert.deepEqual(consumeMergeApproval(mergeGateState, mergePresentation, mergeCandidateObservation), {
+  expectedHeadOid: shaC,
+  prNumber: 17,
+});
 const observedMergeProof = {
   repositoryMergeStrategy: "merge",
   prNumber: 17,
-  sourceHeadSha: shaA,
+  reviewedSha: shaA,
+  approvedHeadSha: shaC,
+  currentPrHeadSha: shaC,
+  expectedHeadOid: shaC,
+  sourceHeadSha: shaC,
   resultSha: shaB,
   protectedMainSha: shaB,
   parentShas: [shaC, shaA],
@@ -953,7 +1079,7 @@ const authoritativeDeliveryEvidence = {
   smokeSucceeded: true,
   identitiesUnchanged: true,
 };
-validateTransition(v31ImplementationReview, mergeGateState, { finalSlice: true });
+validateTransition(v31ImplementationReview, mergeGateState, { finalSlice: true, reviewedSha: shaA });
 validateTransition(mergeGateState, deliveryState, { finalSlice: true, observedMerge: observedMergeProof });
 validateTransition(deliveryState, v31CompletionGate, { finalSlice: true, deliveryEvidence: authoritativeDeliveryEvidence });
 validateTransition(v31CompletionGate, v31Complete, { finalSlice: true, terminalPushed: true });
@@ -1160,9 +1286,16 @@ function validatePrAndMergeLineage(selected, registration) {
   assert.equal(selected.pr.number, state.git.pr_number, "primary PR number mismatch");
   assert.equal(selected.pr.headRef, state.git.branch, "primary PR head is not the canonical branch");
   assert.equal(selected.pr.baseRef, "main", "primary PR does not target main");
-  assert.equal(selected.pr.headSha, state.git.head_sha, "primary PR head SHA mismatch");
   assert.equal(selected.pr.headAncestors.includes(registration.targetSha), true, "PR head does not descend from the bootstrap anchor");
   assert.equal(selected.bootstrapAncestors.includes(selected.pr.headSha), true, "PR head is outside canonical branch ancestry");
+  if (state.git.reviewed_sha !== null) {
+    assert.equal(selected.bootstrapAncestors.includes(state.git.reviewed_sha), true, "reviewed SHA is outside canonical branch ancestry");
+    assert.equal(
+      selected.pr.headSha === state.git.reviewed_sha || selected.pr.headAncestors.includes(state.git.reviewed_sha),
+      true,
+      "PR head does not descend from reviewed SHA",
+    );
+  }
   assert.equal(selected.pr.mergeStrategy, selected.repositoryMergeStrategy, "PR lineage uses a merge strategy different from repository configuration");
 
   if (state.git.merged_sha === null) {
@@ -1174,9 +1307,9 @@ function validatePrAndMergeLineage(selected, registration) {
   assert.ok(selected.pr.mergeLineage, "merge lineage evidence is missing");
   assert.equal(selected.pr.mergeLineage.resultSha, state.git.merged_sha, "merge lineage result differs from workflow merged SHA");
   assert.equal(selected.pr.mergeLineage.prNumber, state.git.pr_number, "merge lineage belongs to another PR");
-  assert.equal(selected.pr.mergeLineage.sourceHeadSha, state.git.head_sha, "merge lineage belongs to another PR head");
+  assert.equal(selected.pr.mergeLineage.sourceHeadSha, selected.pr.headSha, "merge lineage belongs to another PR head");
   if (selected.pr.mergeStrategy === "merge") {
-    assert.equal(selected.pr.mergeLineage.parentShas.includes(state.git.head_sha), true, "merge commit does not contain the approved PR head");
+    assert.equal(selected.pr.mergeLineage.parentShas.includes(selected.pr.headSha), true, "merge commit does not contain the approved PR head");
   } else if (selected.pr.mergeStrategy === "squash" || selected.pr.mergeStrategy === "rebase") {
     assert.equal(selected.pr.mergeLineage.providerAttributed, true, `${selected.pr.mergeStrategy} result is not attributed to the approved PR`);
   } else {
@@ -1226,7 +1359,6 @@ function resolveExecutableRef({ requestedId, expectedRepository, executionRef, r
   assert.equal(selected.state.git.lifecycle_generation, registration.lifecycleGeneration, "lifecycle generation mismatch");
   assert.equal(selected.state.git.lifecycle_anchor_sha, registration.targetSha, "lifecycle anchor mismatch");
   assert.equal(selected.bootstrapAncestors.includes(registration.targetSha), true, "bootstrap anchor is outside canonical ancestry");
-  if (selected.state.git.head_sha !== null) assert.equal(selected.headSha, selected.state.git.head_sha);
   for (const candidate of refs) {
     if (candidate === selected || !candidate.state || String(candidate.state.version) !== "3.1") continue;
     const claimsSelectedIdentity = candidate.state.work_item_id === requestedId
@@ -1301,7 +1433,7 @@ const publishedLifecycle = publishInitialization(safeInitPlan, {
       ...v31Base.git,
       lifecycle_anchor_sha: safeInitPlan.bootstrapSha,
       pr_number: null,
-      head_sha: shaC,
+      reviewed_sha: null,
     },
     next: { action: "create-or-revise-design" },
   },
@@ -1458,7 +1590,6 @@ assert.throws(() => resolveExecutableRef({
   refs: [{
     ...executableRef,
     headSha: shaB,
-    state: { ...executableRef.state, git: { ...executableRef.state.git, head_sha: shaB } },
     pr: { ...executableRef.pr, headSha: shaB, headAncestors: [shaA] },
   }],
   registrations: [lifecycleRegistration],
@@ -1477,7 +1608,7 @@ const mergedExecutableRef = {
   state: {
     ...v31Base,
     phase: "delivery_verification",
-    git: { ...v31Base.git, merged_sha: shaB },
+    git: { ...v31Base.git, reviewed_sha: shaA, merged_sha: shaB },
     next: { action: "verify-delivery" },
   },
   pr: {
@@ -1635,13 +1766,16 @@ assert.equal(branchDeletionEligible(deletionProof), true);
 function validateMergeResult(from, to, observation) {
   assert.ok(observation, "protected merge observation is required");
   assert.equal(observation.prNumber, from.git.pr_number, "merge result belongs to another PR");
-  assert.equal(observation.sourceHeadSha, from.gate_scope.head_sha, "merge result belongs to another PR head");
+  assert.equal(observation.reviewedSha, from.git.reviewed_sha, "merge result belongs to another reviewed revision");
+  assert.equal(observation.currentPrHeadSha, observation.approvedHeadSha, "PR head changed after merge approval");
+  assert.equal(observation.expectedHeadOid, observation.approvedHeadSha, "merge was not atomically bound to the approved head");
+  assert.equal(observation.sourceHeadSha, observation.approvedHeadSha, "merge result belongs to another PR head");
   assert.equal(observation.resultSha, observation.protectedMainSha, "merge result is not the observed protected-main SHA");
   assert.match(observation.resultSha, /^[0-9a-f]{40}$/);
   assert.equal(to.git.merged_sha, observation.resultSha, "delivery state did not record the observed merged-main SHA");
-  assert.equal(to.git.head_sha, from.git.head_sha, "merge transition changed the approved PR head");
+  assert.equal(to.git.reviewed_sha, from.git.reviewed_sha, "merge transition changed the reviewed implementation SHA");
   if (observation.repositoryMergeStrategy === "merge") {
-    assert.equal(observation.parentShas.includes(from.git.head_sha), true, "merged main SHA is not descended from the approved PR head");
+    assert.equal(observation.parentShas.includes(observation.approvedHeadSha), true, "merged main SHA is not descended from the approved PR head");
   } else if (observation.repositoryMergeStrategy === "squash" || observation.repositoryMergeStrategy === "rebase") {
     assert.equal(observation.providerAttributed, true, "merged main SHA is not attributed to the approved PR lineage");
   } else {
@@ -1706,8 +1840,16 @@ assert.throws(() => validateMergeResult(mergeGateState, deliveryState, {
 }));
 assert.throws(() => validateMergeResult(mergeGateState, deliveryState, {
   ...observedMergeProof,
-  parentShas: [shaC],
+  parentShas: [shaA],
 }), /not descended from the approved PR head/);
+assert.throws(() => validateMergeResult(mergeGateState, deliveryState, {
+  ...observedMergeProof,
+  currentPrHeadSha: shaB,
+}), /changed after merge approval/);
+assert.throws(() => validateMergeResult(mergeGateState, deliveryState, {
+  ...observedMergeProof,
+  expectedHeadOid: shaB,
+}), /not atomically bound/);
 assert.throws(() => validateTransition(deliveryState, v31CompletionGate, {
   finalSlice: true,
   deliveryEvidence: { ...authoritativeDeliveryEvidence, authoritativeMergedSha: shaA },
@@ -1729,15 +1871,11 @@ assert.equal(deliveryFailureRoute("evidence_mismatch"), "reconciliation");
 assert.equal(deliveryFailureRoute("production_retry"), "production_mutation_approval");
 
 for (const gateChange of [
-  { head_sha: shaB },
+  { reviewed_sha: shaB },
   { target_branch: "release" },
+  { head_sha: shaB },
+  { validation_run_id: 992 },
   { required_checks_passed: false },
-  { clean_tree: false },
-  { branch_retained: false },
-  { auto_delete_disabled: false },
-  { cleanup_deletion_blocked: false },
-  { diff_scope_verified: false },
-  { unresolved_findings: "LOW-01" },
   { pr_number: 18 },
 ]) {
   assert.throws(() => validateState({
@@ -1745,6 +1883,45 @@ for (const gateChange of [
     gate_scope: { ...mergeGateState.gate_scope, ...gateChange },
   }));
 }
+
+assert.throws(() => resolveMergeCandidate(mergeGateState, {
+  ...mergeCandidateObservation,
+  headAncestors: [shaB],
+}), /does not descend from reviewed SHA/);
+assert.throws(() => resolveMergeCandidate(mergeGateState, {
+  ...mergeCandidateObservation,
+  commitsAfterReviewed: [
+    ...mergeCandidateObservation.commitsAfterReviewed.slice(0, 1),
+    {
+      sha: shaC,
+      parentSha: shaB,
+      changes: [{ path: "src/application.ts", status: "modified" }],
+    },
+  ],
+}), /implementation\/application path requires review again/);
+assert.throws(() => resolveMergeCandidate(mergeGateState, {
+  ...mergeCandidateObservation,
+  commitsAfterReviewed: [{
+    sha: shaC,
+    parentSha: shaA,
+    changes: [{
+      path: "docs/reviews/fixture/implementation-review-01-slice-a.md",
+      status: "modified",
+    }],
+  }],
+}), /new immutable review/);
+const changedHeadObservation = {
+  ...mergeCandidateObservation,
+  headSha: shaB,
+  headAncestors: [shaA],
+  commitsAfterReviewed: mergeCandidateObservation.commitsAfterReviewed.slice(0, 1),
+  validationRunId: 992,
+  validationHeadSha: shaB,
+};
+assert.throws(
+  () => consumeMergeApproval(mergeGateState, mergePresentation, changedHeadObservation),
+  /merge-gate evidence changed after approval/,
+);
 
 function validatePrimaryPrPolicy({ draft, target, primaryPrCount, routineDirectMainPush, routineAdditionalPr }) {
   assert.equal(draft, true);

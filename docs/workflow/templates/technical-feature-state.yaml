@@ -14,7 +14,7 @@ git:
   lifecycle_generation: <uuid>
   lifecycle_anchor_sha: null
   pr_number: null
-  head_sha: null
+  reviewed_sha: null
   merged_sha: null
 
 delivery:

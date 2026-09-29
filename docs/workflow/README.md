@@ -30,7 +30,7 @@ git:
   lifecycle_generation: <uuid>
   lifecycle_anchor_sha: null
   pr_number: null
-  head_sha: null
+  reviewed_sha: null
   merged_sha: null
 
 delivery:
@@ -169,10 +169,16 @@ The first meaningful checkpoint opens the one Draft PR targeting `main`; the
 same PR carries routine design, implementation, and fix checkpoints. Routine
 direct pushes to `main` and control-plane finalization PRs are forbidden.
 
-The final approved v3.1 slice routes to `merge_approval`. Its scope pins the
-branch, lifecycle generation, PR, `main` target, exact full head SHA, successful
-required validation run, clean tree, approved diff, no findings, and branch
-retention proof. Any scope change invalidates approval.
+The final approved v3.1 slice records the exact implementation
+`reviewed_sha` and routes to `merge_approval`. Stable gate scope pins the
+branch, lifecycle generation, PR, `main` target, and reviewed SHA. The current
+full PR head and its successful required validation run are resolved and
+presented dynamically, never persisted before merge. That head must descend
+from `reviewed_sha`; every intervening commit must contain only the same work
+item's workflow transition and new immutable implementation/fix re-review.
+After approval the head is re-resolved, and any change or post-review
+implementation/application edit invalidates approval and requires review.
+Protected merge must atomically bind to the unchanged presented head.
 
 Protected merge records the exact resulting full `main` SHA. The retained work
 branch then enters `delivery_verification`, which correlates that SHA across

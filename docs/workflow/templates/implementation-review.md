@@ -8,7 +8,7 @@
 - Previous review artifacts:
 - Artifact identifier:
 - Canonical branch / lifecycle generation:
-- Primary PR / exact head SHA:
+- Primary PR / reviewed implementation SHA:
 
 ## Final verdict
 **APPROVED | APPROVED WITH RECONCILIATION | CHANGES REQUIRED**
@@ -35,6 +35,8 @@ None.
 ## Architecture assessment
 ## Validation results
 ## Recommended next action
-For a final v3.1 slice, pin merge readiness and route to `merge_approval`, not
-directly to completion.
+For a final v3.1 slice, persist the reviewed implementation SHA, prove the
+dynamic PR head has only approved control-plane descendants, and route to
+`merge_approval`, not directly to completion. Do not persist the current PR
+head before merge.
 ## Handoff notes
