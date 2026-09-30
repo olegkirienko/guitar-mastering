@@ -1,7 +1,7 @@
 # Railway Delivery Evidence
 
 Load this reference only while collecting Railway evidence for an exact merged
-SHA. Railway reads remain subject to the repository delivery contract.
+SHA.
 
 ## Default: one command
 
@@ -28,7 +28,7 @@ not report, or to diagnose a `MISSING` line.
 ## Query discipline
 
 Start with the project, environment, service, deployment, and merged SHA already
-pinned by the workflow or operations contract. Pass explicit IDs; do not use a
+pinned by `docs/operations/railway-ci-cd.md`. Pass explicit IDs; do not use a
 linked default when the identity is known.
 
 Prefer the narrowest available path:
@@ -82,7 +82,6 @@ evidence.
 
 ## Evidence artifact
 
-Record the correlated facts and their source in the immutable delivery
-artifact. Summarize provider evidence; do not paste raw responses. Missing or
+Record the correlated facts and their source in the delivery summary. Summarize provider evidence; do not paste raw responses. Missing or
 ambiguous fields fail closed and may trigger one smaller follow-up query for
 the exact missing fact.
