@@ -6,5 +6,6 @@ sandbox_mode = "workspace-write"
 
 developer_instructions = """
 Follow the review skill. Review only; never modify the reviewed design or code.
+Use CI results instead of re-running validation; scale depth to risk.
 Post findings and one verdict as a PR comment starting with "## Review", then stop.
 """
