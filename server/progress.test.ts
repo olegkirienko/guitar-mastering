@@ -25,6 +25,24 @@ describe("progress service validation", () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it("registers Lesson 2 in production with its own eight steps", async () => {
+    const query = vi.fn();
+    const unauthenticated = new ProgressService({ query } as never, { session: vi.fn(async () => null) } as unknown as AuthService);
+    await expect(unauthenticated.get("token", "stage-01-lesson-02")).rejects.toMatchObject({ status: 401, code: "UNAUTHENTICATED" });
+
+    const service = new ProgressService({ query } as never, { session: vi.fn(async () => ({ id: "user-1" })) } as unknown as AuthService);
+    const base = { schemaVersion: 1, contentVersion: 1, baseRevision: 0, progress: {
+      currentStepId: "repeats", completedStepIds: ["intro", "string"], checkpointPassed: false, completedAt: null,
+    } };
+    await expect(service.put("token", "stage-01-lesson-02", { ...base, progress: { ...base.progress, currentStepId: "air" } }))
+      .rejects.toMatchObject({ code: "INVALID_PROGRESS" });
+    await expect(service.put("token", "stage-01-lesson-02", { ...base, progress: { ...base.progress, audioEnabled: true } }))
+      .rejects.toMatchObject({ code: "INVALID_PROGRESS" });
+    await expect(service.put("token", "stage-01-lesson-01", { ...base, progress: { ...base.progress, currentStepId: "repeats" } }))
+      .rejects.toMatchObject({ code: "INVALID_PROGRESS" });
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it("validates each lesson against its injected catalog entry", async () => {
     const query = vi.fn();
     const catalog = new ProgressCatalog({
