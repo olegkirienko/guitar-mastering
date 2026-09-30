@@ -2090,17 +2090,97 @@ for (const path of [
   const instructions = read(path);
   assert.doesNotMatch(instructions, /next\.phase:/);
   assert.doesNotMatch(instructions, /human_approval_required:/);
+  assert.ok(
+    instructions.includes("references/contract.md"),
+    `${path} must load the orchestration contract reference`,
+  );
 }
 
-const orchestratorInstructions = read(".codex/skills/work-orchestrator/SKILL.md");
-assert.match(orchestratorInstructions, /After every successful non-human phase, re-resolve the authoritative workflow/);
-assert.match(orchestratorInstructions, /run the full preflight against that\nfresh state/);
-assert.match(orchestratorInstructions, /dispatch that action immediately in the same invocation/);
-assert.match(orchestratorInstructions, /fresh routing fingerprint—lifecycle identity/);
-assert.match(orchestratorInstructions, /An unchanged fingerprint or an invalid or\nambiguous transition is unsafe continuation/);
-assert.match(orchestratorInstructions, /explicit human gate, a risky\nexternal mutation requiring its typed approval, blocked input/);
-assert.match(orchestratorInstructions, /Ordinary phase completion is not a stop\ncondition/);
-assert.match(orchestratorInstructions, /Approval supplied for an earlier gate is never reused/);
+// Instruction checks pin short invariant phrases, not exact wording, so rewrapping
+// or rephrasing around them never requires reading this validator.
+function requirePhrases(path, phrases) {
+  const text = read(path).replace(/\s+/g, " ");
+  for (const phrase of phrases) {
+    assert.ok(text.includes(phrase), `${path} must keep the invariant: ${phrase}`);
+  }
+}
+
+const agentsInstructions = read("AGENTS.md");
+assert.ok(
+  Buffer.byteLength(agentsInstructions) <= 5000,
+  "AGENTS.md is loaded into every model call; keep it within 5000 bytes and move orchestration detail to the contract reference",
+);
+requirePhrases("AGENTS.md", [
+  ".codex/skills/work-orchestrator/references/contract.md",
+  "Each invocation executes one phase and stops unless the user explicitly asks to continue",
+  "The lite track never covers auth, persistence, migrations, deployment, production, credentials, provider state, or runtime dependencies.",
+  "touches `AGENTS.md`, `.codex/`, `.github/`, `.railway/`, `scripts/`, `server/`, `docs/workflow/`, `docs/reviews/`, `docs/delivery-evidence/`, or `docs/operations/`",
+  "If unsure, or if the change grows past the limit or into an excluded area, stop and switch to the orchestrated track.",
+]);
+requirePhrases(".codex/skills/work-orchestrator/references/contract.md", [
+  "WORKFLOW STATE INCONSISTENT",
+  "Do not skip a blocking review gate.",
+  "Completed review files are immutable snapshots.",
+  "Never infer routing from contradictory workflow fields.",
+  "A non-terminal work branch must not be deleted",
+  "Fix agents must not expand scope beyond selected finding IDs.",
+  "Human approval is required:",
+]);
+requirePhrases(".codex/skills/work-orchestrator/SKILL.md", [
+  "references/contract.md",
+  "Each invocation executes at most one phase.",
+  "consume exactly that gate, commit and publish the resulting transition",
+  "stop before dispatching it",
+  "report the next allowed action with its launcher prompt, and stop",
+  "only when the user explicitly requests continuation",
+  "both that exact approval and the explicit continuation request",
+  "Generic approval or a generic request to proceed is not a continuation request.",
+  "run the full preflight",
+  "re-resolve the published state",
+  "fresh routing fingerprint",
+  "Even with explicit continuation, stop at an explicit human gate",
+  "risky external mutation requiring its typed approval",
+  "all bounded conditions in `references/contract.md` (Fail closed) are proven",
+  "consumes merge approval only if the approval names the full head SHA and it equals the freshly resolved head",
+  "otherwise present the head and stop without merging",
+  "unsafe continuation",
+  "Approval supplied for an earlier gate is never reused",
+  "Approval is scoped, non-transitive, and single-use.",
+  "provider-side field selection",
+]);
+
+function continuationDecision({ startedAtHumanGate, explicitApproval, explicitContinue, nextIsReadyNonHuman, reachedGate }) {
+  if (reachedGate || !nextIsReadyNonHuman || !explicitContinue) return "stop";
+  if (startedAtHumanGate && !explicitApproval) return "stop";
+  return "dispatch";
+}
+
+const decisionCases = [
+  [{ startedAtHumanGate: true, explicitApproval: true, explicitContinue: false, nextIsReadyNonHuman: true, reachedGate: false }, "stop"],
+  [{ startedAtHumanGate: true, explicitApproval: true, explicitContinue: true, nextIsReadyNonHuman: true, reachedGate: false }, "dispatch"],
+  [{ startedAtHumanGate: true, explicitApproval: false, explicitContinue: true, nextIsReadyNonHuman: true, reachedGate: false }, "stop"],
+  [{ startedAtHumanGate: false, explicitApproval: false, explicitContinue: false, nextIsReadyNonHuman: true, reachedGate: false }, "stop"],
+  [{ startedAtHumanGate: false, explicitApproval: false, explicitContinue: true, nextIsReadyNonHuman: true, reachedGate: false }, "dispatch"],
+  [{ startedAtHumanGate: false, explicitApproval: false, explicitContinue: true, nextIsReadyNonHuman: false, reachedGate: false }, "stop"],
+  [{ startedAtHumanGate: true, explicitApproval: true, explicitContinue: true, nextIsReadyNonHuman: true, reachedGate: true }, "stop"],
+];
+for (const [input, expected] of decisionCases) {
+  assert.equal(continuationDecision(input), expected, JSON.stringify(input));
+}
+
+requirePhrases(".codex/skills/delivery-verification/SKILL.md", [
+  "references/railway-evidence.md",
+  "corepack pnpm evidence:delivery --sha",
+  "Never emit complete provider JSON",
+]);
+requirePhrases(".codex/skills/delivery-verification/references/railway-evidence.md", [
+  "only required scalar fields",
+  "projector such as `jq`",
+  "the unfiltered command first",
+  "corepack pnpm evidence:delivery --sha",
+  "that result fails closed and is never success",
+  "do not load the external `use-railway` skill",
+]);
 
 const fakeEntry = (name, file) => ({ name, isFile: () => file });
 assert.deepEqual(workflowPathsFromEntries([

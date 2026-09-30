@@ -7,6 +7,11 @@ description: Review one implemented slice for any work-item type and transition 
 
 Review only; do not modify application code.
 
+Read `AGENTS.md`, `.codex/skills/work-orchestrator/references/contract.md`,
+workflow state, the design (the current slice plus goal, non-goals,
+constraints/safety, acceptance criteria, and any amendments), and the latest
+review. Inspect the slice with `git diff --stat` first, then diff single paths.
+
 Always review:
 - design compliance;
 - correctness;
@@ -37,6 +42,10 @@ Verdict:
 Write immutable artifact:
 
 `docs/reviews/<work-item-id>/implementation-review-XX-<slice>.md`
+
+Keep the artifact near 3 KB: metadata, a one-line preflight and validation
+result, the verdict, and each finding's ID, class, impact, evidence,
+correction, and verification. Do not restate the design or the diff.
 
 If changes required, route to `fixes` with exact blocking IDs.
 

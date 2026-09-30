@@ -6,9 +6,10 @@ description: Apply only active blocking finding fixes for any work-item type.
 # Targeted Fix
 
 Read:
-- AGENTS.md
+- `AGENTS.md` and `.codex/skills/work-orchestrator/references/contract.md`
 - workflow state
-- authoritative design
+- the design sections the active findings touch, plus non-goals,
+  constraints/safety, and any amendments
 - context
 - owning review artifact
 - named source files

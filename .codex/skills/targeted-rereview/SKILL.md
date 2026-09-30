@@ -7,6 +7,10 @@ description: Re-review active fixes for any work-item type and transition determ
 
 Verify only active blocking IDs plus direct regressions.
 
+Read `AGENTS.md`, `.codex/skills/work-orchestrator/references/contract.md`,
+workflow state, the owning review, and the fix diff (`git diff --stat` first,
+then single paths).
+
 Per finding:
 - `FIXED`
 - `PARTIALLY FIXED`
@@ -18,7 +22,9 @@ Verdict:
 - `APPROVED WITH RECONCILIATION`
 - `CHANGES REQUIRED`
 
-Create a new immutable review artifact.
+Create a new immutable review artifact. Keep it near 3 KB: metadata, one line
+per finding with its outcome and evidence, any new finding in full, and the
+verdict.
 
 If changes remain → `fixes`.
 
