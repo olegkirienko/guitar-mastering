@@ -49,10 +49,9 @@ The approved target sequence is:
 5. A successful verifier permits `pnpm db:migrate`; readiness must pass before
    promotion, followed by production smoke and observation.
 
-The first positive and protected-branch negative production proof is governed
-by the reviewed
-[end-to-end acceptance plan](railway-end-to-end-cicd-acceptance-plan.md).
-Do not use a manual CLI deployment as a substitute for this release path.
+The first positive and protected-branch negative production proofs passed on
+2026-09-26; their plan and evidence are in git history. Do not use a manual CLI
+deployment as a substitute for this release path.
 
 ## Commit-SHA correlation
 
@@ -73,9 +72,8 @@ full SHA across:
 
 Missing Git metadata uses the fallback when one is supplied. Malformed nonempty
 `RAILWAY_GIT_COMMIT_SHA` fails startup instead of recording ambiguous release
-identity. The reviewed production retirement and post-deletion verification are
-recorded in
-[the retirement plan](railway-deployment-version-retirement-plan.md).
+identity. The production retirement and its post-deletion verification are recorded in
+git history.
 
 ## Manual Railway IaC and drift
 
@@ -131,9 +129,9 @@ duplicated steps fail at once. The budget is at most 12 HTTP requests and about
 305 s of extra time, and only while data is incomplete. When the data never
 completes, the error names the step and `after 5 job reads`.
 
-In that case, retry the deployment through the post-merge
-`production_mutation_approval` gate described in the `delivery-verification`
-skill, never by editing variables or bypassing the gate. Before the retry,
+In that case, retry the deployment only after the owner approves the exact
+redeploy operation, as described in the `delivery-verification` skill. Never
+retry by editing variables or bypassing the verifier. Before the retry,
 `corepack pnpm delivery:retry-guard --mode pre --sha <merged SHA>` must clear:
 `main` and the newest web deployment are both at that SHA, and the deployment
 is `FAILED` or `CRASHED`. After the retry, `--mode post` must confirm that no

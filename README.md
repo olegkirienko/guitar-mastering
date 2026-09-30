@@ -77,10 +77,8 @@ The approved target pre-deploy command is `pnpm release:predeploy`, which runs
 the exact-SHA GitHub Actions verifier before `pnpm db:migrate`. Production must
 use a sealed, repository-only `Actions: read` credential and never fall back to
 anonymous GitHub API access. The production source, Wait for CI, and autodeploy
-are active. The first positive and protected-branch negative proof follows the
-reviewed
-[`docs/operations/railway-end-to-end-cicd-acceptance-plan.md`](docs/operations/railway-end-to-end-cicd-acceptance-plan.md);
-do not change source, gate variables, or branch policy ad hoc.
+are active and were proven end to end on 2026-09-26. Do not change the
+source, gate variables, or branch policy ad hoc.
 The data-handling and backup-retention disclosure is in
 [`docs/operations/privacy-and-retention.md`](docs/operations/privacy-and-retention.md).
 
@@ -111,182 +109,41 @@ src/
 └── main.tsx
 ```
 
-# Codex Orchestration Layer v3.1
+# Working with Codex
 
-The repository uses a deterministic, repo-local workflow for both lesson development and technical work.
+The binding rules are in `AGENTS.md`. Each change is one branch and one PR:
 
-The orchestration unit is a **work item**.
+1. **Design** (lessons and risky changes only), using the `design` skill.
+2. **Design review** by a separate session or agent, using the `review` skill.
+3. **Owner approves the design.**
+4. **Implement** each slice.
+5. **Review** by a separate session or agent, then fix only the reported
+   findings and re-review them.
+6. **Owner approves the merge** of the exact PR head.
+7. **Verify delivery** with the `delivery-verification` skill.
 
-Examples:
+State lives in the PR, including its review comments, and the design. Start
+each step in a fresh Codex session.
 
-- `stage-01-lesson-02`
-- `feature-auth-persistence`
-- `feature-profile`
-- `refactor-progress-storage`
-- `infra-cloudflare-migration`
-
-Eligible work items created after v3.1 activation on canonical `main` use the
-v3.1 contract. Active pre-activation v3 items stay v3 unless an explicit,
-separately designed migration proves compatible provenance. Completed v1/v2/v3
-workflows remain valid under their original contract and are not migrated
-merely for schema consistency.
-Historical `lesson_id`, `spec`, and `lesson_completion` fields remain readable.
-
-The complete state-machine, reconciliation, gate, migration, and compatibility
-contract is documented in [`docs/workflow/README.md`](docs/workflow/README.md).
-
-## Workflow
-
-`work-item init → design → design review → implementation/review/fixes → merge approval → delivery verification → completion approval`
-
-## Sources of truth
-
-- `AGENTS.md` — project rules, work tracks, and context budget
-- `.codex/skills/work-orchestrator/references/contract.md` — orchestration invariants
-- `.codex/agents/` — role-specific agent profiles
-- `.codex/skills/` — reusable workflow phases
-- `docs/course-map/` — curriculum/stage truth
-- `docs/lesson-designs/` — lesson specifications
-- `docs/technical-designs/` — technical architecture/design artifacts
-- `docs/reviews/` — immutable review artifacts
-- `docs/workflow/` — deterministic work-item state
-
-For an active work item, its workflow YAML is the only mutable authority for
-the current `phase`, `status`, `gate`, active `blocking_findings`, and
-`next.action`. Designs own durable decisions and approved slices; reviews are
-immutable historical assessments; operator documents own bounded operations
-and evidence.
-
-## Work tracks
-
-Small, low-risk changes (copy, styling, `src` UI code, course docs, or a
-contained fix of at most about 300 lines) use the lite track: one branch, one
-session, one PR, with no workflow YAML, design document, or review artifacts.
-`AGENTS.md` is binding for the exclusions: control-plane, CI, `scripts/`,
-`server/`, operations, and review paths, plus lessons, auth/persistence,
-migrations, deployment, production, and credential work, always use the
-orchestrated track below.
-
-## Standard launcher
-
-Start every phase in a fresh Codex session. The orchestrator runs one phase,
-publishes its transition, prints the prompt for the next phase, and stops.
-Templates live in
-[`docs/workflow/templates/launcher-prompt.md`](docs/workflow/templates/launcher-prompt.md).
-
-For a normal phase:
+## Prompts
 
 ```text
-Use the work-orchestrator workflow for <work-item-id>.
-
-Read and validate the current workflow state, execute exactly the next allowed phase, publish its transition, and stop.
+Design <topic> per AGENTS.md on branch <type>/<topic>, open a draft PR, and stop.
+Review the design of <topic> (PR <n>) with the review skill and stop.
+I approve the design of <topic>. Implement slice <slice> on branch <type>/<topic>, push, and stop.
+Review PR <n> at its current head with the review skill and stop.
+Fix findings <IDs> from the latest review on PR <n>, push, and stop.
+I approve merging PR <n> at head <full SHA>. Merge it and verify delivery.
 ```
-
-At a human gate:
-
-```text
-Use the work-orchestrator workflow for <work-item-id>.
-
-Approve the current <gate> human gate, publish the transition, and stop.
-```
-
-Add `Continue until the next human gate.` only when several tightly coupled
-phases should share one session.
 
 ## Model policy
 
-- design/planning — Sol / medium
-- design review — Sol / medium
-- implementation — Terra / medium
-- implementation review — Sol / medium
-- targeted fixes — Terra / low
-- targeted re-review — Sol / medium
+- `implementer` (`.codex/agents/implementer.toml`): Terra / medium.
+- `reviewer` (`.codex/agents/reviewer.toml`): Sol / medium.
+- The main session keeps the personal profile default.
 
-Reconciliation is a bounded skill-driven repair rather than a separate general
-implementation role.
+## History
 
-## Deterministic state
-
-Top-level `phase` in `docs/workflow/*.yaml` selects the legal transition family.
-`next.action` is the single action allowed now. Prospective destinations exist
-only as `next.on_approval` at a human gate or `next.on_success` during
-reconciliation.
-
-Contradictory state fails closed with:
-
-```text
-WORKFLOW STATE INCONSISTENT
-```
-
-The orchestrator must not guess the intended phase or silently repair the state.
-A state-only repair is legal only as a separately requested, bounded operation
-when immutable evidence or an unambiguous repository fact already determines
-the outcome.
-
-## Reviews and fixes
-
-Review artifacts are immutable snapshots. Actionable findings use stable IDs such as `HIGH-01` or `MEDIUM-03`.
-
-V3 findings also carry one semantic class:
-
-- `design_defect`
-- `implementation_defect`
-- `documentation_defect`
-- `state_sync_defect`
-
-Design and implementation defects retain their full review loops. An exact,
-non-behavioral documentation or state repair may use reconciliation when its
-basis, allowed paths, forbidden effects, acceptance checks, and destination are
-already pinned. Ambiguous meaning or risk fails closed into review.
-
-Targeted fixes operate only on active blocking IDs. Targeted re-review verifies those findings plus direct regressions.
-
-Review verdicts are `APPROVED`, `APPROVED WITH RECONCILIATION`, or
-`CHANGES REQUIRED`.
-
-## Human gates
-
-Progression gates remain explicit:
-
-- `design_approval`
-- `next_slice_approval`
-- `work_item_completion`
-- `merge_approval`
-
-Risky operations use scoped gates when applicable:
-
-- `production_mutation_approval`
-- `destructive_action_approval`
-- `credential_change_approval`
-
-Approval is scoped, non-transitive, and single-use. A changed target, plan,
-destroy count, credential scope, or risk invalidates it.
-
-## Completion
-
-Before starting another slice, the orchestrator verifies that the authoritative design actually defines one.
-
-For v3, if the approved slice is final:
-
-`human_gate / work_item_completion → explicit human approval → complete`
-
-Existing historical lesson workflows may retain legacy `lesson_completion`.
-
-For v3.1, a final approved slice enters `merge_approval`. The one Draft PR must
-merge through protected `main`, and `delivery_verification` must positively
-correlate the exact merged SHA across GitHub CI and Railway before
-`work_item_completion` can be offered. The canonical work branch remains the
-only executable control plane until the terminal state is committed and pushed.
-
-Canonical terminal state:
-
-```yaml
-phase: complete
-status: complete
-gate: none
-blocking_findings: []
-next:
-  action: none
-```
-
-`complete` means the current work item is complete only.
+The v1–v3.1 work-item state machine was retired on 2026-09-30. Its files are
+in `docs/archive/`, and the decision is recorded in
+`docs/technical-designs/process-simplification.md`.
