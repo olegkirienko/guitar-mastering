@@ -1,0 +1,43 @@
+version: 3.1
+
+work_item_id: multi-lesson-progress-foundation
+work_item_type: technical_feature
+title: "Multi-lesson progress foundation"
+
+phase: work_item_init
+status: ready
+gate: none
+
+git:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/multi-lesson-progress-foundation
+  lifecycle_generation: f9ee8628-7f3b-4241-bdfa-37c28392167d
+  lifecycle_anchor_sha: null
+  pr_number: null
+  reviewed_sha: null
+  merged_sha: null
+
+delivery:
+  evidence_path: null
+
+design:
+  path: docs/technical-designs/multi-lesson-progress-foundation.md
+
+context:
+  - AGENTS.md
+  - docs/technical-designs/feature-auth-persistence.md
+  - docs/reviews/feature-auth-persistence/implementation-review-12-lesson-one-progress-migration.md
+
+completed_slices: []
+
+current_slice:
+  id: design
+  name: "Technical architecture design"
+
+latest_review:
+  path: null
+
+blocking_findings: []
+
+next:
+  action: initialize-work-item
