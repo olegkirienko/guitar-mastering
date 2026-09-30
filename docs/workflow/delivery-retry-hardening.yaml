@@ -13,7 +13,7 @@ git:
   branch: work/delivery-retry-hardening
   lifecycle_generation: d63fa900-5d14-4d07-8092-5b5256411dee
   lifecycle_anchor_sha: f3d0b7995fc2dd29759aba0d34e121e9894cf8b4
-  pr_number: null
+  pr_number: 19
   reviewed_sha: null
   merged_sha: null
 
