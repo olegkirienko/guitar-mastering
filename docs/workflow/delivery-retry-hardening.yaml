@@ -4,7 +4,7 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: design
+phase: design_review
 status: ready
 gate: none
 
@@ -64,4 +64,4 @@ blocking_findings:
     summary: "Immediate step failures do not report the observed state."
 
 next:
-  action: create-or-revise-design
+  action: review-design
