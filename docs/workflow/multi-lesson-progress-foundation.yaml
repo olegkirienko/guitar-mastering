@@ -4,9 +4,9 @@ work_item_id: multi-lesson-progress-foundation
 work_item_type: technical_feature
 title: "Multi-lesson progress foundation"
 
-phase: implementation_review
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: merge_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -14,7 +14,7 @@ git:
   lifecycle_generation: f9ee8628-7f3b-4241-bdfa-37c28392167d
   lifecycle_anchor_sha: 21c86eada6024a1d78118ced0931cc838ff4c96a
   pr_number: 17
-  reviewed_sha: null
+  reviewed_sha: 8f771c87e1f4c99474964ab5f7ea056075c7c9c1
   merged_sha: null
 
 delivery:
@@ -37,9 +37,36 @@ current_slice:
   name: "Typed server progress catalog"
 
 latest_review:
-  path: docs/reviews/multi-lesson-progress-foundation/implementation-review-01-client-progress-controller.md
+  path: docs/reviews/multi-lesson-progress-foundation/implementation-review-02-server-progress-catalog.md
+
+validation:
+  result: passed
+  node_version: 24.7.0
+  repository_workflows: "10 verified"
+  commands:
+    - "pnpm validate:workflow"
+    - "pnpm lint"
+    - "pnpm test"
+    - "pnpm test:postgres (GitHub CI)"
+    - "pnpm test:browser"
+    - "pnpm build"
+    - "git diff --check"
+  unit_tests: "82 passed, 20 skipped locally"
+  browser_tests: "10 passed"
+  github_validation_run: 36694058644
 
 blocking_findings: []
 
+gate_scope:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/multi-lesson-progress-foundation
+  lifecycle_generation: f9ee8628-7f3b-4241-bdfa-37c28392167d
+  pr_number: 17
+  target_branch: main
+  reviewed_sha: 8f771c87e1f4c99474964ab5f7ea056075c7c9c1
+
 next:
-  action: review-server-progress-catalog
+  action: approve-merge
+  on_approval:
+    phase: delivery_verification
+    action: verify-delivery
