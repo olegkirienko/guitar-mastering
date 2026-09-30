@@ -1,0 +1,47 @@
+version: 3.1
+
+work_item_id: delivery-retry-hardening
+work_item_type: infrastructure
+title: "Delivery retry hardening"
+
+phase: work_item_init
+status: ready
+gate: none
+
+git:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/delivery-retry-hardening
+  lifecycle_generation: d63fa900-5d14-4d07-8092-5b5256411dee
+  lifecycle_anchor_sha: null
+  pr_number: null
+  reviewed_sha: null
+  merged_sha: null
+
+delivery:
+  evidence_path: null
+
+design:
+  path: docs/technical-designs/delivery-retry-hardening.md
+
+context:
+  - AGENTS.md
+  - .codex/skills/work-orchestrator/references/contract.md
+  - .codex/skills/work-orchestrator/SKILL.md
+  - .codex/skills/delivery-verification/SKILL.md
+  - docs/operations/railway-ci-cd.md
+  - server/verify-ci.ts
+  - server/verify-ci.test.ts
+
+completed_slices: []
+
+current_slice:
+  id: design
+  name: "Delivery retry hardening design"
+
+latest_review:
+  path: null
+
+blocking_findings: []
+
+next:
+  action: initialize-work-item
