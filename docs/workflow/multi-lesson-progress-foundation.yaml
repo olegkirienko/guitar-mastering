@@ -4,9 +4,9 @@ work_item_id: multi-lesson-progress-foundation
 work_item_type: technical_feature
 title: "Multi-lesson progress foundation"
 
-phase: design_review
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: design_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -35,9 +35,12 @@ current_slice:
   name: "Technical architecture design"
 
 latest_review:
-  path: null
+  path: docs/reviews/multi-lesson-progress-foundation/design-review-01.md
 
 blocking_findings: []
 
 next:
-  action: review-design
+  action: approve-design
+  on_approval:
+    phase: implementation
+    action: implement-client-progress-controller
