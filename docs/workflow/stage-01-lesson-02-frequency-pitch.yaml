@@ -13,7 +13,7 @@ git:
   branch: work/stage-01-lesson-02-frequency-pitch
   lifecycle_generation: a02a844c-0c02-46c8-b39d-75da6aeb9b0f
   lifecycle_anchor_sha: 418b1e70f90d2de1a7074b8bf032b4c4d97f1310
-  pr_number: null
+  pr_number: 20
   reviewed_sha: null
   merged_sha: null
 
