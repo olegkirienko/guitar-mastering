@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
-import { mergeProgress, ProgressSyncQueue, type ProgressValue } from '../src/progress/core.ts';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createProgressApi, mergeProgress, ProgressSyncQueue, type ProgressValue } from '../src/progress/core.ts';
 
 type Step = 'intro' | 'string' | 'air' | 'checkpoint' | 'complete';
 const order: readonly Step[] = ['intro', 'string', 'air', 'checkpoint', 'complete'];
 const progress = (currentStepId: Step, completedStepIds: Step[] = []): ProgressValue<Step> => ({
   currentStepId, completedStepIds, checkpointPassed: completedStepIds.includes('checkpoint'), completedAt: null,
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('progress sync core', () => {
   it('merges monotonic progress and keeps the earliest completion', () => {
@@ -41,5 +43,38 @@ describe('progress sync core', () => {
     expect(save.mock.calls[1]?.[0]).toMatchObject({ progress: { currentStepId: 'checkpoint' }, baseRevision: 1 });
     queue.retry();
     await vi.waitFor(() => expect(queue.snapshot).toEqual({ status: 'synced', revision: 2, error: null }));
+  });
+
+  it('keeps API targets and queue revisions independent across lessons', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const lessonId = String(input).endsWith('lesson-two') ? 'lesson-two' : 'lesson-one';
+      const body = JSON.parse(String(init?.body)) as { progress: ProgressValue<Step>; baseRevision: number };
+      return {
+        ok: true,
+        json: async () => ({ item: {
+          lessonId,
+          schemaVersion: 1,
+          contentVersion: 1,
+          progress: body.progress,
+          revision: body.baseRevision + 1,
+          updatedAt: '2026-09-30T00:00:00.000Z',
+        } }),
+      } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const api = createProgressApi<ProgressValue<Step>>();
+    const firstQueue = new ProgressSyncQueue<ProgressValue<Step>>((request) => api.save('lesson-one', request), 1, 1, 3);
+    const secondQueue = new ProgressSyncQueue<ProgressValue<Step>>((request) => api.save('lesson-two', request), 1, 1, 8);
+
+    firstQueue.enqueue(progress('string'));
+    secondQueue.enqueue(progress('air'));
+
+    await vi.waitFor(() => expect(firstQueue.snapshot).toEqual({ status: 'synced', revision: 4, error: null }));
+    await vi.waitFor(() => expect(secondQueue.snapshot).toEqual({ status: 'synced', revision: 9, error: null }));
+    expect(fetchMock.mock.calls.map(([input]) => input)).toEqual([
+      '/api/v1/progress/lesson-one',
+      '/api/v1/progress/lesson-two',
+    ]);
+    expect(fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).baseRevision)).toEqual([3, 8]);
   });
 });

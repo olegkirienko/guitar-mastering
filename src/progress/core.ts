@@ -21,6 +21,22 @@ export type SaveProgress<Value extends ProgressValue> = {
   baseRevision: number;
 };
 
+export type LessonProgressAdapter<StepId extends string, Local extends ProgressValue<StepId>> = {
+  lessonId: string;
+  schemaVersion: number;
+  contentVersion: number;
+  guestStorageKey: string;
+  userStorageKey(userId: string): string;
+  importDecisionKey(userId: string): string;
+  read(key: string): { progress: Local; storageAvailable: boolean };
+  write(key: string, progress: Local): boolean;
+  parse(value: unknown): Local;
+  toSynced(progress: Local): ProgressValue<StepId>;
+  merge(local: Local, remote: ProgressValue<StepId>): Local;
+  hasMeaningfulProgress(progress: Local): boolean;
+  fingerprint(progress: Local): string;
+};
+
 type ApiErrorBody<Value extends ProgressValue> = {
   error?: { code?: string; message?: string; current?: ProgressItem<Value> };
 };

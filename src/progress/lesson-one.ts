@@ -1,4 +1,4 @@
-import { mergeProgress, type ProgressValue } from '@/progress/core';
+import { mergeProgress, type LessonProgressAdapter, type ProgressValue } from '@/progress/core';
 import type { LessonOneStepId } from '@/data/lessons/stage-01-lesson-01';
 
 export const lessonOneId = 'stage-01-lesson-01';
@@ -167,3 +167,19 @@ export function hasMeaningfulLessonOneProgress(progress: LessonOneProgress): boo
 export function lessonOneProgressFingerprint(progress: LessonOneProgress): string {
   return JSON.stringify(toSyncedLessonOneProgress(progress));
 }
+
+export const lessonOneProgressAdapter = {
+  lessonId: lessonOneId,
+  schemaVersion: lessonOneSchemaVersion,
+  contentVersion: lessonOneContentVersion,
+  guestStorageKey: lessonOneGuestStorageKey,
+  userStorageKey: lessonOneUserStorageKey,
+  importDecisionKey: lessonOneImportDecisionKey,
+  read: readLessonOneProgress,
+  write: writeLessonOneProgress,
+  parse: parseLessonOneProgress,
+  toSynced: toSyncedLessonOneProgress,
+  merge: mergeLessonOneProgress,
+  hasMeaningfulProgress: hasMeaningfulLessonOneProgress,
+  fingerprint: lessonOneProgressFingerprint,
+} satisfies LessonProgressAdapter<LessonOneStepId, LessonOneProgress>;
