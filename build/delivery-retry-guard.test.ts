@@ -1,3 +1,6 @@
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { retryGuardDecision } from "../scripts/delivery-retry-guard.mjs";
 
@@ -61,5 +64,37 @@ describe("delivery retry guard", () => {
       .toMatchObject({ clear: false, reason: `main advanced to ${newerSha}` });
     expect(retryGuardDecision({ mode: "post", sha, mainSha: sha, deployments: [retry], retryDeploymentId: "other" }))
       .toMatchObject({ clear: false, kind: "permanent" });
+  });
+
+  const guardScript = fileURLToPath(new URL("../scripts/delivery-retry-guard.mjs", import.meta.url));
+  // PATH holds only node, so no provider can be contacted.
+  const runCli = (args: string[]) => spawnSync(process.execPath, [guardScript, ...args], {
+    env: { PATH: path.dirname(process.execPath) },
+    encoding: "utf8",
+  });
+
+  it("rejects invalid CLI usage with exit 2 before contacting any provider", () => {
+    for (const args of [
+      ["--mode", "post", "--sha", sha, "--retry-deployment"],
+      ["--mode", "post", "--sha", sha, "--retry-deploymnet", "abc"],
+      ["--mode", "post", "--sha", sha, "--extra", "junk"],
+      ["--mode", "post", "--sha", sha, "positional"],
+      ["--mode", "post", "--mode", "pre", "--sha", sha],
+      ["--mode", "post", "--sha", sha, "--retry-deployment", ""],
+      ["--mode", "post", "--sha", sha, "--retry-deployment", "--mode"],
+      ["--mode", "pre", "--sha", sha, "--retry-deployment", "abc"],
+      ["--mode", "later", "--sha", sha],
+      ["--mode", "pre", "--sha", "short"],
+    ]) {
+      const result = runCli(args);
+      expect(result.status, args.join(" ")).toBe(2);
+      expect(result.stdout).toBe("");
+    }
+  });
+
+  it("stops with exit 1 when valid usage cannot reach the providers", () => {
+    const result = runCli(["--", "--mode", "post", "--sha", sha, "--retry-deployment", "retry-1"]);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toMatch(/^retry-guard mode=post STOP kind=temporary reason=provider query failed/);
   });
 });

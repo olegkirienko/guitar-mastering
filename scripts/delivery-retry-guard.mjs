@@ -5,7 +5,7 @@
 // Usage: node scripts/delivery-retry-guard.mjs --mode pre|post --sha <merged-sha> [--retry-deployment <id>]
 // Exit code 0 means clear, 1 means stop, and 2 means invalid usage.
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { parseArgs, promisify } from "node:util";
 
 // Production identity pinned in docs/operations/railway-ci-cd.md.
 const REPOSITORY = "olegkirienko/guitar-mastering";
@@ -59,20 +59,42 @@ async function command(file, args) {
   return stdout;
 }
 
+// Strict usage parsing: an unknown, repeated, empty, or missing option value is
+// invalid usage, so a mistyped --retry-deployment can never silently unbind a
+// post-check.
+export function parseUsage(argv) {
+  const args = argv[0] === "--" ? argv.slice(1) : argv;
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args,
+      options: { mode: { type: "string" }, sha: { type: "string" }, "retry-deployment": { type: "string" } },
+      strict: true,
+      allowPositionals: false,
+      tokens: true,
+    });
+  } catch {
+    return undefined;
+  }
+  const seen = new Set();
+  for (const token of parsed.tokens) {
+    if (token.kind !== "option") continue;
+    if (seen.has(token.name) || !token.value || token.value.startsWith("-")) return undefined;
+    seen.add(token.name);
+  }
+  const { mode, sha, "retry-deployment": retryDeploymentId } = parsed.values;
+  if ((mode !== "pre" && mode !== "post") || !/^[0-9a-f]{40}$/.test(sha ?? "")) return undefined;
+  if (mode === "pre" && retryDeploymentId !== undefined) return undefined;
+  return { mode, sha, retryDeploymentId };
+}
+
 async function main() {
-  const args = process.argv.slice(2).filter((argument) => argument !== "--");
-  const option = (name) => {
-    const index = args.indexOf(name);
-    return index === -1 ? undefined : args[index + 1];
-  };
-  const mode = option("--mode");
-  const sha = option("--sha");
-  const retryDeploymentId = option("--retry-deployment");
-  if ((mode !== "pre" && mode !== "post") || !/^[0-9a-f]{40}$/.test(sha ?? "")
-    || (mode === "pre" && retryDeploymentId !== undefined)) {
+  const usage = parseUsage(process.argv.slice(2));
+  if (!usage) {
     console.error("Usage: --mode pre|post --sha <full 40-hex SHA> [--retry-deployment <id>] (post only).");
     process.exit(2);
   }
+  const { mode, sha, retryDeploymentId } = usage;
 
   let decision;
   try {

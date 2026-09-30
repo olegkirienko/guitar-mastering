@@ -4,7 +4,7 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: fixes
+phase: fix_rereview
 status: ready
 gate: none
 
@@ -58,4 +58,4 @@ blocking_findings:
     summary: "Delivery skill omits withdrawal SHA/evidence, retry outcome, and next-NN clauses."
 
 next:
-  action: fix-MEDIUM-01-LOW-01-LOW-02
+  action: rereview-bounded-step-reread-and-retry-gate

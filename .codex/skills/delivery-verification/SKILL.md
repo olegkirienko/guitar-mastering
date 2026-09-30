@@ -53,7 +53,8 @@ numbers the retries from `01`. While the gate is being used:
    `corepack pnpm delivery:retry-guard --mode pre --sha <merged SHA>`.
    - A temporary stop leaves the gate unconsumed.
    - A permanent stop is resolved only by the owner withdrawing the gate to
-     `verify-delivery`, before any operation.
+     `verify-delivery`, before any operation. Withdrawal keeps both SHAs
+     unchanged, and the delivery evidence records the guard's reason.
 3. Issue the operation exactly once. Issuing it consumes the gate.
 4. Run `corepack pnpm delivery:retry-guard --mode post --sha <merged SHA> --retry-deployment <id>`.
 5. If it clears, enter `retry-delivery-<NN>`. Otherwise, or if the operation
@@ -61,6 +62,6 @@ numbers the retries from `01`. While the gate is being used:
    `delivery_verification / blocked / supply-retry-<NN>-owner-decision`.
 
 `retry-delivery-<NN>` runs `--mode post` without an ID before collecting
-evidence, and a stop blocks the same way. Any further mutation needs a new
-gate. Record each retry's scope, operation, deployment ID, and guard results in
-the delivery evidence.
+evidence, and a stop blocks the same way. Any further mutation needs a new gate
+with the next `NN`. Record each retry's scope, operation, deployment ID, guard
+results, and outcome in the delivery evidence.

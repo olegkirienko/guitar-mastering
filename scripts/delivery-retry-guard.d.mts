@@ -20,3 +20,7 @@ export interface RetryGuardDecision {
 }
 
 export function retryGuardDecision(input: RetryGuardInput): RetryGuardDecision;
+
+export function parseUsage(
+  argv: string[],
+): { mode: "pre" | "post"; sha: string; retryDeploymentId?: string } | undefined;

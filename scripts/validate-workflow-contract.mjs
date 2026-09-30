@@ -2390,6 +2390,11 @@ validateTransition(retryVerificationState, retryCompletionGate, { finalSlice: tr
 validateTransition(postMergeRetryGate, retryBlockedState);
 validateTransition(postMergeRetryGate, retryDeliveryState);
 const movedSha = (state) => ({ ...state, git: { ...state.git, merged_sha: shaC } });
+const movedReviewed = (state) => ({ ...state, git: { ...state.git, reviewed_sha: shaC } });
+assert.throws(() => validateTransition(postMergeRetryGate, movedReviewed(retryVerificationState)), /reviewed SHA changed/);
+assert.throws(() => validateTransition(postMergeRetryGate, movedReviewed(retryBlockedState)), /reviewed SHA changed/);
+assert.throws(() => validateTransition(postMergeRetryGate, movedReviewed(retryDeliveryState)), /reviewed SHA changed/);
+assert.throws(() => validateTransition(movedReviewed(retryDeliveryState), postMergeRetryGate), /reviewed SHA changed/);
 assert.throws(() => validateTransition(postMergeRetryGate, { ...retryBlockedState, next: { action: "supply-retry-02-owner-decision" } }));
 assert.throws(() => validateTransition(postMergeRetryGate, movedSha(retryVerificationState)), /merged SHA changed/);
 assert.throws(() => validateTransition(postMergeRetryGate, movedSha(retryBlockedState)), /merged SHA changed/);
@@ -2409,6 +2414,10 @@ requirePhrases(".codex/skills/delivery-verification/SKILL.md", [
   "corepack pnpm delivery:retry-guard --mode post --sha <merged SHA> --retry-deployment <id>",
   "delivery_verification / blocked / supply-retry-<NN>-owner-decision",
   "before any operation",
+  "Withdrawal keeps both SHAs unchanged",
+  "records the guard's reason",
+  "Any further mutation needs a new gate with the next `NN`.",
+  "guard results, and outcome in the delivery evidence",
 ]);
 requirePhrases(".codex/skills/work-orchestrator/SKILL.md", [
   "After merge it is entered only from delivery verification.",
