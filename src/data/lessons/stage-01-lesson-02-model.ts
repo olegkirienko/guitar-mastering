@@ -4,6 +4,13 @@
 export const comparisonRepeats = { a: 4, b: 8 } as const;
 export const comparisonMoments = 16;
 export const comparisonDurationMs = 6000;
+// A frame never advances the shared timer by more than this, so a hidden tab
+// (no frames) pauses the comparison instead of jumping to its end.
+export const maxFrameDeltaMs = 50;
+
+export function advanceElapsed(elapsedMs: number, frameDeltaMs: number): number {
+  return Math.min(elapsedMs + Math.min(Math.max(frameDeltaMs, 0), maxFrameDeltaMs), comparisonDurationMs);
+}
 
 function clampFraction(fraction: number): number {
   return Math.min(Math.max(fraction, 0), 1);

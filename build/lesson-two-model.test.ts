@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  advanceElapsed,
+  comparisonDurationMs,
   comparisonMoments,
   comparisonRepeats,
   completedRepeats,
@@ -32,6 +34,13 @@ describe('Lesson 2 repeat comparison', () => {
     expect(table[4]).toEqual([1, 2]);
     expect(table[comparisonMoments]).toEqual([4, 8]);
     table.forEach(([a, b]) => expect(b).toBe(2 * a + (b % 2)));
+  });
+
+  it('pauses on long gaps between frames instead of jumping to the end', () => {
+    expect(advanceElapsed(0, 16)).toBe(16);
+    expect(advanceElapsed(1000, 60_000)).toBe(1050);
+    expect(advanceElapsed(1000, -5)).toBe(1000);
+    expect(advanceElapsed(comparisonDurationMs - 10, 40)).toBe(comparisonDurationMs);
   });
 
   it('moves both dots through visibly different positions in step mode', () => {

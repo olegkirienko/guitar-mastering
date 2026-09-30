@@ -3,6 +3,7 @@ import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
 import {
+  advanceElapsed,
   comparisonDurationMs,
   comparisonMoments,
   comparisonRepeats,
@@ -36,6 +37,7 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
   const [fraction, setFraction] = useState(0);
   const [running, setRunning] = useState(false);
   const [resultShown, setResultShown] = useState(false);
+  const [soundPredicted, setSoundPredicted] = useState(false);
   const frame = useRef<number>(undefined);
   const finished = fraction >= 1;
   const moment = Math.round(fraction * comparisonMoments);
@@ -59,17 +61,25 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
   }, [finished, onComplete, predicted]);
 
   const run = () => {
+    if (running) return;
     setFraction(0);
     setRunning(true);
-    const startedAt = performance.now();
+    let elapsed = 0;
+    let previous = performance.now();
+    // Capped per-frame steps: with no frames on a hidden tab, the run pauses.
     const tick = (now: number) => {
-      const next = Math.min((now - startedAt) / comparisonDurationMs, 1);
+      elapsed = advanceElapsed(elapsed, now - previous);
+      previous = now;
+      const next = elapsed / comparisonDurationMs;
       setFraction(next);
       if (next < 1) frame.current = requestAnimationFrame(tick);
       else setRunning(false);
     };
     frame.current = requestAnimationFrame(tick);
   };
+  const nextMoment = () => { if (!finished) setFraction(momentFraction(moment + 1)); };
+  const showSummary = () => { if (!finished) setFraction(1); };
+  const disabledLook = 'aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
 
   const countA = completedRepeats(comparisonRepeats.a, fraction);
   const countB = completedRepeats(comparisonRepeats.b, fraction);
@@ -97,9 +107,9 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {staticMode ? <>
-          <button type="button" disabled={finished} onClick={() => setFraction(momentFraction(moment + 1))} className="min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.nextMomentLabel}</button>
-          <button type="button" disabled={finished} onClick={() => setFraction(1)} className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.showSummaryLabel}</button>
-        </> : <button type="button" disabled={running} onClick={run} className="min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{finished ? content.rerunLabel : content.runLabel}</button>}
+          <button type="button" aria-disabled={finished} onClick={nextMoment} className={`min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${disabledLook}`}>{content.nextMomentLabel}</button>
+          <button type="button" aria-disabled={finished} onClick={showSummary} className={`min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${disabledLook}`}>{content.showSummaryLabel}</button>
+        </> : <button type="button" aria-disabled={running} onClick={run} className={`min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${disabledLook}`}>{finished ? content.rerunLabel : content.runLabel}</button>}
       </div>
       <table className="mt-4 w-full text-left text-sm text-gray-700">
         <caption className="sr-only">{content.summaryCaption}</caption>
@@ -116,10 +126,10 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
         choices={content.soundChoices}
         correctChoiceId="higher"
         mode="prediction"
-        onCheck={() => undefined}
+        onCheck={() => setSoundPredicted(true)}
       />
-      <button type="button" onClick={() => setResultShown(true)} className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.showResultLabel}</button>
-      {audio.enabled && <div className="flex flex-wrap gap-2">
+      {soundPredicted && <button type="button" onClick={() => setResultShown(true)} className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.showResultLabel}</button>}
+      {soundPredicted && audio.enabled && <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => audio.playTone(220, toneGain[220])} className="min-h-11 rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.listenA}</button>
         <button type="button" onClick={() => audio.playTone(440, toneGain[440])} className="min-h-11 rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.listenB}</button>
       </div>}

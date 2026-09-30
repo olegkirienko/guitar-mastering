@@ -57,7 +57,12 @@ test("completes screens 0–1 through the virtual string at 320 px and resumes a
   await expect(page.getByText("Який стан тієї самої струни дав вищий звук", { exact: false })).toBeVisible();
 });
 
+async function focusIsNotLost(page: Page) {
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe("BODY");
+}
+
 test("completes the string step on the guitar path with the keyboard only", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
   await mockSession(page, null);
   await page.goto(`${applicationOrigin}/#/lessons/02`);
 
@@ -80,6 +85,7 @@ test("completes the string step on the guitar path with the keyboard only", asyn
   await check.press("Enter");
   expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string"]);
 
+  await noHorizontalScroll(page);
   const back = page.getByRole("button", { name: "Назад до вступу" });
   await back.focus();
   await back.press("Enter");
@@ -235,8 +241,11 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
 
   await pressButton(page, "Показати підсумок");
   await expect(page.getByText("A: 4 повтори; B: 8 повторів; час однаковий.", { exact: false })).toBeVisible();
+  await focusIsNotLost(page);
+  await expect(page.getByRole("button", { name: "Показати підсумок" })).toBeDisabled();
   expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string", "repeats"]);
 
+  await expect(page.getByRole("button", { name: "Показати результат" })).toHaveCount(0);
   await answer(page, "Як звучатиме рух, який повторюється частіше?", "Вище");
   await pressButton(page, "Показати результат");
   await expect(page.getByText("A сприймається нижчим; B — вищим.")).toBeVisible();
@@ -264,9 +273,19 @@ test("reveals the names before the lab and checks a predicted change on screen 3
   await page.goto(`${applicationOrigin}/#/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Змінюй частоту" })).toHaveCount(0);
-  for (let row = 0; row < 3; row += 1) await pressButton(page, "Відкрити наступний рядок");
-  await expect(page.getByText("Кількість повних коливань за секунду називаємо частотою.")).toBeVisible();
+  const physics = page.getByRole("list", { name: "Що відбувається" });
+  const perception = page.getByRole("list", { name: "Що ми сприймаємо" });
+  await pressButton(page, "Відкрити наступний рядок");
+  await expect(physics.getByRole("listitem")).toHaveText(["Кількість повних коливань за секунду називаємо частотою."]);
+  await expect(perception.getByRole("listitem")).toHaveCount(0);
+  await pressButton(page, "Відкрити наступний рядок");
+  await expect(physics.getByRole("listitem").nth(1)).toContainText("герц, скорочено Гц");
+  await expect(perception.getByRole("listitem")).toHaveCount(0);
+  await pressButton(page, "Відкрити наступний рядок");
+  await expect(perception.getByRole("listitem")).toHaveText(["Те, наскільки високим або низьким ми чуємо звук, називаємо висотою звуку."]);
+  await expect(physics.getByRole("listitem")).toHaveCount(2);
   await expect(page.getByText("Більша частота → вищий звук; менша частота → нижчий звук.")).toBeVisible();
+  await focusIsNotLost(page);
 
   const output = page.locator("output");
   await expect(output).toHaveText("220 Гц");
@@ -281,6 +300,7 @@ test("reveals the names before the lab and checks a predicted change on screen 3
   await higher.press("Space");
   await lab.getByRole("button", { name: "Перевірити" }).press("Enter");
   await expect(lab.getByTestId("lab-feedback")).toHaveText("220 → 330: за секунду повторів стало більше, тому звук став вищим.");
+  await expect(page.getByRole("slider", { name: "Частота" })).toBeFocused();
   await expect(lab.getByTestId("lab-feedback")).toHaveAttribute("role", "status");
   expect((await storedProgress(page)).completedStepIds).toContain("frequency");
 
@@ -289,6 +309,12 @@ test("reveals the names before the lab and checks a predicted change on screen 3
   await slider.press("ArrowRight");
   await expect(output).toHaveText("440 Гц");
   await expect(slider).toHaveAttribute("aria-valuetext", "440 Гц");
+  const higherButton = page.getByRole("button", { name: "Більше" });
+  await higherButton.focus();
+  await higherButton.press("Enter");
+  await expect(higherButton).toBeFocused();
+  await expect(higherButton).toBeDisabled();
+  await expect(output).toHaveText("440 Гц");
   await noHorizontalScroll(page);
 });
 
@@ -341,6 +367,8 @@ test("plays capped tones one at a time and silences them when the tab is hidden"
   await page.getByRole("button", { name: "Показувати покадрово" }).click();
   await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці A");
   await pressButton(page, "Показати підсумок");
+  await expect(page.getByRole("button", { name: "Послухати A" })).toHaveCount(0);
+  await answer(page, "Як звучатиме рух, який повторюється частіше?", "Не знаю");
   await pressButton(page, "Послухати A");
   await pressButton(page, "Послухати B");
   const log = await page.evaluate(() => (window as unknown as { __audioLog: unknown[][] }).__audioLog);
@@ -359,4 +387,21 @@ test("plays capped tones one at a time and silences them when the tab is hidden"
   });
   const afterHide = await page.evaluate(() => (window as unknown as { __audioLog: unknown[][] }).__audioLog);
   expect(afterHide.some(([kind, id, time]) => kind === "stop" && id === 2 && (time as number) < 0.1)).toBe(true);
+});
+
+test("offers listening in the lab only for a value that was predicted and checked", async ({ page }) => {
+  await installFakeAudio(page);
+  await seedStep(page, "frequency", ["intro", "string", "repeats"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await pressButton(page, "Звук: вимкнено");
+  for (let row = 0; row < 3; row += 1) await pressButton(page, "Відкрити наступний рядок");
+  const lab = page.getByRole("region", { name: "Змінюй частоту" });
+  await expect(lab.getByRole("button", { name: "Послухати" })).toBeVisible();
+  await pressButton(page, "Більше");
+  await expect(lab.getByRole("button", { name: "Послухати" })).toHaveCount(0);
+  await lab.getByRole("radio", { name: "вищим" }).check();
+  await lab.getByRole("button", { name: "Перевірити" }).click();
+  await expect(lab.getByRole("button", { name: "Послухати" })).toBeVisible();
 });
