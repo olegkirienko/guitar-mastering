@@ -6,12 +6,13 @@ description: Implement exactly one approved slice for any work-item type and tra
 # Implementation Slice
 
 Read:
-- `AGENTS.md`
+- `AGENTS.md` and `.codex/skills/work-orchestrator/references/contract.md`
 - workflow state
-- authoritative design
+- the authoritative design: the current slice plus goal, non-goals,
+  constraints/safety, acceptance criteria, and any amendments
 - context references
 - latest relevant approved review
-- relevant source files
+- source files the slice changes and their direct dependencies
 
 Implement only the current slice.
 

@@ -7,6 +7,10 @@ description: Critically review the current work-item design and write an immutab
 
 Review only.
 
+Read `AGENTS.md`, `.codex/skills/work-orchestrator/references/contract.md`,
+workflow state, the design, and referenced `context`. Read earlier reviews only
+when the design or an active finding cites them.
+
 Always assess:
 - goal clarity;
 - scope/non-goals;
@@ -35,6 +39,10 @@ Verdict:
 Write:
 
 `docs/reviews/<work-item-id>/design-review-XX.md`
+
+Keep the artifact near 3 KB: metadata, a one-line preflight result, the
+verdict, and each finding's ID, class, impact, evidence, correction, and
+verification. Do not restate the design or list passing checks beyond one line.
 
 Transition deterministically from verdict.
 

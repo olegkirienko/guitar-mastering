@@ -141,7 +141,8 @@ contract is documented in [`docs/workflow/README.md`](docs/workflow/README.md).
 
 ## Sources of truth
 
-- `AGENTS.md` — project rules and orchestration invariants
+- `AGENTS.md` — project rules, work tracks, and context budget
+- `.codex/skills/work-orchestrator/references/contract.md` — orchestration invariants
 - `.codex/agents/` — role-specific agent profiles
 - `.codex/skills/` — reusable workflow phases
 - `docs/course-map/` — curriculum/stage truth
@@ -156,14 +157,27 @@ the current `phase`, `status`, `gate`, active `blocking_findings`, and
 immutable historical assessments; operator documents own bounded operations
 and evidence.
 
+## Work tracks
+
+Small, low-risk changes (copy, styling, docs, tooling, contained bug fixes)
+use the lite track from `AGENTS.md`: one branch, one session, one PR, with no
+workflow YAML, design document, or review artifacts. Lessons, auth/persistence,
+migrations, deployment, production, and credential work use the orchestrated
+track below.
+
 ## Standard launcher
+
+Start every phase in a fresh Codex session. The orchestrator runs one phase,
+publishes its transition, prints the prompt for the next phase, and stops.
+Templates live in
+[`docs/workflow/templates/launcher-prompt.md`](docs/workflow/templates/launcher-prompt.md).
 
 For a normal phase:
 
 ```text
 Use the work-orchestrator workflow for <work-item-id>.
 
-Read and validate the current workflow state, then execute the next allowed phase.
+Read and validate the current workflow state, execute exactly the next allowed phase, publish its transition, and stop.
 ```
 
 At a human gate:
@@ -171,22 +185,23 @@ At a human gate:
 ```text
 Use the work-orchestrator workflow for <work-item-id>.
 
-Approve the current human gate, then read and validate the workflow state and execute the next allowed phase.
+Approve the current <gate> human gate, publish the transition, and stop.
 ```
+
+Add `Continue until the next human gate.` only when several tightly coupled
+phases should share one session.
 
 ## Model policy
 
 - design/planning — Sol / medium
-- design review — Sol / high
+- design review — Sol / medium
 - implementation — Terra / medium
-- implementation review — Sol / high
+- implementation review — Sol / medium
 - targeted fixes — Terra / low
-- targeted re-review — Sol / high
+- targeted re-review — Sol / medium
 
 Reconciliation is a bounded skill-driven repair rather than a separate general
 implementation role.
-
-A fresh Codex session per workflow phase is recommended.
 
 ## Deterministic state
 

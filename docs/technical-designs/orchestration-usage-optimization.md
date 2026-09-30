@@ -43,10 +43,10 @@ orchestrator must treat that as a separate opt-in and still stop at the next
 human or typed operational gate. A generic approval request does not imply this
 opt-in.
 
-Automatic continuation remains available when an invocation starts on a ready
-non-human phase. This avoids repeatedly reloading the same baseline context
-between tightly related implementation/review or fix/re-review steps. Existing
-fingerprint checks and all other stop conditions remain unchanged.
+~~Automatic continuation remains available when an invocation starts on a
+ready non-human phase.~~ *Superseded by Amendment 01: each invocation executes
+one phase unless the user explicitly asks to continue.* Existing fingerprint
+checks and all other stop conditions remain unchanged.
 
 ### Bounded command and provider output
 
@@ -81,7 +81,8 @@ skill entrypoint small.
 The repository workflow validator must stop asserting the previous unconditional
 same-invocation continuation wording and assert the new boundary instead:
 
-- ordinary non-human completion can continue after fresh preflight;
+- ~~ordinary non-human completion can continue after fresh preflight~~
+  (superseded by Amendment 01: it stops unless continuation was requested);
 - gate consumption stops after its committed and published transition;
 - only an explicit approval-and-continue request permits immediate dispatch;
 - approval still cannot cross a later gate;
@@ -151,8 +152,8 @@ Run with Node `24.7.0`:
 - the `skill-creator` quick validator for each changed skill.
 
 Static contract assertions must cover the new gate stop rule, explicit opt-in,
-non-transitive approval, bounded Railway retrieval, and preserved automatic
-continuation from a ready non-human phase. Review the final diff to prove that
+non-transitive approval, bounded Railway retrieval, and the Amendment 01
+one-phase invocation boundary. Review the final diff to prove that
 no personal/corporate profile, application, deployment, or provider artifact
 changed.
 
@@ -180,11 +181,104 @@ Acceptance criteria:
   action, and stops before dispatching it;
 - an explicit approval-and-continue request may proceed after a fresh preflight
   but cannot reuse approval at a later gate;
-- an invocation starting at a ready non-human phase retains deterministic
-  automatic continuation and fingerprint protection;
+- ~~an invocation starting at a ready non-human phase retains deterministic
+  automatic continuation and fingerprint protection~~ (superseded by the
+  amended acceptance criteria in Amendment 01);
 - Railway evidence collection requests and exposes only the minimum required
   fields and bounded relevant logs, with secrets excluded;
 - review profiles use `gpt-5.6-sol` with `medium` reasoning while implementer,
   fixer, personal, and corporate profile choices remain unchanged;
 - all listed validation passes without dependency, application, CI,
   infrastructure, credential, or provider changes.
+
+## Amendment 01: measured audit (2026-09-30)
+
+The repository owner explicitly approved this amendment on 2026-09-30 after an
+audit of 153 personal Codex session logs (2026-09-09 to 2026-09-30). The
+amendment supersedes the parts of this design listed below. Everything else
+stays in force.
+
+### Evidence
+
+- 528M input tokens (95% cached) against 2.7M output tokens, so usage tracks
+  context size times call count, not reasoning effort.
+- The baseline is about 22K tokens per call. The average call carried 100–146K,
+  and 57% of all input came from calls whose context exceeded 100K. Threads
+  that kept continuing grew to 236K. That contradicts the assumption above that
+  automatic continuation saves usage.
+- Tool output was about 78% of input. Whole-document reads were about 50% of
+  resident context, and git diff/log/show about 16%. Agents read historical
+  workflows and reviews as examples.
+- `AGENTS.md` (11.6 KB) was resent in every call, even though about 75% of it
+  applied only to orchestrated phases.
+- Lessons received about 9% of tokens. Infrastructure took about 71%, and the
+  orchestration process itself about 19%.
+
+### Superseded decisions
+
+- **Invocation boundary.** Each invocation now executes at most one phase,
+  publishes its transition, reports the next launcher prompt, and stops. The
+  next phase starts in a fresh session. Continuation within one invocation
+  requires an explicit user request; at a human gate it needs both that exact
+  approval and the continuation request. Fingerprint checks, stop conditions,
+  and non-transitive approval stay as they were.
+- **`AGENTS.md` scope.** The non-goal "Rewriting `AGENTS.md` broadly" is
+  withdrawn. The orchestration sections move verbatim to
+  `.codex/skills/work-orchestrator/references/contract.md`. Every phase skill
+  reads that file, so no invariant is dropped. `AGENTS.md` keeps project rules
+  and gains a context budget and a work-track choice. The validator caps it at
+  5000 bytes.
+- **Lite track.** Small, low-risk changes (copy, styling, docs, tooling, or a
+  contained fix of about 300 lines or less, with no auth, persistence,
+  migration, deployment, production, credential, or provider change) use one
+  branch, one session, and one PR, with no workflow state or review artifacts.
+  Lessons and risky work keep the full v3.1 route.
+- **Read scope and output discipline.** Phases read only the current work
+  item's workflow, design sections, latest review, and named `context`, and
+  they use templates for formats. Commands locate before reading and bound
+  their diffs and logs.
+- **Artifact size.** Designs target about 6 KB for maintenance/refactor, 15 KB
+  for technical_feature/infrastructure, and 20 KB for lessons. Review artifacts
+  target about 3 KB and contain findings only.
+- **Delivery evidence command.** Railway output was ~775K tokens across 559
+  calls, and only ~5% of it was projected. `deployment list --json` alone
+  returns 48 KB, and a build log returns about 81 KB. The new
+  `corepack pnpm evidence:delivery --sha <sha>` (`scripts/railway-delivery-evidence.mjs`)
+  runs with the pinned production IDs. It processes provider JSON and logs
+  locally and prints only the contract facts (about 1.3 KB). Any expected fact
+  that is absent is reported as `MISSING` and exits 1. `railway-evidence.md`
+  makes it the default and forbids `whoami`/`status`/schema/`--help`
+  preflights and loading the external `use-railway` skill for delivery.
+- **Search scope.** `.rgignore` hides immutable reviews, delivery evidence,
+  completed operation plans/evidence, and completed items' workflows and
+  process designs from default `rg`. Nothing moves: completed workflows keep
+  their paths, and explicit paths remain searchable.
+- **Contract validation.** Instruction checks now match short invariant phrases
+  after whitespace normalization, instead of exact wrapped prose. The dispatch
+  model asserts the new boundary.
+
+### Outside the repository
+
+The owner applied these changes to the personal Codex profile separately:
+removed `service_tier = "priority"`, which roughly doubled weekly-limit usage
+per token; added `model_auto_compact_token_limit` and `tool_output_token_limit`;
+disabled the retired Cloudflare plugin; and replaced one-off approval rules with
+general read-only and validation rules.
+
+### Amended acceptance criteria
+
+These replace the automatic-continuation criterion above:
+
+- a successful non-human phase publishes its transition, reports the next
+  launcher prompt, and stops unless the user explicitly asked to continue;
+- explicit continuation keeps fresh preflight, fingerprint protection, and
+  every gate stop;
+- `AGENTS.md` is at most 5000 bytes and points orchestrated work to the
+  contract reference, which retains the moved invariants verbatim;
+- phase skills name their exact read sets and artifact size targets;
+- `evidence:delivery` reproduces the recorded facts of the last delivery and
+  fails closed for an unknown SHA;
+- the lite track excludes control-plane, CI, server, and operations paths, and
+  a fresh-session merge approval must name the full presented head SHA;
+- `corepack pnpm validate:workflow`, `test`, `build`, and `git diff --check`
+  pass with no application, CI, infrastructure, credential, or provider change.

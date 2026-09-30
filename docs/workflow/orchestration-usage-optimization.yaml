@@ -32,8 +32,11 @@ context:
   - .codex/agents/fixer.toml
   - .codex/agents/fix-reviewer.toml
   - .codex/skills/work-orchestrator/SKILL.md
+  - .codex/skills/work-orchestrator/references/contract.md
   - .codex/skills/delivery-verification/SKILL.md
-  - scripts/validate-workflow-contract.mjs
+  - .codex/skills/delivery-verification/references/railway-evidence.md
+  - scripts/railway-delivery-evidence.mjs
+  - .rgignore
 
 completed_slices: []
 

@@ -2,6 +2,13 @@
 
 The repository-local orchestration layer is a deterministic state machine for lessons, features, refactors, infrastructure, and maintenance. New work items use v3.1. Completed v1/v2/v3 workflows remain valid and untouched.
 
+This page is a human summary. Agents load the binding contract from
+`.codex/skills/work-orchestrator/references/contract.md` and the
+`work-orchestrator` skill. Each invocation executes one phase, publishes its
+transition, and stops; the next phase starts in a fresh session unless the user
+explicitly asks to continue. Small, low-risk changes use the lite track in
+`AGENTS.md` and create no workflow state.
+
 ## One mutable control plane
 
 For an active work item, `docs/workflow/<work-item>.yaml` on its resolved

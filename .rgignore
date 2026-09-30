@@ -1,0 +1,25 @@
+# Historical artifacts that default `rg` searches skip (see AGENTS.md "Context
+# budget"). They stay in git and are still read or searched when their path is
+# passed explicitly, e.g. `rg -n foo docs/reviews/<work-item>/`.
+
+# Immutable review and delivery history.
+docs/reviews/
+docs/delivery-evidence/
+
+# Completed operation plans and dated evidence; live contracts stay searchable.
+docs/operations/*-plan.md
+docs/operations/*-evidence-*.md
+docs/operations/legacy-platform-retirement-*.md
+
+# Workflow state and designs of completed or delivered work items.
+docs/workflow/ci-workflow-contract-validation.yaml
+docs/workflow/feature-auth-persistence.yaml
+docs/workflow/infra-legacy-platform-retirement.yaml
+docs/workflow/maintenance-orchestration-*.yaml
+docs/workflow/orchestration-auto-advance.yaml
+docs/workflow/railway-ci-cd-iac.yaml
+docs/workflow/stage-01-lesson-01.yaml
+docs/technical-designs/ci-workflow-contract-validation.md
+docs/technical-designs/infra-legacy-platform-retirement.md
+docs/technical-designs/maintenance-orchestration-*.md
+docs/technical-designs/orchestration-auto-advance.md

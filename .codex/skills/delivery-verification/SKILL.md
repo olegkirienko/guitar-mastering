@@ -5,8 +5,9 @@ description: Verify one exact merged SHA across GitHub CI and Railway delivery, 
 
 # Delivery Verification
 
-Read `AGENTS.md`, workflow state, authoritative design, primary PR metadata,
-and the existing Railway CI/CD operations contract.
+Read `AGENTS.md`, `.codex/skills/work-orchestrator/references/contract.md`,
+workflow state, authoritative design, primary PR metadata, and the existing
+Railway CI/CD operations contract.
 
 This phase is read-only unless `next.action` records a bounded safe retry or a
 separate typed production gate authorizes mutation. Resolve only the canonical
@@ -14,7 +15,9 @@ work branch and reject missing, ambiguous, inherited, or terminal identities.
 
 When Railway evidence is required, read
 [references/railway-evidence.md](references/railway-evidence.md) before making
-provider requests. Request and expose only the exact fields and bounded log
+provider requests. Its default is one command,
+`corepack pnpm evidence:delivery --sha <merged SHA>`, which prints only the
+required facts. Request and expose only the exact fields and bounded log
 events needed for the current proof. Never emit complete provider JSON, full
 build/runtime logs, variables, credentials, or unredacted configuration. If a
 narrow result omits a required fact, query only that missing fact or fail

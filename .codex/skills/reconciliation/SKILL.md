@@ -5,7 +5,8 @@ description: Apply one exact non-behavioral documentation or workflow-state repa
 
 # Reconciliation
 
-Read `AGENTS.md`, workflow state, authoritative design, the immutable basis review or unambiguous repository fact, and every allowed target path.
+Read `AGENTS.md`, `.codex/skills/work-orchestrator/references/contract.md`,
+workflow state, authoritative design, the immutable basis review or unambiguous repository fact, and every allowed target path.
 
 Preflight must prove:
 

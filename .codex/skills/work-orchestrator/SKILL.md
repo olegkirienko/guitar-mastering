@@ -5,6 +5,10 @@ description: Deterministically coordinate arbitrary repository work items throug
 
 # Work Orchestrator
 
+Before validating or dispatching anything, read
+[references/contract.md](references/contract.md). It holds the orchestration
+invariants that `AGENTS.md` no longer carries in every call.
+
 ## Version selection and identity
 
 Validate a workflow under its declared version. Generate only v3.1. Never migrate a completed v1/v2/v3 workflow merely for schema consistency.
@@ -52,7 +56,7 @@ snapshot, inherited copy, or terminal retained branch is non-executable and
 must fail closed. A failed resume never enters initialization and never
 substitutes the current checkout, `main`, another ref, or history.
 
-If inconsistent, stop with exactly `WORKFLOW STATE INCONSISTENT`, list conflicts and expected values, and make no application/provider mutation. Do not infer or silently repair. A state-only `repair-state` action is allowed only when separately requested and all bounded conditions in `AGENTS.md` are proven.
+If inconsistent, stop with exactly `WORKFLOW STATE INCONSISTENT`, list conflicts and expected values, and make no application/provider mutation. Do not infer or silently repair. A state-only `repair-state` action is allowed only when separately requested and all bounded conditions in `references/contract.md` (Fail closed) are proven.
 
 ## Routing
 
@@ -70,39 +74,49 @@ If inconsistent, stop with exactly `WORKFLOW STATE INCONSISTENT`, list conflicts
 
 A `blocked` state permits only its named non-mutating `supply-<blocker>` action.
 
-## Automatic continuation
+## Invocation boundary
+
+Each invocation executes at most one phase. Every model call resends the whole
+thread, so a fresh session per phase costs less than continuing in a thread
+that has already grown.
 
 When an invocation begins by supplying approval for the current human gate,
 consume exactly that gate, commit and publish the resulting transition, report
-the newly authorized action, and stop before dispatching it. Continue in the
-same invocation only when the user explicitly requests both that exact approval
-and continued execution. Generic approval or a generic request to proceed is
-not approval-and-continue. Before an explicit continuation, re-resolve the
-published state and run the full preflight.
+the newly authorized action, and stop before dispatching it.
 
-After every successful non-human phase, re-resolve the authoritative workflow
-using the applicable identity rules and run the full preflight against that
-fresh state. If it records another ready deterministic non-human action,
-dispatch that action immediately in the same invocation and repeat this cycle.
-This applies to `work_item_init`, `design`, `design_review`, `implementation`,
-`implementation_review`, `fixes`, `fix_rereview`, `reconciliation`, and
-`delivery_verification`, including repeated review/fix cycles. Phase skills
-remain responsible only for their own phase and complete state transition.
+After a successful non-human phase, commit and publish its complete
+transition, re-resolve the authoritative workflow using the applicable identity
+rules, and run the full preflight against that fresh state. Then report the
+next allowed action with its launcher prompt, and stop. The next phase starts
+in a fresh session. Phase skills remain responsible only for their own phase
+and complete state transition.
 
-Before each dispatch, compare the fresh routing fingerprint—lifecycle identity,
-`phase`, `status`, `gate`, and `next.action`—with the fingerprint that produced
-the preceding successful dispatch. An unchanged fingerprint or an invalid or
-ambiguous transition is unsafe continuation: stop and use the existing
-fail-closed reporting instead of retrying blindly.
+Continue in the same invocation only when the user explicitly requests
+continuation for this invocation, for example "continue until the next gate".
+At a human gate this requires both that exact approval and the explicit
+continuation request. Generic approval or a generic request to proceed is not
+a continuation request. Before each continued dispatch, re-resolve the
+published state and run the full preflight. Compare the fresh routing
+fingerprint (lifecycle identity, `phase`, `status`, `gate`, and `next.action`)
+with the fingerprint that produced the preceding successful dispatch. An
+unchanged fingerprint or an invalid or ambiguous transition is unsafe
+continuation: stop and use the existing fail-closed reporting instead of
+retrying blindly.
 
-Continue until the fresh preflight reaches an explicit human gate, a risky
+Even with explicit continuation, stop at an explicit human gate, a risky
 external mutation requiring its typed approval, blocked input that cannot be
 supplied safely, inconsistent or ambiguous state, unsafe or failed execution,
-or exact terminal completion. Ordinary phase completion is not a stop
-condition. Approval supplied for an earlier gate is never reused for a newly
-reached gate.
+or exact terminal completion. Approval supplied for an earlier gate is never
+reused for a newly reached gate.
 
 ## Context and command output
+
+Read only the current work item's workflow, its authoritative design, the
+latest review, and the paths in `context` or the current slice. Do not read
+other work items' workflows, reviews, designs, or evidence unless the current
+design or `context` names them. Use `docs/workflow/templates/` for formats.
+`docs/workflow/README.md` and the root `README.md` are human summaries of this
+contract; do not load them during a phase.
 
 Keep model-visible evidence proportional to the routing decision. Prefer exact
 paths and IDs, provider-side field selection, bounded result/time/log windows,
@@ -128,6 +142,10 @@ Approval is scoped, non-transitive, and single-use. Consume only the currently r
   present the current full PR head and its successful required checks without
   persisting either value. Prove the head descends from `reviewed_sha` and each
   intervening commit changes only approved same-item control-plane artifacts.
+  The presenting phase ends with a launcher prompt that names that full head
+  SHA. Because the head is never persisted, a fresh session consumes merge
+  approval only if the approval names the full head SHA and it equals the
+  freshly resolved head; otherwise present the head and stop without merging.
   After approval, re-resolve all scope and fail closed if the head changed;
   merge atomically with that unchanged expected head, record the exact
   resulting `main` SHA, and enter delivery verification on the retained work

@@ -1,8 +1,29 @@
 # Railway Delivery Evidence
 
 Load this reference only while collecting Railway evidence for an exact merged
-SHA. Railway reads remain subject to the repository delivery contract and the
-active Railway skill.
+SHA. Railway reads remain subject to the repository delivery contract.
+
+## Default: one command
+
+Run this first:
+
+```sh
+corepack pnpm evidence:delivery --sha <full merged SHA>
+```
+
+It prints only the facts the contract needs: the push-event `Validate` run, the
+Railway deployment for that SHA (ID, status, times, repository, branch, image
+digest), the first build-log timestamp for CI ordering, and the pre-deploy,
+migration, `server_started`, and readiness events. Every expected fact that is
+absent is printed as a `MISSING` line and makes the command exit 1; that result
+fails closed and is never success. Production smoke still runs separately with
+`corepack pnpm smoke:production <origin>`.
+
+For delivery verification, do not load the external `use-railway` skill. Do
+not run `railway whoami`, `railway status --json`, `railway api describe` or
+`search`, or `--help` preflights, because the pinned identity already lives in
+the operations contract. Use the rules below only for a fact the command does
+not report, or to diagnose a `MISSING` line.
 
 ## Query discipline
 

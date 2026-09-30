@@ -6,10 +6,10 @@ description: Create or revise the authoritative design/specification for an arbi
 # Work Design
 
 Read:
-- `AGENTS.md`
+- `AGENTS.md` and `.codex/skills/work-orchestrator/references/contract.md`
 - workflow state
 - referenced `context`
-- relevant prior designs/reviews
+- prior designs/reviews only when `context` or the current design names them
 
 For new v3.1 work, initialization must already have established a clean,
 synchronized, non-divergent `main`, the deterministic canonical work branch,
@@ -51,6 +51,12 @@ Cover preserved invariants, migration sequence, regression risks, compatibility,
 Cover topology, environments, secrets/configuration, security, deployment, rollback, limits/cost where relevant, observability, and failure modes.
 
 Write/update exactly the design path referenced by workflow state.
+
+Every later phase rereads the design, so keep it proportional: cite existing
+documents instead of restating them, and state each decision once. Target
+sizes are about 6 KB for maintenance/refactor, 15 KB for
+technical_feature/infrastructure, and 20 KB for a lesson. If a design needs
+more, split the work into more slices.
 
 Do not modify application code.
 
