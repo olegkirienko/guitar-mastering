@@ -62,7 +62,7 @@ The ID order below is also the server catalog's `stepIds`.
 | `intro` | 0 | 1 Струна | the learner starts the lesson, having chosen the guitar or the virtual string |
 | `string` | 1 | 1 Струна | the learner answers which state sounded higher, through either path (criterion 1) |
 | `repeats` | 2 | 2 Повтори | a prediction is made **and** the synchronized comparison finishes, or the step view reaches its end (criterion 2) |
-| `frequency` | 3 | 3 Частота | the reveal is fully opened **and** at least one lab value changed (criteria 3, 4) |
+| `frequency` | 3 | 3 Частота | the reveal is fully opened **and** at least one changed value is checked with «Перевірити» after a prediction (criteria 3, 4) |
 | `loudness` | 4 | 3 Частота | the counterexample is answered and its explanation shown (criterion 5) |
 | `guitar` | 5 | 4 Гітара | the application question is answered, through either path (criterion 6) |
 | `checkpoint` | 6 | 5 Перевірка | the spec's pass rule sets `checkpointPassed` (criterion 7) |
@@ -183,8 +183,10 @@ copy and behavior stay the same, and its e2e specs must stay green.
     - a full run at 320 px;
     - opening Lesson 2 from the home page while Lesson 1's card still opens
       Lesson 1.
-- **Screen reader:** role and accessible-name assertions in the Playwright
-  specs, plus one manual screen-reader pass that the slice 3 review reports.
+- **Screen reader:** the required check is role, accessible-name, and
+  live-region assertions in the Playwright specs. A manual pass with VoiceOver
+  or NVDA is optional. Only the owner can do it, before approving the merge,
+  and the result is noted on the PR. Review agents never claim a manual pass.
 
 ## Slices
 
