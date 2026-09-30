@@ -106,8 +106,10 @@ Before merge the existing rule is unchanged: routing to `implementation` with
 `validateTransition` enforces:
 
 - a post-merge production gate is entered only from `delivery_verification`;
-- it leaves only to its `next.on_approval`, or through the owner's withdrawal
-  to `delivery_verification / verify-delivery`;
+- it leaves only to its `next.on_approval`, to
+  `delivery_verification / blocked / supply-retry-<NN>-owner-decision` with the
+  same `NN` as `on_approval`, or through the owner's withdrawal to
+  `delivery_verification / verify-delivery`;
 - `git.reviewed_sha` and `git.merged_sha` stay unchanged across every
   transition into and out of the gate.
 
@@ -265,8 +267,8 @@ Validator fixtures:
   from-phase error message;
 - **illegal withdrawals:** a `work_item_completion` gate →
   `verify-delivery`, and a pre-merge production gate → `verify-delivery`;
-- **legal:** a `delivery_verification / blocked /
-  supply-retry-01-owner-decision` state.
+- **blocked exit:** gate → `supply-retry-01-owner-decision` passes, and fails
+  with another `NN`, with a changed SHA, or from a pre-merge gate.
 
 This work item's own production delivery exercises only the first-read path.
 The re-read path is proven by tests.

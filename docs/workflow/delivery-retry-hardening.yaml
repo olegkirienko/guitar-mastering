@@ -4,7 +4,7 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: design_review
+phase: design
 status: ready
 gate: none
 
@@ -39,21 +39,13 @@ current_slice:
   name: "Delivery retry hardening design"
 
 latest_review:
-  path: docs/reviews/delivery-retry-hardening/design-review-04.md
+  path: docs/reviews/delivery-retry-hardening/design-review-05.md
 
 blocking_findings:
-  - id: MEDIUM-05
+  - id: LOW-09
     class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-04.md
-    summary: "Guard mode is implied by ID presence, so an ID-less post-check stops successful retries."
-  - id: LOW-07
-    class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-04.md
-    summary: "A failed or missing post-check after the operation has no defined state outcome."
-  - id: LOW-08
-    class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-04.md
-    summary: "No fixture keeps the withdrawal exit limited to post-merge production gates."
+    source: docs/reviews/delivery-retry-hardening/design-review-05.md
+    summary: "Gate to blocked owner-decision exit is missing from validateTransition rules and fixtures."
 
 next:
-  action: review-design
+  action: create-or-revise-design
