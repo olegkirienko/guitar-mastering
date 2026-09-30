@@ -4,7 +4,7 @@ work_item_id: orchestration-usage-optimization
 work_item_type: maintenance
 title: "Orchestration usage optimization"
 
-phase: implementation_review
+phase: fixes
 status: ready
 gate: none
 
@@ -45,9 +45,21 @@ current_slice:
   name: "Bounded orchestration execution"
 
 latest_review:
-  path: docs/reviews/orchestration-usage-optimization/design-review-01.md
+  path: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
 
-blocking_findings: []
+blocking_findings:
+  - id: MEDIUM-01
+    class: implementation_defect
+    source: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
+    summary: "--no-logs makes the delivery evidence command report success without release-path facts."
+  - id: LOW-01
+    class: documentation_defect
+    source: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
+    summary: "README lite-track summary is looser than the binding AGENTS.md rule."
+  - id: LOW-02
+    class: documentation_defect
+    source: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
+    summary: "Withdrawn AGENTS.md non-goal in the design body lacks a superseded marker."
 
 next:
-  action: review-bounded-orchestration-execution
+  action: fix-MEDIUM-01-LOW-01-LOW-02
