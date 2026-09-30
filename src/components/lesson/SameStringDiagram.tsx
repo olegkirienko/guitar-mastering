@@ -1,11 +1,14 @@
 // Static diagram of the first string in its two states: open, and pressed just
 // behind a metal fret nearer the body. No fret numbers or note names are shown.
+import { useId } from 'react';
+
 const fretPositions = [72, 118, 160, 198, 232];
 const pressedFingerX = 108;
 
 function StringState({ pressed, label }: { pressed: boolean; label: string }) {
+  const labelId = useId();
   return <div className="max-w-md">
-    <svg viewBox="0 0 320 56" className="h-auto w-full" role="img" aria-label={label}>
+    <svg viewBox="0 0 320 56" className="h-auto w-full" role="img" aria-labelledby={labelId}>
       <g className="text-gray-300">
         <rect x="8" y="16" width="252" height="24" rx="4" fill="currentColor" opacity="0.35" />
         <path d="M260 8 Q300 8 312 28 Q300 48 260 48 Z" fill="currentColor" opacity="0.6" />
@@ -17,7 +20,7 @@ function StringState({ pressed, label }: { pressed: boolean; label: string }) {
       <line x1="14" y1="28" x2="296" y2="28" className="text-gray-950" stroke="currentColor" strokeWidth="1.5" />
       {pressed && <circle cx={pressedFingerX} cy="28" r="7" className="text-brand-600" fill="currentColor" />}
     </svg>
-    <p className="mt-1 text-sm text-gray-700">{label}</p>
+    <p id={labelId} className="mt-1 text-sm text-gray-700">{label}</p>
   </div>;
 }
 

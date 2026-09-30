@@ -153,3 +153,210 @@ test("keeps Lesson 2 unlisted on the home page until the lesson is complete", as
   await expect(page.getByText("Чому звуки бувають високими й низькими?")).toBeVisible();
   await expect(page.getByRole("link", { name: /Чому звуки бувають високими й низькими/ })).toHaveCount(0);
 });
+
+async function seedStep(page: Page, currentStepId: string, completedStepIds: string[]) {
+  await page.addInitScript(({ key, progress }) => {
+    localStorage.setItem(key, JSON.stringify(progress));
+  }, { key: guestKey, progress: { currentStepId, completedStepIds, checkpointPassed: false, completedAt: null, audioEnabled: false, prefersStatic: false } });
+}
+
+async function pressButton(page: Page, name: string) {
+  const button = page.getByRole("button", { name, exact: true });
+  await button.focus();
+  await button.press("Enter");
+}
+
+async function answer(page: Page, group: string, choice: string) {
+  const question = page.getByRole("group", { name: group });
+  const radio = question.getByRole("radio", { name: choice });
+  await radio.focus();
+  await radio.press("Space");
+  const check = question.getByRole("button", { name: "Перевірити" });
+  await check.focus();
+  await check.press("Enter");
+}
+
+async function installFakeAudio(page: Page) {
+  await page.addInitScript(() => {
+    const log: unknown[][] = [];
+    (window as unknown as { __audioLog: unknown[][] }).__audioLog = log;
+    class Param {
+      value = 1;
+      constructor(private readonly kind: string) {}
+      setValueAtTime(value: number) { this.value = value; log.push([this.kind, value]); return this; }
+      exponentialRampToValueAtTime(value: number) { this.value = value; log.push([this.kind, value]); return this; }
+      linearRampToValueAtTime(value: number) { this.value = value; log.push([this.kind, value]); return this; }
+      cancelScheduledValues() { return this; }
+    }
+    let nextId = 0;
+    class Node { connect<T>(node: T) { return node; } disconnect() {} }
+    class Source extends Node {
+      id = ++nextId;
+      frequency = new Param("frequency");
+      type = "sine";
+      buffer: unknown = null;
+      onended: (() => void) | null = null;
+      start() { log.push(["start", this.id]); }
+      stop(time: number) { log.push(["stop", this.id, time]); }
+    }
+    class Gain extends Node { gain = new Param("gain"); }
+    class FakeAudioContext {
+      state = "suspended";
+      currentTime = 0;
+      sampleRate = 8000;
+      destination = new Node();
+      async resume() { this.state = "running"; }
+      async close() { this.state = "closed"; }
+      createGain() { return new Gain(); }
+      createOscillator() { return new Source(); }
+      createBufferSource() { return new Source(); }
+      createBuffer(_channels: number, length: number) { return { getChannelData: () => new Float32Array(length) }; }
+    }
+    (window as unknown as { AudioContext: unknown }).AudioContext = FakeAudioContext;
+  });
+}
+
+test("runs screen 2 step by step with reduced motion and the keyboard only", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await seedStep(page, "repeats", ["intro", "string"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await expect(page.getByRole("heading", { name: "Передбач і перевір" })).toBeVisible();
+  await expect(page.getByText("Крок 2 із 5")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Покадрово: системне" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Запустити обидві доріжки" })).toHaveCount(0);
+
+  await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці B");
+  for (let moment = 0; moment < 4; moment += 1) await pressButton(page, "Наступний момент");
+  const summary = page.getByRole("table", { name: "Повні повтори за той самий час" });
+  await expect(summary.getByRole("cell")).toHaveText(["1", "2"]);
+  expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string"]);
+
+  await pressButton(page, "Показати підсумок");
+  await expect(page.getByText("A: 4 повтори; B: 8 повторів; час однаковий.", { exact: false })).toBeVisible();
+  expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string", "repeats"]);
+
+  await answer(page, "Як звучатиме рух, який повторюється частіше?", "Вище");
+  await pressButton(page, "Показати результат");
+  await expect(page.getByText("A сприймається нижчим; B — вищим.")).toBeVisible();
+  await pressButton(page, "Далі: дамо відкриттю назву");
+  await expect(page.getByRole("heading", { name: "Даємо відкриттю назви" })).toBeFocused();
+});
+
+test("finishes the animated comparison on one shared timer", async ({ page }) => {
+  await seedStep(page, "repeats", ["intro", "string"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await answer(page, "Де повторів буде більше, поки час іде однаково?", "Однаково");
+  await expect(page.getByRole("button", { name: "Наступний момент" })).toHaveCount(0);
+  await pressButton(page, "Запустити обидві доріжки");
+  await expect(page.getByRole("button", { name: "Запустити обидві доріжки" })).toBeDisabled();
+  await expect(page.getByText("A: 4 повтори; B: 8 повторів; час однаковий.", { exact: false })).toBeVisible({ timeout: 10_000 });
+  expect((await storedProgress(page)).completedStepIds).toContain("repeats");
+});
+
+test("reveals the names before the lab and checks a predicted change on screen 3", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await seedStep(page, "frequency", ["intro", "string", "repeats"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await expect(page.getByRole("heading", { name: "Змінюй частоту" })).toHaveCount(0);
+  for (let row = 0; row < 3; row += 1) await pressButton(page, "Відкрити наступний рядок");
+  await expect(page.getByText("Кількість повних коливань за секунду називаємо частотою.")).toBeVisible();
+  await expect(page.getByText("Більша частота → вищий звук; менша частота → нижчий звук.")).toBeVisible();
+
+  const output = page.locator("output");
+  await expect(output).toHaveText("220 Гц");
+  await expect(page.getByRole("button", { name: "Менше" })).toBeDisabled();
+  await pressButton(page, "Більше");
+  await expect(output).toHaveText("330 Гц");
+  const lab = page.getByRole("region", { name: "Змінюй частоту" });
+  await expect(lab.getByRole("button", { name: "Перевірити" })).toBeDisabled();
+  expect((await storedProgress(page)).completedStepIds).not.toContain("frequency");
+  const higher = lab.getByRole("radio", { name: "вищим" });
+  await higher.focus();
+  await higher.press("Space");
+  await lab.getByRole("button", { name: "Перевірити" }).press("Enter");
+  await expect(lab.getByTestId("lab-feedback")).toHaveText("220 → 330: за секунду повторів стало більше, тому звук став вищим.");
+  await expect(lab.getByTestId("lab-feedback")).toHaveAttribute("role", "status");
+  expect((await storedProgress(page)).completedStepIds).toContain("frequency");
+
+  const slider = page.getByRole("slider", { name: "Частота" });
+  await slider.focus();
+  await slider.press("ArrowRight");
+  await expect(output).toHaveText("440 Гц");
+  await expect(slider).toHaveAttribute("aria-valuetext", "440 Гц");
+  await noHorizontalScroll(page);
+});
+
+test("separates loudness from pitch on screen 4 without audio", async ({ page }) => {
+  await seedStep(page, "loudness", ["intro", "string", "repeats", "frequency"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await expect(page.getByText("Перед прослуховуванням зроби гучність пристрою комфортною", { exact: false })).toBeVisible();
+  await expect(page.getByText("Частота: 330 Гц")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Послухати голосніше" })).toHaveCount(0);
+  await answer(page, "Ми зробили той самий тон голоснішим. Чи змінилася його висота?", "Так, звук став вищим");
+  await expect(page.getByText("Рівень гучності змінився; частота 330 Гц в обох; висота та сама.")).toBeVisible();
+  expect((await storedProgress(page)).completedStepIds).toContain("loudness");
+});
+
+test("explains missing and blocked audio and keeps the text path", async ({ page }) => {
+  await page.addInitScript(() => { delete (window as unknown as { AudioContext?: unknown }).AudioContext; });
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await pressButton(page, "Звук: вимкнено");
+  await expect(page.getByText("Звук недоступний у цьому браузері.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Звук: вимкнено" })).toHaveAttribute("aria-pressed", "false");
+
+  const blocked = await page.context().newPage();
+  await blocked.addInitScript(() => {
+    class BlockedAudioContext {
+      state = "suspended";
+      async resume() { throw new DOMException("blocked", "NotAllowedError"); }
+      async close() {}
+    }
+    (window as unknown as { AudioContext: unknown }).AudioContext = BlockedAudioContext;
+  });
+  await mockSession(blocked, null);
+  await blocked.goto(`${applicationOrigin}/#/lessons/02`);
+  await pressButton(blocked, "Звук: вимкнено");
+  await expect(blocked.getByText("Браузер не дозволив увімкнути звук.", { exact: false })).toBeVisible();
+  await pressButton(blocked, "Немає гітари — відкрити віртуальну струну");
+  await expect(blocked.getByRole("heading", { name: "Одна струна — два звуки" })).toBeVisible();
+});
+
+test("plays capped tones one at a time and silences them when the tab is hidden", async ({ page }) => {
+  await installFakeAudio(page);
+  await seedStep(page, "repeats", ["intro", "string"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await pressButton(page, "Звук: вимкнено");
+  await expect(page.getByRole("button", { name: "Звук: увімкнено" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Показувати покадрово" }).click();
+  await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці A");
+  await pressButton(page, "Показати підсумок");
+  await pressButton(page, "Послухати A");
+  await pressButton(page, "Послухати B");
+  const log = await page.evaluate(() => (window as unknown as { __audioLog: unknown[][] }).__audioLog);
+  const starts = log.filter(([kind]) => kind === "start").map(([, id]) => id);
+  expect(starts).toEqual([1, 2]);
+  const earlyStopOfFirst = log.findIndex(([kind, id, time]) => kind === "stop" && id === 1 && (time as number) < 0.1);
+  const startOfSecond = log.findIndex(([kind, id]) => kind === "start" && id === 2);
+  expect(earlyStopOfFirst).toBeGreaterThan(-1);
+  expect(earlyStopOfFirst).toBeLessThan(startOfSecond);
+  const gains = log.filter(([kind]) => kind === "gain").map(([, value]) => value as number);
+  expect(Math.max(...gains)).toBeLessThanOrEqual(0.12);
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  const afterHide = await page.evaluate(() => (window as unknown as { __audioLog: unknown[][] }).__audioLog);
+  expect(afterHide.some(([kind, id, time]) => kind === "stop" && id === 2 && (time as number) < 0.1)).toBe(true);
+});

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { SameStringDiagram } from '@/components/lesson/SameStringDiagram';
+import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
+import { stringPluckFrequency } from '@/data/lessons/stage-01-lesson-02-model';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
 
 type StringContent = typeof lessonTwoContent.string;
@@ -8,18 +10,24 @@ export type PitchPath = 'guitar' | 'virtual';
 interface SameStringPitchExperienceProps {
   content: StringContent;
   preferredPath: PitchPath;
+  audio?: LessonTwoAudio;
   onReady: () => void;
 }
 
 // Two states of the same first string, experienced on a real guitar or on a
 // virtual card with a text result. Both paths carry the same weight.
-export function SameStringPitchExperience({ content, preferredPath, onReady }: SameStringPitchExperienceProps) {
+export function SameStringPitchExperience({ content, preferredPath, audio, onReady }: SameStringPitchExperienceProps) {
   const [openPlucked, setOpenPlucked] = useState(false);
   const [pressedPlucked, setPressedPlucked] = useState(false);
 
-  const pluckOpen = () => setOpenPlucked(true);
+  // With audio on, the same buttons also play short, non-overlapping plucks.
+  const pluckOpen = () => {
+    setOpenPlucked(true);
+    if (audio?.enabled) audio.playPluck(stringPluckFrequency.open);
+  };
   const pluckPressed = () => {
     setPressedPlucked(true);
+    if (audio?.enabled) audio.playPluck(stringPluckFrequency.pressed);
     onReady();
   };
 
