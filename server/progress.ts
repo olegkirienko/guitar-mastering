@@ -1,13 +1,6 @@
 import type { Pool } from "pg";
 import type { AuthService } from "./auth.ts";
-
-const LESSON_CATALOG = {
-  "stage-01-lesson-01": {
-    schemaVersion: 1,
-    contentVersion: 1,
-    stepIds: ["intro", "string", "air", "checkpoint", "complete"],
-  },
-} as const;
+import { productionProgressCatalog, type ProgressCatalog, type ProgressCatalogEntry } from "./progress-catalog.ts";
 
 const MAX_PROGRESS_BYTES = 12 * 1024;
 
@@ -60,12 +53,6 @@ function itemFromRow(row: ProgressRow): LessonProgressItem {
   };
 }
 
-function catalogEntry(lessonId: string) {
-  const entry = LESSON_CATALOG[lessonId as keyof typeof LESSON_CATALOG];
-  if (!entry) throw new ProgressError(404, "UNKNOWN_LESSON", "Lesson is not available.");
-  return entry;
-}
-
 function integer(value: unknown, name: string): number {
   if (!Number.isInteger(value) || (value as number) < 0) {
     throw new ProgressError(422, "INVALID_PROGRESS", `${name} must be a non-negative integer.`);
@@ -73,8 +60,7 @@ function integer(value: unknown, name: string): number {
   return value as number;
 }
 
-function validateProgress(body: unknown, lessonId: string) {
-  const entry = catalogEntry(lessonId);
+function validateProgress(body: unknown, entry: ProgressCatalogEntry) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new ProgressError(422, "INVALID_PROGRESS", "Progress payload is invalid.");
   }
@@ -129,7 +115,17 @@ function validateProgress(body: unknown, lessonId: string) {
 }
 
 export class ProgressService {
-  constructor(private readonly pool: Pool, private readonly auth: AuthService) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly auth: AuthService,
+    private readonly catalog: ProgressCatalog = productionProgressCatalog,
+  ) {}
+
+  private catalogEntry(lessonId: string): ProgressCatalogEntry {
+    const entry = this.catalog.get(lessonId);
+    if (!entry) throw new ProgressError(404, "UNKNOWN_LESSON", "Lesson is not available.");
+    return entry;
+  }
 
   private async userId(token?: string): Promise<string> {
     const user = await this.auth.session(token);
@@ -147,7 +143,7 @@ export class ProgressService {
   }
 
   async get(token: string | undefined, lessonId: string): Promise<LessonProgressItem> {
-    catalogEntry(lessonId);
+    this.catalogEntry(lessonId);
     const userId = await this.userId(token);
     const result = await this.pool.query<ProgressRow>(`
       SELECT lesson_id, schema_version, content_version, progress, revision, updated_at
@@ -158,7 +154,7 @@ export class ProgressService {
   }
 
   async put(token: string | undefined, lessonId: string, body: unknown): Promise<LessonProgressItem> {
-    const value = validateProgress(body, lessonId);
+    const value = validateProgress(body, this.catalogEntry(lessonId));
     const userId = await this.userId(token);
     const parameters = [userId, lessonId, value.schemaVersion, value.contentVersion, JSON.stringify(value.progress), value.baseRevision];
     const result = value.baseRevision === 0

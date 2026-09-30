@@ -4,7 +4,7 @@ work_item_id: multi-lesson-progress-foundation
 work_item_type: technical_feature
 title: "Multi-lesson progress foundation"
 
-phase: implementation
+phase: implementation_review
 status: ready
 gate: none
 
@@ -42,4 +42,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: implement-server-progress-catalog
+  action: review-server-progress-catalog
