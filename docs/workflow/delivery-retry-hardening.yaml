@@ -4,7 +4,7 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: design_review
+phase: design
 status: ready
 gate: none
 
@@ -39,9 +39,25 @@ current_slice:
   name: "Delivery retry hardening design"
 
 latest_review:
-  path: docs/reviews/delivery-retry-hardening/design-review-02.md
+  path: docs/reviews/delivery-retry-hardening/design-review-03.md
 
-blocking_findings: []
+blocking_findings:
+  - id: MEDIUM-04
+    class: design_defect
+    source: docs/reviews/delivery-retry-hardening/design-review-03.md
+    summary: "Retry guard is not the last read and a race-induced rollback goes undetected."
+  - id: LOW-04
+    class: design_defect
+    source: docs/reviews/delivery-retry-hardening/design-review-03.md
+    summary: "Guard test fails typecheck and a top-level CLI exits under vitest."
+  - id: LOW-05
+    class: design_defect
+    source: docs/reviews/delivery-retry-hardening/design-review-03.md
+    summary: "Newest-deployment selection is outside the tested pure function."
+  - id: LOW-06
+    class: design_defect
+    source: docs/reviews/delivery-retry-hardening/design-review-03.md
+    summary: "Permanent guard stops leave the gate without a legal exit."
 
 next:
-  action: review-design
+  action: create-or-revise-design
