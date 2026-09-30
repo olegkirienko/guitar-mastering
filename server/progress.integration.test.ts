@@ -3,6 +3,7 @@ import { runner } from "node-pg-migrate";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AuthService } from "./auth.ts";
 import { loadConfig } from "./config.ts";
+import { ProgressCatalog } from "./progress-catalog.ts";
 import { ProgressService } from "./progress.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
@@ -43,6 +44,32 @@ describePostgres("progress PostgreSQL acceptance", () => {
     const updated = await progress.put(first.token, "stage-01-lesson-01", payload(1, "string"));
     expect(updated).toMatchObject({ revision: 2, progress: { currentStepId: "string" } });
     await expect(progress.list(first.token)).resolves.toEqual([updated]);
+  });
+
+  it("persists and lists two catalog lessons with independent validation", async () => {
+    const auth = new AuthService(pool, config, passwordOperations);
+    const registered = await auth.register({ username: "Player.One", password: "correct horse guitar" }, "network-a");
+    const catalog = new ProgressCatalog({
+      "stage-01-lesson-01": { schemaVersion: 1, contentVersion: 1, stepIds: ["intro", "string"] },
+      "test-lesson-02": { schemaVersion: 2, contentVersion: 3, stepIds: ["listen", "finish"] },
+    });
+    const progress = new ProgressService(pool, auth, catalog);
+    const alternatePayload = {
+      schemaVersion: 2,
+      contentVersion: 3,
+      baseRevision: 0,
+      progress: { currentStepId: "listen", completedStepIds: [], checkpointPassed: false, completedAt: null },
+    };
+
+    const lessonOne = await progress.put(registered.token, "stage-01-lesson-01", payload(0));
+    const lessonTwo = await progress.put(registered.token, "test-lesson-02", alternatePayload);
+    await expect(progress.list(registered.token)).resolves.toEqual([lessonOne, lessonTwo]);
+    await expect(progress.put(registered.token, "stage-01-lesson-01", {
+      ...payload(1), progress: { ...payload(1).progress, currentStepId: "listen" },
+    })).rejects.toMatchObject({ code: "INVALID_PROGRESS" });
+    await expect(progress.put(registered.token, "test-lesson-02", {
+      ...alternatePayload, baseRevision: 1, progress: { ...alternatePayload.progress, currentStepId: "intro" },
+    })).rejects.toMatchObject({ code: "INVALID_PROGRESS" });
   });
 
   it("allows one optimistic writer and returns durable current data to the loser", async () => {

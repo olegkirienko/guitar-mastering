@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   hasMeaningfulLessonOneProgress,
+  defaultLessonOneProgress,
   lessonOneGuestStorageKey,
+  lessonOneProgressAdapter,
   lessonOnePreferencesStorageKey,
   lessonOneProgressFingerprint,
   lessonOneUserStorageKey,
@@ -11,6 +13,7 @@ import {
   toSyncedLessonOneProgress,
   writeLessonOneProgress,
 } from '../src/progress/lesson-one.ts';
+import type { LessonProgressAdapter } from '../src/progress/core.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -66,6 +69,23 @@ describe('Lesson 1 progress adapter', () => {
     expect(lessonOneUserStorageKey('user/one')).toContain('user%2Fone');
     expect(hasMeaningfulLessonOneProgress(progress)).toBe(true);
     expect(lessonOneProgressFingerprint(progress)).toBe(lessonOneProgressFingerprint({ ...progress, audioEnabled: true }));
+  });
+
+  it('exposes a stable adapter while another lesson keeps independent storage identity', () => {
+    const secondAdapter = {
+      ...lessonOneProgressAdapter,
+      lessonId: 'test-lesson-two',
+      guestStorageKey: 'guitar-mastering:test-lesson-two',
+      userStorageKey: (userId: string) => `guitar-mastering:user:${encodeURIComponent(userId)}:test-lesson-two`,
+      importDecisionKey: (userId: string) => `guitar-mastering:user:${encodeURIComponent(userId)}:test-lesson-two:guest-import`,
+    } satisfies LessonProgressAdapter<'intro' | 'string' | 'air' | 'checkpoint' | 'complete', typeof defaultLessonOneProgress>;
+
+    expect(lessonOneProgressAdapter.lessonId).toBe('stage-01-lesson-01');
+    expect(lessonOneProgressAdapter.guestStorageKey).toBe(lessonOneGuestStorageKey);
+    expect(lessonOneProgressAdapter.userStorageKey('user/one')).toBe(lessonOneUserStorageKey('user/one'));
+    expect(secondAdapter.guestStorageKey).not.toBe(lessonOneProgressAdapter.guestStorageKey);
+    expect(secondAdapter.userStorageKey('user/one')).not.toBe(lessonOneProgressAdapter.userStorageKey('user/one'));
+    expect(secondAdapter.importDecisionKey('user/one')).not.toBe(lessonOneProgressAdapter.importDecisionKey('user/one'));
   });
 
   it('keeps valid completion when the independent preference record is corrupt', () => {
