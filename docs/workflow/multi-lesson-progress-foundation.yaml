@@ -4,9 +4,9 @@ work_item_id: multi-lesson-progress-foundation
 work_item_type: technical_feature
 title: "Multi-lesson progress foundation"
 
-phase: human_gate
-status: awaiting_approval
-gate: next_slice_approval
+phase: implementation
+status: ready
+gate: none
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -28,11 +28,13 @@ context:
   - docs/technical-designs/feature-auth-persistence.md
   - docs/reviews/feature-auth-persistence/implementation-review-12-lesson-one-progress-migration.md
 
-completed_slices: []
+completed_slices:
+  - id: client-progress-controller
+    name: "Reusable client progress controller"
 
 current_slice:
-  id: client-progress-controller
-  name: "Reusable client progress controller"
+  id: server-progress-catalog
+  name: "Typed server progress catalog"
 
 latest_review:
   path: docs/reviews/multi-lesson-progress-foundation/implementation-review-01-client-progress-controller.md
@@ -40,7 +42,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: approve-next-slice
-  on_approval:
-    phase: implementation
-    action: implement-server-progress-catalog
+  action: implement-server-progress-catalog
