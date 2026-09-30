@@ -13,7 +13,7 @@ git:
   branch: work/orchestration-usage-optimization
   lifecycle_generation: 611d90af-cf43-4e9d-8df0-734cf8973703
   lifecycle_anchor_sha: d7634b2f7c2d9f8f8783ac7ee17ccde7a5b2b186
-  pr_number: null
+  pr_number: 18
   reviewed_sha: null
   merged_sha: null
 
