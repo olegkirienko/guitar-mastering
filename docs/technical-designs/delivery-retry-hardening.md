@@ -118,26 +118,33 @@ Consumption semantics, mirroring `merge_approval`:
 
 1. When the gate is used, re-resolve the workflow and scope, and re-check the
    pinned stop conditions against live provider state.
-2. Run the retry guard in pre-check mode as the last read before the
+2. Run the retry guard with `--mode pre` as the last read before the
    operation. No other read or step happens between it and the operation.
-3. Perform the pinned operation exactly once.
-4. Run the guard in post-check mode with the new deployment ID from the
+3. Perform the pinned operation exactly once. Issuing it consumes the gate,
+   whatever the outcome.
+4. Run the guard with `--mode post` and the new deployment ID from the
    operation's output.
-5. Enter `delivery_verification / retry-delivery-<NN>`.
+5. Always leave the gate:
+   - if the post-check clears, enter `delivery_verification / ready /
+     retry-delivery-<NN>`;
+   - if it stops, or the output has no deployment ID, enter
+     `delivery_verification / blocked / supply-retry-<NN>-owner-decision`.
+     This is a possible rollback: the owner decides, and no further mutation
+     happens.
 
-That state is a read-only re-verification. It also runs the post-check,
-without the ID: the newest deployment must be for `merged_sha`, and `main`
-must still be `merged_sha`. A failed post-check means a possible rollback:
-stop, perform no mutation, and report to the owner. Any further mutation needs
-a new gate with the next `NN`. The delivery evidence records each retry with
-its scope, operation, guard results, and outcome.
+`retry-delivery-<NN>` is a read-only re-verification. It runs
+`--mode post` without an ID before collecting evidence, and a stop blocks the
+same way. Any further mutation needs a new gate with the next `NN`. The
+delivery evidence records each retry with its scope, operation, deployment ID,
+guard results, and outcome.
 
 Guard stops before the operation:
 
 - **temporary** (`deployment in progress`, or a missing or failed provider
   fact): leave the gate unconsumed and re-run the guard later;
 - **permanent** (`main advanced`, a newer deployment, already `SUCCESS`): the
-  owner withdraws the gate. The state returns to
+  owner withdraws the gate. Withdrawal is legal only if no operation was
+  issued. The state returns to
   `delivery_verification / verify-delivery` with unchanged SHAs, the evidence
   records the guard's reason, and no mutation happens. How delivery of a
   superseded `merged_sha` is then proven is the owner's decision, outside this
@@ -160,21 +167,22 @@ A redeploy of `merged_sha` must never roll production back after newer code
 has been merged or deployed.
 
 `scripts/delivery-retry-guard.mjs`, run as
-`corepack pnpm delivery:retry-guard --sha <merged_sha> [--retry-deployment <id>]`,
+`corepack pnpm delivery:retry-guard --mode pre|post --sha <merged_sha> [--retry-deployment <id>]`,
 is read-only. It reads the protected `main` head from GitHub and the unfiltered
 deployment list of the pinned production web service from Railway, and prints
 one line. The CLI body runs only under `import.meta.main`, and
 `scripts/delivery-retry-guard.d.mts` types the export for the test.
 
-The pure, exported `retryGuardDecision({ sha, mainSha, deployments, retryDeploymentId })`:
+The pure, exported `retryGuardDecision({ mode, sha, mainSha, deployments, retryDeploymentId })`,
+where `mode` is `"pre"` or `"post"` and is always explicit:
 
 - takes the newest deployment by greatest `createdAt`, never by commit, and
   stops on an empty list or a missing timestamp;
-- **pre-check** (no `retryDeploymentId`): clear only if `mainSha === sha`, the
-  newest deployment is for `sha`, and its status is `FAILED` or `CRASHED`;
-- **post-check** (after the operation or in `retry-delivery-<NN>`): clear only
-  if `mainSha === sha`, the newest deployment is for `sha`, and, when an ID is
-  given, it is that retry deployment;
+- **pre** rejects a `retryDeploymentId`. It clears only if `mainSha === sha`,
+  the newest deployment is for `sha`, and its status is `FAILED` or `CRASHED`;
+- **post** takes an optional ID. It clears only if `mainSha === sha` and the
+  newest deployment is for `sha` (any status), and, when an ID is given, it is
+  that retry deployment;
 - otherwise stops with a reason that states the observed facts (`main advanced
   to <sha>`, `newer deployment <id> for <sha>`, `latest deployment already
   SUCCESS`, `deployment <status>`, `missing <fact>`) and says whether the stop
@@ -231,9 +239,11 @@ Retry guard tests (`build/delivery-retry-guard.test.ts`, pure decision):
   next to an older FAILED one for `sha`, when the deployment already
   succeeded, when it is in progress, and on an empty list or a missing
   `createdAt`;
-- the post-check clears when the retry deployment is the newest and `main` is
-  still `sha`, and stops when a newer deployment or an advanced `main`
-  appears;
+- the pre-check rejects a `retryDeploymentId`;
+- the post-check clears, with or without the ID, for a newest SUCCESS or
+  FAILED deployment of `sha` with `main` at `sha`. It stops when a newer
+  deployment for another SHA or an advanced `main` appears, and when the given
+  ID is not the newest;
 - stops are labeled temporary or permanent as specified.
 
 Validator fixtures:
@@ -252,7 +262,11 @@ Validator fixtures:
 - **withdrawal:** gate → `delivery_verification / verify-delivery` with the
   same SHAs passes;
 - both fail when a SHA changes. Entry from `implementation` fails with the
-  from-phase error message.
+  from-phase error message;
+- **illegal withdrawals:** a `work_item_completion` gate →
+  `verify-delivery`, and a pre-merge production gate → `verify-delivery`;
+- **legal:** a `delivery_verification / blocked /
+  supply-retry-01-owner-decision` state.
 
 This work item's own production delivery exercises only the first-read path.
 The re-read path is proven by tests.
@@ -284,8 +298,10 @@ Acceptance criteria:
 - `delivery:retry-guard` is read-only. Its pre-check clears only when `main`
   and the newest (by `createdAt`) FAILED or CRASHED deployment are at
   `merged_sha`. Its post-check runs after the operation and in
-  `retry-delivery-<NN>`. Permanent stops exit only through the owner's
-  withdrawal, as proven by the guard tests and fixtures;
+  `retry-delivery-<NN>`, and both modes are explicit. Issuing the operation
+  consumes the gate, and a stopped post-check blocks for the owner. Permanent
+  stops exit only through the owner's withdrawal before any operation, as
+  proven by the guard tests and fixtures, and the skills pin this wording;
 - the skills and the operations doc describe the behavior and the fallback;
 - all listed validation passes, with no CI, Railway, credential, or database
   change.
