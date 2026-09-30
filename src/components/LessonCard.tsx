@@ -9,6 +9,8 @@ interface LessonCardProps {
 
 export function LessonCard({ lesson }: LessonCardProps) {
   const available = lesson.status === 'available';
+  const titleId = `lesson-card-${lesson.id}-title`;
+  const descriptionId = `lesson-card-${lesson.id}-description`;
 
   const content = (
     <article
@@ -24,8 +26,8 @@ export function LessonCard({ lesson }: LessonCardProps) {
         <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-brand-700">
           {available ? 'Доступний' : 'Далі'}
         </p>
-        <h3 className="text-lg font-semibold tracking-tight text-gray-950">{lesson.title}</h3>
-        <p className="mt-2 text-sm leading-6 text-gray-600">{lesson.description}</p>
+        <h3 id={titleId} className="text-lg font-semibold tracking-tight text-gray-950">{lesson.title}</h3>
+        <p id={descriptionId} className="mt-2 text-sm leading-6 text-gray-600">{lesson.description}</p>
 
         {available ? (
           <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
@@ -42,5 +44,9 @@ export function LessonCard({ lesson }: LessonCardProps) {
     </article>
   );
 
-  return available ? <Link to="/lessons/01">{content}</Link> : content;
+  // The link wraps an <article>, whose content browsers do not use as the link's
+  // name, so name and describe it explicitly.
+  return available
+    ? <Link to={`/lessons/${lesson.id}`} aria-labelledby={titleId} aria-describedby={descriptionId}>{content}</Link>
+    : content;
 }

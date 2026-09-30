@@ -153,11 +153,15 @@ test("explains unavailable storage and still lets the lesson start", async ({ pa
   await expect(page.getByRole("heading", { name: "Одна струна — два звуки" })).toBeVisible();
 });
 
-test("keeps Lesson 2 unlisted on the home page until the lesson is complete", async ({ page }) => {
+test("links Lesson 2 from the home page while Lesson 1 still opens Lesson 1", async ({ page }) => {
   await mockSession(page, null);
   await page.goto(`${applicationOrigin}/#/`);
-  await expect(page.getByText("Чому звуки бувають високими й низькими?")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Чому звуки бувають високими й низькими/ })).toHaveCount(0);
+  await page.getByRole("link", { name: "Чому звуки бувають високими й низькими?", exact: true }).click();
+  await expect(page).toHaveURL(/#\/lessons\/02$/);
+  await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
+  await page.goto(`${applicationOrigin}/#/`);
+  await page.getByRole("link", { name: "Що таке звук?", exact: true }).click();
+  await expect(page).toHaveURL(/#\/lessons\/01$/);
 });
 
 async function seedStep(page: Page, currentStepId: string, completedStepIds: string[]) {
@@ -426,4 +430,134 @@ test("offers listening in the lab only for a value that was predicted and checke
   await lab.getByRole("radio", { name: "вищим" }).check();
   await lab.getByRole("button", { name: "Перевірити" }).click();
   await expect(lab.getByRole("button", { name: "Послухати" })).toBeVisible();
+});
+
+async function moveCardTo(page: Page, card: string, direction: "Раніше" | "Пізніше", times: number) {
+  for (let move = 0; move < times; move += 1) {
+    const button = page.getByRole("button", { name: `${direction}: ${card}` });
+    await button.focus();
+    await button.press("Enter");
+    await expect(page.getByRole("button", { name: `${direction}: ${card}` })).toBeFocused();
+  }
+}
+
+test("completes the whole lesson at 320 px with the keyboard only and no audio", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await pressButton(page, "Показувати покадрово");
+  await pressButton(page, "Немає гітари — відкрити віртуальну струну");
+  await pressButton(page, "Смикнути відкриту");
+  await pressButton(page, "Притиснути й смикнути");
+  await answer(page, "Який стан тієї самої струни дав вищий звук: відкритий чи притиснутий ближче до корпусу?", "Притиснутий ближче до корпусу");
+  await pressButton(page, "Далі: порахуємо повтори");
+
+  await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці B");
+  await pressButton(page, "Показати підсумок");
+  await pressButton(page, "Далі: дамо відкриттю назву");
+
+  for (let row = 0; row < 3; row += 1) await pressButton(page, "Відкрити наступний рядок");
+  await pressButton(page, "Більше");
+  const lab = page.getByRole("region", { name: "Змінюй частоту" });
+  const higher = lab.getByRole("radio", { name: "вищим" });
+  await higher.focus();
+  await higher.press("Space");
+  await lab.getByRole("button", { name: "Перевірити" }).press("Enter");
+  await pressButton(page, "Далі: висота і гучність");
+
+  await answer(page, "Ми зробили той самий тон голоснішим. Чи змінилася його висота?", "Ні, висота та сама");
+  await pressButton(page, "Далі: повернемося до струни");
+  await expect(page.getByText("Крок 4 із 5")).toBeVisible();
+
+  await answer(page, "У якому стані коливання мають повторюватися частіше?", "У притиснутому ближче до корпусу");
+  await pressButton(page, "Я послухав/ла обидва стани");
+  await expect(page.getByText("ще не заповнено")).toHaveCount(2);
+  await answer(page, "Притиснута струна звучала вище. Що тепер можна сказати про кількість її коливань за секунду?", "Коливання повторюються частіше — частота більша");
+  await expect(page.getByText("ще не заповнено")).toHaveCount(0);
+  await pressButton(page, "Далі: перевірка");
+
+  await expect(page.getByText("500 герців — 500 повних коливань за секунду")).toBeAttached();
+  await answer(page, "Де за секунду більше повних коливань?", "500 Гц");
+  await answer(page, "Який звук буде вищим?", "500 Гц");
+  await moveCardTo(page, "вищий звук", "Пізніше", 2);
+  await expect(page.getByRole("listitem").filter({ hasText: "1. більше повних коливань за секунду" })).toHaveCount(1);
+  await pressButton(page, "Перевірити порядок");
+  await expect(page.getByTestId("chain-status")).toBeFocused();
+  await expect(page.getByTestId("chain-status")).toContainText("Так: більше повних коливань за секунду → більша частота → вищий звук.");
+  await answer(page, "500 Гц відтворили тихіше, але число Гц не змінили. Що сталося з висотою?", "Лишилася тією самою");
+  await expect(page.getByText("Перевірку пройдено.")).toBeVisible();
+  expect(await storedProgress(page)).toMatchObject({ checkpointPassed: true, completedAt: null });
+  await pressButton(page, "Далі: підсумок");
+
+  await expect(page.getByText("Крок 5 із 5")).toBeVisible();
+  await pressButton(page, "Завершити урок");
+  await expect(page.getByText("Урок завершено.")).toBeVisible();
+  await expect(page.getByText("Що можна змінити в самій струні", { exact: false })).toBeVisible();
+  const finished = await storedProgress(page);
+  expect(finished.completedStepIds).toEqual(["intro", "string", "repeats", "frequency", "loudness", "guitar", "checkpoint", "complete"]);
+  expect(Number.isFinite(Date.parse(finished.completedAt))).toBe(true);
+  await noHorizontalScroll(page);
+
+  await page.reload();
+  await expect(page.getByText("Урок завершено.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Завершити урок" })).toHaveCount(0);
+});
+
+test("offers the explanation after repeated wrong orders and still requires the counterexample", async ({ page }) => {
+  await seedStep(page, "checkpoint", ["intro", "string", "repeats", "frequency", "loudness", "guitar"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await pressButton(page, "Перевірити порядок");
+  await expect(page.getByTestId("chain-status")).toContainText("Спочатку назви спостереження, потім фізичну величину, потім те, що ми чуємо.");
+  await expect(page.getByText("↓ цей зв’язок правильний")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Показати й пояснити" })).toHaveCount(0);
+  await pressButton(page, "Перевірити порядок");
+  await pressButton(page, "Показати й пояснити");
+  await expect(page.getByTestId("chain-status")).toBeFocused();
+  await expect(page.getByTestId("chain-status")).toContainText("Більшу частоту ми чуємо як вищий звук.");
+  expect((await storedProgress(page)).checkpointPassed).toBe(false);
+
+  await answer(page, "500 Гц відтворили тихіше, але число Гц не змінили. Що сталося з висотою?", "Стала нижчою");
+  await expect(page.getByText("Гучність змінилася, але чи змінилося число Гц?").first()).toBeVisible();
+  expect((await storedProgress(page)).checkpointPassed).toBe(false);
+  await answer(page, "500 Гц відтворили тихіше, але число Гц не змінили. Що сталося з висотою?", "Лишилася тією самою");
+  expect((await storedProgress(page)).checkpointPassed).toBe(true);
+});
+
+test("applies the discovery on screen 5 through the ready text result", async ({ page }) => {
+  await seedStep(page, "guitar", ["intro", "string", "repeats", "frequency", "loudness"]);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+
+  await expect(page.getByRole("button", { name: "Не почув/ла різниці" })).toHaveCount(0);
+  await answer(page, "У якому стані коливання мають повторюватися частіше?", "Не знаю");
+  await expect(page.getByRole("figure", { name: "Перша струна у двох станах" })).toBeVisible();
+  await pressButton(page, "Струна дзижчить");
+  await expect(page.getByText("Готовий результат: притиснута струна звучить вище, ніж відкрита.")).toBeVisible();
+  await answer(page, "Притиснута струна звучала вище. Що тепер можна сказати про кількість її коливань за секунду?", "Кількість коливань не змінилася");
+  expect((await storedProgress(page)).completedStepIds).not.toContain("guitar");
+  await answer(page, "Притиснута струна звучала вище. Що тепер можна сказати про кількість її коливань за секунду?", "Коливання повторюються частіше — частота більша");
+  await expect(page.getByText("Причину зміни дослідимо окремо.", { exact: false })).toBeVisible();
+  expect((await storedProgress(page)).completedStepIds).toContain("guitar");
+});
+
+test("falls back safely from corrupted guest storage and keeps a valid completion", async ({ page }) => {
+  await page.addInitScript((key) => localStorage.setItem(key, "{not json"), guestKey);
+  await mockSession(page, null);
+  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
+  await expect(page.getByText("Прогрес зберігається на цьому пристрої.")).toBeVisible();
+
+  const completed = await page.context().newPage();
+  await completed.addInitScript((key) => localStorage.setItem(key, JSON.stringify({
+    currentStepId: "no-such-step",
+    completedStepIds: ["intro", "bogus"],
+    checkpointPassed: false,
+    completedAt: "2026-09-30T12:00:00.000Z",
+  })), guestKey);
+  await mockSession(completed, null);
+  await completed.goto(`${applicationOrigin}/#/lessons/02`);
+  await expect(completed.getByText("Урок завершено.")).toBeVisible();
 });

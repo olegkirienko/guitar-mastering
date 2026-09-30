@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { SameStringDiagram } from '@/components/lesson/SameStringDiagram';
 import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
 import { stringPluckFrequency } from '@/data/lessons/stage-01-lesson-02-model';
-import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
+import { sameStringExperience } from '@/data/lessons/stage-01-lesson-02';
 
-type StringContent = typeof lessonTwoContent.string;
+type StringContent = typeof sameStringExperience;
 export type PitchPath = 'guitar' | 'virtual';
 
 interface SameStringPitchExperienceProps {

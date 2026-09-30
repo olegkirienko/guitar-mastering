@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  chainAttemptOutcome,
+  chainIsCorrect,
+  checkpointPassed,
+  correctAdjacentLinks,
+  correctChain,
+  initialChain,
+  moveCard,
   advanceElapsed,
   comparisonDurationMs,
   comparisonMoments,
@@ -82,5 +89,33 @@ describe('Lesson 2 audio safety', () => {
     expect(safeGain(5)).toBe(peakGainCap);
     expect(safeGain(-1)).toBeGreaterThan(0);
     expect(loudnessGain.loud).toBeGreaterThan(loudnessGain.quiet);
+  });
+});
+
+describe('Lesson 2 checkpoint chain', () => {
+  it('starts wrong everywhere and reaches the correct order with earlier/later moves', () => {
+    expect(initialChain.every((card, index) => card !== correctChain[index])).toBe(true);
+    let order = [...initialChain];
+    order = moveCard(order, 0, 1);
+    order = moveCard(order, 1, 1);
+    expect(order).toEqual(['repeats', 'frequency', 'pitch']);
+    expect(chainIsCorrect(order)).toBe(true);
+    expect(moveCard(order, 0, -1)).toEqual(order);
+    expect(moveCard(order, 2, 1)).toEqual(order);
+  });
+
+  it('marks only the correct adjacent links', () => {
+    expect(correctAdjacentLinks(['pitch', 'repeats', 'frequency'])).toEqual([false, true]);
+    expect(correctAdjacentLinks(['frequency', 'pitch', 'repeats'])).toEqual([true, false]);
+    expect(correctAdjacentLinks(['repeats', 'frequency', 'pitch'])).toEqual([true, true]);
+  });
+
+  it('hints first, then offers the explanation, and passes only with the counterexample', () => {
+    expect(chainAttemptOutcome(['pitch', 'repeats', 'frequency'], 0)).toBe('hint');
+    expect(chainAttemptOutcome(['pitch', 'repeats', 'frequency'], 1)).toBe('offer-explanation');
+    expect(chainAttemptOutcome([...correctChain], 3)).toBe('correct');
+    expect(checkpointPassed(true, true)).toBe(true);
+    expect(checkpointPassed(true, false)).toBe(false);
+    expect(checkpointPassed(false, true)).toBe(false);
   });
 });

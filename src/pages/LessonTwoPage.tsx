@@ -1,8 +1,11 @@
-import { ArrowLeft, ArrowRight } from '@untitledui/icons';
+import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import { FrequencyComparison } from '@/components/lesson/FrequencyComparison';
+import { FrequencyPitchCheckpoint } from '@/components/lesson/FrequencyPitchCheckpoint';
 import { FrequencyPitchLab } from '@/components/lesson/FrequencyPitchLab';
+import { GuitarApplication } from '@/components/lesson/GuitarApplication';
 import { LessonProgressPanel } from '@/components/lesson/LessonProgressPanel';
 import { LessonShell } from '@/components/lesson/LessonShell';
 import { LessonStep } from '@/components/lesson/LessonStep';
@@ -22,9 +25,6 @@ const stopByStep: Record<LessonTwoStepId, number> = {
   checkpoint: 5,
   complete: 5,
 };
-
-// Screens implemented so far; later step IDs render the last implemented screen.
-const implementedSteps: readonly LessonTwoStepId[] = ['intro', 'string', 'repeats', 'frequency', 'loudness'];
 
 const primaryButton = 'inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2';
 const backButton = 'inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2';
@@ -46,8 +46,9 @@ export function LessonTwoPage() {
   const [stringReady, setStringReady] = useState(false);
   const [focusedStep, setFocusedStep] = useState<LessonTwoStepId | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const { intro, string, preferences, repeats, frequency, loudness } = lessonTwoContent;
-  const visibleStep = implementedSteps.includes(progress.currentStepId) ? progress.currentStepId : 'loudness';
+  const [reflection, setReflection] = useState('');
+  const { intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete } = lessonTwoContent;
+  const visibleStep = progress.currentStepId;
   const staticMode = prefersReducedMotion || progress.prefersStatic;
   const isCompleted = (step: LessonTwoStepId) => progress.completedStepIds.includes(step);
 
@@ -87,6 +88,17 @@ export function LessonTwoPage() {
   const completeRepeats = useCallback(() => completeStep('repeats'), [completeStep]);
   const completeFrequency = useCallback(() => completeStep('frequency'), [completeStep]);
   const completeLoudness = useCallback(() => completeStep('loudness'), [completeStep]);
+  const completeGuitar = useCallback(() => completeStep('guitar'), [completeStep]);
+  const passCheckpoint = useCallback(() => setProgress((current) => ({
+    ...current,
+    checkpointPassed: true,
+    completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'checkpoint'])),
+  })), [setProgress]);
+  const finishLesson = () => setProgress((current) => ({
+    ...current,
+    completedAt: current.completedAt ?? new Date().toISOString(),
+    completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'complete'])),
+  }));
 
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
@@ -191,7 +203,58 @@ export function LessonTwoPage() {
       <LessonStep title={loudness.title} intro={loudness.instruction} shouldFocus={focusedStep === 'loudness'}>
         <PitchLoudnessComparison content={loudness} audio={audio} onComplete={completeLoudness} />
       </LessonStep>
-      <button type="button" onClick={() => goTo('frequency')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{loudness.backLabel}</button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => goTo('frequency')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{loudness.backLabel}</button>
+        {isCompleted('loudness') && <button type="button" onClick={() => goTo('guitar')} className={primaryButton}>{loudness.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'guitar' && <div className="space-y-5">
+      <LessonStep title={guitar.title} intro={guitar.instruction} shouldFocus={focusedStep === 'guitar'}>
+        <GuitarApplication content={guitar} preferredPath={preferredPath} audio={audio} completed={isCompleted('guitar')} onComplete={completeGuitar} />
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => goTo('loudness')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{guitar.backLabel}</button>
+        {isCompleted('guitar') && <button type="button" onClick={() => goTo('checkpoint')} className={primaryButton}>{guitar.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'checkpoint' && <div className="space-y-5">
+      <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
+        <FrequencyPitchCheckpoint content={checkpoint} passed={progress.checkpointPassed} onPass={passCheckpoint} />
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => goTo('guitar')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{checkpoint.backLabel}</button>
+        {progress.checkpointPassed && <button type="button" onClick={() => goTo('complete')} className={primaryButton}>{checkpoint.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'complete' && <div className="space-y-5">
+      <LessonStep title={complete.title} shouldFocus={focusedStep === 'complete'}>
+        <ul className="space-y-2 text-gray-700">
+          {complete.discoveries.map((discovery) => <li key={discovery} className="flex gap-2"><CheckCircle className="mt-0.5 size-5 shrink-0 text-success-600" aria-hidden="true" />{discovery}</li>)}
+        </ul>
+        <ul className="mt-4 space-y-1 rounded-lg bg-gray-50 p-4 text-sm font-medium text-gray-950">
+          {complete.chains.map((chain) => <li key={chain}>{chain}</li>)}
+        </ul>
+        {progress.completedAt === null ? <div className="mt-5 space-y-3">
+          <label htmlFor="lesson-two-reflection" className="block text-sm text-gray-700">{complete.reflectionLabel}</label>
+          <textarea id="lesson-two-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={2} className="w-full rounded-lg border border-gray-300 p-3 text-sm text-gray-950 outline-none focus-visible:ring-2 focus-visible:ring-brand-600" />
+          <button type="button" onClick={finishLesson} className={primaryButton}>{complete.finishLabel}</button>
+        </div> : <div className="mt-5 space-y-3" role="status">
+          <p className="font-semibold text-gray-950">{complete.finished}</p>
+          <p className="text-gray-700">{complete.feedback}</p>
+        </div>}
+        {progress.completedAt !== null && <section aria-labelledby="lesson-two-bridge" className="mt-6 rounded-lg border border-brand-200 bg-brand-25 p-5">
+          <h3 id="lesson-two-bridge" className="font-semibold text-gray-950">{complete.bridgeTitle}</h3>
+          <p className="mt-2 text-lg font-medium text-gray-950">{complete.bridge}</p>
+          <p className="mt-2 text-sm text-gray-600">{complete.bridgeNote}</p>
+        </section>}
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => goTo('checkpoint')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{complete.backLabel}</button>
+        {progress.completedAt !== null && <Link to="/" className={primaryButton}>{complete.backToCourse}</Link>}
+      </div>
     </div>}
   </LessonShell>;
 }

@@ -21,7 +21,7 @@ export const lessons: Lesson[] = [
     number: '02',
     title: 'Чому звуки бувають високими й низькими?',
     description: 'Одна струна — два різні звуки: з’ясуємо, що робить звук вищим або нижчим.',
-    status: 'next',
+    status: 'available',
   },
   {
     id: '03',
