@@ -4,7 +4,7 @@ work_item_id: stage-01-lesson-02-frequency-pitch
 work_item_type: lesson
 title: "Етап I · Урок 2 — Чому звуки бувають високими й низькими?"
 
-phase: work_item_init
+phase: design
 status: ready
 gate: none
 
@@ -12,7 +12,7 @@ git:
   repository: github.com/olegkirienko/guitar-mastering
   branch: work/stage-01-lesson-02-frequency-pitch
   lifecycle_generation: a02a844c-0c02-46c8-b39d-75da6aeb9b0f
-  lifecycle_anchor_sha: null
+  lifecycle_anchor_sha: 418b1e70f90d2de1a7074b8bf032b4c4d97f1310
   pr_number: null
   reviewed_sha: null
   merged_sha: null
@@ -45,4 +45,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: initialize-work-item
+  action: create-or-revise-design
