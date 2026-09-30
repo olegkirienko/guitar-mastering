@@ -117,6 +117,29 @@ credential while diagnosing. A `401`, `403`, or `429` is not retried and must
 not trigger anonymous access. A transient network failure or GitHub `5xx` may
 receive only the verifier's single bounded retry.
 
+GitHub can briefly serve incomplete job-step data for a completed, successful
+run. On 2026-09-30 it did so for more than 131 s after CI completed. When a
+required step is missing or has a `null` conclusion, the verifier re-reads the
+same run's jobs:
+
+- at most 5 reads, at 0, 15, 45, 105, and 225 s;
+- with the validate job ID pinned from the first read;
+- with one log line per re-read, recording the observed state.
+
+Each read must prove all six steps on its own. Skipped, failed, cancelled, or
+duplicated steps fail at once. The budget is at most 12 HTTP requests and about
+305 s of extra time, and only while data is incomplete. When the data never
+completes, the error names the step and `after 5 job reads`.
+
+In that case, retry the deployment through the post-merge
+`production_mutation_approval` gate described in the `delivery-verification`
+skill, never by editing variables or bypassing the gate. Before the retry,
+`corepack pnpm delivery:retry-guard --mode pre --sha <merged SHA>` must clear:
+`main` and the newest web deployment are both at that SHA, and the deployment
+is `FAILED` or `CRASHED`. After the retry, `--mode post` must confirm that no
+newer deployment or merge replaced it. A stop after the retry blocks delivery
+verification for the owner.
+
 ### Migration or pre-deploy failure
 
 Confirm the failed deployment SHA and that no new version was promoted. Inspect

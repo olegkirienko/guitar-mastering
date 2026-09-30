@@ -133,7 +133,7 @@ Approval is scoped, non-transitive, and single-use. Consume only the currently r
 - `design_approval`: enter the first approved slice.
 - `next_slice_approval`: prove a later slice, archive the approved current slice, and enter exactly that slice.
 - `work_item_completion` / legacy `lesson_completion`: prove the current slice is final, record it in `completed_slices`, retain it as current, and enter terminal state.
-- `production_mutation_approval`: require provider, environment, target IDs, exact operation/plan, and rollback/stop conditions.
+- `production_mutation_approval`: require provider, environment, target IDs, exact operation/plan, and rollback/stop conditions. After merge it is entered only from delivery verification. It pins `merged_sha` and a `delivery:retry-guard` stop condition, and it issues its operation exactly once while being used. It leaves only to `retry-delivery-<NN>`, to `blocked / supply-retry-<NN>-owner-decision`, or, before any operation, through the owner's withdrawal to `verify-delivery` (see `delivery-verification`).
 - `destructive_action_approval`: additionally require pinned targets, recovery evidence, and allowed destroy count.
 - `credential_change_approval`: require owner, scope, destination, expiry/rotation, and secret-safe verification.
 - `merge_approval`: require the canonical branch and lifecycle generation,

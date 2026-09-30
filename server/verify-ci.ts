@@ -13,8 +13,16 @@ const REQUIRED_STEPS = [
   "PostgreSQL integration tests",
   "Build production artifact",
 ] as const;
+// Waits between jobs reads while GitHub still serves incomplete step data:
+// reads happen at 0, 15, 45, 105, and 225 seconds.
+const STEP_REREAD_WAITS_MS = [15_000, 30_000, 60_000, 120_000] as const;
+const MAX_JOB_READS = STEP_REREAD_WAITS_MS.length + 1;
 
 type Fetch = typeof fetch;
+type Wait = (milliseconds: number) => Promise<void>;
+type Log = (message: string) => void;
+
+const sleep: Wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 interface WorkflowRun {
   id: number;
@@ -188,9 +196,40 @@ async function requestJson(url: URL, token: string, fetchImplementation: Fetch):
   return fail("GitHub API request failed.");
 }
 
+type StepObservation =
+  | { state: "passed" }
+  | { state: "incomplete"; observed: string }
+  | { state: "failed"; observed: string };
+
+// Missing steps and null conclusions are step data GitHub has not finished
+// publishing; any other non-success value is final and fails at once.
+function observeStep(steps: WorkflowJobStep[], name: string): StepObservation {
+  const matches = steps.filter((step) => step.name === name);
+  if (matches.length === 0) return { state: "incomplete", observed: "missing" };
+  if (matches.length > 1) return { state: "failed", observed: "duplicated" };
+  const { conclusion } = matches[0];
+  if (conclusion === "success") return { state: "passed" };
+  if (conclusion === null) return { state: "incomplete", observed: "conclusion null" };
+  return { state: "failed", observed: `conclusion ${conclusion}` };
+}
+
+async function readValidateJob(jobsUrl: URL, token: string, fetchImplementation: Fetch): Promise<WorkflowJob> {
+  const jobs = parseWorkflowJobs(await requestJson(jobsUrl, token, fetchImplementation));
+  if (jobs.jobs.length !== 1 || jobs.jobs[0].name !== "validate") {
+    fail("The matching workflow run must contain exactly one validate job.");
+  }
+  const job = jobs.jobs[0];
+  if (job.status !== "completed" || job.conclusion !== "success") {
+    fail("The validate job did not complete successfully.");
+  }
+  return job;
+}
+
 export async function verifyCi(
   environment: NodeJS.ProcessEnv,
   fetchImplementation: Fetch = fetch,
+  wait: Wait = sleep,
+  log: Log = console.log,
 ): Promise<{ bypassed: boolean; runId?: number; jobId?: number }> {
   const required = environment.GITHUB_CI_GATE_REQUIRED;
   if (required === "false") return { bypassed: true };
@@ -222,23 +261,30 @@ export async function verifyCi(
   const jobsUrl = new URL(`${API_ROOT}/runs/${run.id}/jobs`);
   jobsUrl.searchParams.set("filter", "latest");
   jobsUrl.searchParams.set("per_page", "100");
-  const jobs = parseWorkflowJobs(await requestJson(jobsUrl, token, fetchImplementation));
-  if (jobs.jobs.length !== 1 || jobs.jobs[0].name !== "validate") {
-    fail("The matching workflow run must contain exactly one validate job.");
-  }
-  const job = jobs.jobs[0];
-  if (job.status !== "completed" || job.conclusion !== "success") {
-    fail("The validate job did not complete successfully.");
-  }
+  let pinnedJobId: number | undefined;
+  for (let read = 1; read <= MAX_JOB_READS; read += 1) {
+    const job = await readValidateJob(jobsUrl, token, fetchImplementation);
+    pinnedJobId ??= job.id;
+    if (job.id !== pinnedJobId) fail("The validate job identity changed between reads.");
 
-  for (const requiredStep of REQUIRED_STEPS) {
-    const matches = job.steps.filter((step) => step.name === requiredStep);
-    if (matches.length !== 1 || matches[0].conclusion !== "success") {
-      fail(`Required validation step did not succeed: ${requiredStep}.`);
+    let incomplete: { step: string; observed: string } | undefined;
+    for (const requiredStep of REQUIRED_STEPS) {
+      const observation = observeStep(job.steps, requiredStep);
+      if (observation.state === "failed") {
+        fail(`Required validation step did not succeed: ${requiredStep} (${observation.observed}).`);
+      }
+      if (observation.state === "incomplete") incomplete ??= { step: requiredStep, observed: observation.observed };
     }
-  }
+    if (!incomplete) return { bypassed: false, runId: run.id, jobId: job.id };
 
-  return { bypassed: false, runId: run.id, jobId: job.id };
+    if (read === MAX_JOB_READS) {
+      fail(`Required validation step did not succeed: ${incomplete.step} (${incomplete.observed} after ${MAX_JOB_READS} job reads).`);
+    }
+    const waitMs = STEP_REREAD_WAITS_MS[read - 1];
+    log(`CI step data incomplete: ${incomplete.step} (${incomplete.observed}); re-reading in ${waitMs / 1000} s (read ${read}/${MAX_JOB_READS}).`);
+    await wait(waitMs);
+  }
+  return fail("GitHub step data could not be verified.");
 }
 
 async function main(): Promise<void> {

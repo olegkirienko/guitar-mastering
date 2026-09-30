@@ -4,7 +4,7 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: implementation
+phase: implementation_review
 status: ready
 gate: none
 
@@ -31,6 +31,8 @@ context:
   - docs/operations/railway-ci-cd.md
   - server/verify-ci.ts
   - server/verify-ci.test.ts
+  - scripts/delivery-retry-guard.mjs
+  - build/delivery-retry-guard.test.ts
 
 completed_slices: []
 
@@ -44,4 +46,4 @@ latest_review:
 blocking_findings: []
 
 next:
-  action: implement-bounded-step-reread-and-retry-gate
+  action: review-bounded-step-reread-and-retry-gate
