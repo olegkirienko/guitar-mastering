@@ -4,7 +4,7 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: implementation_review
+phase: fixes
 status: ready
 gate: none
 
@@ -41,9 +41,21 @@ current_slice:
   name: "Bounded step re-read and retry gate"
 
 latest_review:
-  path: docs/reviews/delivery-retry-hardening/design-review-06.md
+  path: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
 
-blocking_findings: []
+blocking_findings:
+  - id: MEDIUM-01
+    class: implementation_defect
+    source: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
+    summary: "Retry-guard CLI accepts bad usage and can silently drop the retry-deployment binding."
+  - id: LOW-01
+    class: implementation_defect
+    source: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
+    summary: "No fixture covers reviewed_sha continuity across the post-merge gate."
+  - id: LOW-02
+    class: documentation_defect
+    source: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
+    summary: "Delivery skill omits withdrawal SHA/evidence, retry outcome, and next-NN clauses."
 
 next:
-  action: review-bounded-step-reread-and-retry-gate
+  action: fix-MEDIUM-01-LOW-01-LOW-02
