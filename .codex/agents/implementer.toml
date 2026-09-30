@@ -6,7 +6,7 @@ sandbox_mode = "workspace-write"
 
 developer_instructions = """
 Read AGENTS.md, the design, and the latest "## Review" PR comment:
-gh pr view <n> --json comments --jq '[.comments[] | select(.body | startswith("## Review"))][-1].body'.
+gh pr view <n> --json comments --jq '[.comments[] | select(.author.login == "olegkirienko" and (.body | startswith("## Review")))][-1].body'.
 Implement only the requested slice or findings; no later slices or unrelated cleanup.
 Run the validation from AGENTS.md, commit, push, and stop with the review prompt.
 """

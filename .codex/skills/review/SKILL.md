@@ -12,7 +12,7 @@ Read:
 
 - `AGENTS.md`;
 - the latest earlier review, if any:
-  `gh pr view <n> --json comments --jq '[.comments[] | select(.body | startswith("## Review"))][-1].body'`;
+  `gh pr view <n> --json comments --jq '[.comments[] | select(.author.login == "olegkirienko" and (.body | startswith("## Review")))][-1].body'`;
 - the design. For an implementation review, read its goal, non-goals,
   constraints, acceptance criteria, and the slice under review;
 - the change: `git diff --stat origin/main...HEAD` first, then diff single
