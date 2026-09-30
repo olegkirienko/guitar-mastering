@@ -234,14 +234,21 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
   await expect(page.getByRole("button", { name: "Запустити обидві доріжки" })).toHaveCount(0);
 
   await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці B");
+  const nextMoment = page.getByRole("button", { name: "Наступний момент" });
   for (let moment = 0; moment < 4; moment += 1) await pressButton(page, "Наступний момент");
   const summary = page.getByRole("table", { name: "Повні повтори за той самий час" });
   await expect(summary.getByRole("cell")).toHaveText(["1", "2"]);
   expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string"]);
 
+  for (let moment = 4; moment < 16; moment += 1) await nextMoment.press("Enter");
+  await expect(nextMoment).toBeFocused();
+  await expect(nextMoment).toBeDisabled();
+  await nextMoment.press("Enter");
+  await expect(summary.getByRole("cell")).toHaveText(["4", "8"]);
   await pressButton(page, "Показати підсумок");
   await expect(page.getByText("A: 4 повтори; B: 8 повторів; час однаковий.", { exact: false })).toBeVisible();
   await focusIsNotLost(page);
+  await expect(page.getByRole("button", { name: "Показати підсумок" })).toBeFocused();
   await expect(page.getByRole("button", { name: "Показати підсумок" })).toBeDisabled();
   expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string", "repeats"]);
 
@@ -260,8 +267,18 @@ test("finishes the animated comparison on one shared timer", async ({ page }) =>
 
   await answer(page, "Де повторів буде більше, поки час іде однаково?", "Однаково");
   await expect(page.getByRole("button", { name: "Наступний момент" })).toHaveCount(0);
-  await pressButton(page, "Запустити обидві доріжки");
-  await expect(page.getByRole("button", { name: "Запустити обидві доріжки" })).toBeDisabled();
+  const runButton = page.getByRole("button", { name: "Запустити обидві доріжки" });
+  await runButton.focus();
+  await runButton.press("Enter");
+  await expect(runButton).toBeDisabled();
+  await expect(runButton).toBeFocused();
+  await page.waitForTimeout(1500);
+  const partway = await page.getByRole("table", { name: "Повні повтори за той самий час" }).getByRole("cell").nth(1).textContent();
+  expect(Number(partway)).toBeGreaterThan(0);
+  await runButton.press("Enter");
+  await expect(runButton).toBeFocused();
+  const afterExtraPress = await page.getByRole("table", { name: "Повні повтори за той самий час" }).getByRole("cell").nth(1).textContent();
+  expect(Number(afterExtraPress)).toBeGreaterThanOrEqual(Number(partway));
   await expect(page.getByText("A: 4 повтори; B: 8 повторів; час однаковий.", { exact: false })).toBeVisible({ timeout: 10_000 });
   expect((await storedProgress(page)).completedStepIds).toContain("repeats");
 });
@@ -289,7 +306,12 @@ test("reveals the names before the lab and checks a predicted change on screen 3
 
   const output = page.locator("output");
   await expect(output).toHaveText("220 Гц");
-  await expect(page.getByRole("button", { name: "Менше" })).toBeDisabled();
+  const lowerButton = page.getByRole("button", { name: "Менше" });
+  await expect(lowerButton).toBeDisabled();
+  await lowerButton.focus();
+  await lowerButton.press("Enter");
+  await expect(lowerButton).toBeFocused();
+  await expect(output).toHaveText("220 Гц");
   await pressButton(page, "Більше");
   await expect(output).toHaveText("330 Гц");
   const lab = page.getByRole("region", { name: "Змінюй частоту" });

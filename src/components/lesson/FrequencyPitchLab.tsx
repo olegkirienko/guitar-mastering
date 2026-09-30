@@ -96,16 +96,16 @@ export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitch
       <div className="grid gap-3 text-sm sm:grid-cols-[1fr_auto_1fr]">
         <div>
           <p id="discovery-happens" className="font-semibold text-gray-950">{content.happensTitle}</p>
-          <ul aria-labelledby="discovery-happens" className="mt-2 space-y-2 text-gray-700">
+          {itemsIn('happens').length > 0 && <ul aria-labelledby="discovery-happens" className="mt-2 space-y-2 text-gray-700">
             {itemsIn('happens').map((item) => <li key={item.text}>{item.text}</li>)}
-          </ul>
+          </ul>}
         </div>
         <ArrowRight className="size-5 rotate-90 text-gray-400 sm:mt-6 sm:rotate-0" aria-hidden="true" />
         <div>
           <p id="discovery-perceive" className="font-semibold text-gray-950">{content.perceiveTitle}</p>
-          <ul aria-labelledby="discovery-perceive" className="mt-2 space-y-2 text-gray-700">
+          {itemsIn('perceive').length > 0 && <ul aria-labelledby="discovery-perceive" className="mt-2 space-y-2 text-gray-700">
             {itemsIn('perceive').map((item) => <li key={item.text}>{item.text}</li>)}
-          </ul>
+          </ul>}
         </div>
       </div>
       {allRevealed && <p className="mt-4 rounded-md bg-brand-25 p-3 text-sm font-semibold text-gray-950">{content.summary}</p>}
