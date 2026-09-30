@@ -4,9 +4,9 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: fix_rereview
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: merge_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -14,7 +14,7 @@ git:
   lifecycle_generation: d63fa900-5d14-4d07-8092-5b5256411dee
   lifecycle_anchor_sha: f3d0b7995fc2dd29759aba0d34e121e9894cf8b4
   pr_number: 19
-  reviewed_sha: null
+  reviewed_sha: ceb527974ff4c6f0b2938eb6b8ec6ceae580db90
   merged_sha: null
 
 delivery:
@@ -41,21 +41,20 @@ current_slice:
   name: "Bounded step re-read and retry gate"
 
 latest_review:
-  path: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
+  path: docs/reviews/delivery-retry-hardening/fix-rereview-02-bounded-step-reread-and-retry-gate.md
 
-blocking_findings:
-  - id: MEDIUM-01
-    class: implementation_defect
-    source: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
-    summary: "Retry-guard CLI accepts bad usage and can silently drop the retry-deployment binding."
-  - id: LOW-01
-    class: implementation_defect
-    source: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
-    summary: "No fixture covers reviewed_sha continuity across the post-merge gate."
-  - id: LOW-02
-    class: documentation_defect
-    source: docs/reviews/delivery-retry-hardening/implementation-review-01-bounded-step-reread-and-retry-gate.md
-    summary: "Delivery skill omits withdrawal SHA/evidence, retry outcome, and next-NN clauses."
+blocking_findings: []
+
+gate_scope:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/delivery-retry-hardening
+  lifecycle_generation: d63fa900-5d14-4d07-8092-5b5256411dee
+  pr_number: 19
+  target_branch: main
+  reviewed_sha: ceb527974ff4c6f0b2938eb6b8ec6ceae580db90
 
 next:
-  action: rereview-bounded-step-reread-and-retry-gate
+  action: approve-merge
+  on_approval:
+    phase: delivery_verification
+    action: verify-delivery
