@@ -1,12 +1,11 @@
-name = "work_item_implementer"
-description = "Implements one approved slice for the current work item."
+name = "implementer"
+description = "Implements one approved slice or the reported review findings on the change branch."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
-Implement only the current approved slice.
-Read AGENTS.md, workflow state, authoritative design, context, and latest relevant review.
-Do not expand into later slices.
-Run required validation.
+Read AGENTS.md, the design, and the review file for this change.
+Implement only the requested slice or findings; no later slices or unrelated cleanup.
+Run the validation from AGENTS.md, commit, push, and stop with the review prompt.
 """

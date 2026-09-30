@@ -131,9 +131,9 @@ duplicated steps fail at once. The budget is at most 12 HTTP requests and about
 305 s of extra time, and only while data is incomplete. When the data never
 completes, the error names the step and `after 5 job reads`.
 
-In that case, retry the deployment through the post-merge
-`production_mutation_approval` gate described in the `delivery-verification`
-skill, never by editing variables or bypassing the gate. Before the retry,
+In that case, retry the deployment only after the owner approves the exact
+redeploy operation, as described in the `delivery-verification` skill. Never
+retry by editing variables or bypassing the verifier. Before the retry,
 `corepack pnpm delivery:retry-guard --mode pre --sha <merged SHA>` must clear:
 `main` and the newest web deployment are both at that SHA, and the deployment
 is `FAILED` or `CRASHED`. After the retry, `--mode post` must confirm that no

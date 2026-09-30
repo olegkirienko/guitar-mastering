@@ -45,9 +45,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate workflow contracts
-        run: pnpm validate:workflow
-
       - name: Lint and typecheck
         run: pnpm lint
 

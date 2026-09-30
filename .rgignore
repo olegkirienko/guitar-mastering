@@ -11,15 +11,12 @@ docs/operations/*-plan.md
 docs/operations/*-evidence-*.md
 docs/operations/legacy-platform-retirement-*.md
 
-# Workflow state and designs of completed or delivered work items.
-docs/workflow/ci-workflow-contract-validation.yaml
-docs/workflow/feature-auth-persistence.yaml
-docs/workflow/infra-legacy-platform-retirement.yaml
-docs/workflow/maintenance-orchestration-*.yaml
-docs/workflow/orchestration-auto-advance.yaml
-docs/workflow/railway-ci-cd-iac.yaml
-docs/workflow/stage-01-lesson-01.yaml
+# Retired v1-v3.1 workflow state and templates.
+docs/archive/
+
+# Designs of completed process work items.
 docs/technical-designs/ci-workflow-contract-validation.md
 docs/technical-designs/infra-legacy-platform-retirement.md
 docs/technical-designs/maintenance-orchestration-*.md
 docs/technical-designs/orchestration-auto-advance.md
+docs/technical-designs/orchestration-usage-optimization.md
