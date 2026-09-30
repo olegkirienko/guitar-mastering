@@ -4,9 +4,9 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: reconciliation
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: design_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -41,27 +41,10 @@ current_slice:
 latest_review:
   path: docs/reviews/delivery-retry-hardening/design-review-02.md
 
-blocking_findings:
-  - id: LOW-03
-    class: documentation_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-02.md
-    summary: "Design must name the replacement of the delivery-verification bounded-safe-retry mutation sentence."
-
-reconciliation:
-  id: RECON-01
-  kind: documentation_defect
-  basis:
-    path: docs/reviews/delivery-retry-hardening/design-review-02.md
-    finding_ids: [LOW-03]
-  allowed_paths:
-    - docs/technical-designs/delivery-retry-hardening.md
-    - docs/workflow/delivery-retry-hardening.yaml
-  acceptance:
-    - "The design skills paragraph states that delivery-verification SKILL.md lines 12-13 are replaced: the phase is read-only at verify-delivery and retry-delivery-<NN>, and the only mutation is the single pinned operation performed while consuming production_mutation_approval. No other design decision changes."
+blocking_findings: []
 
 next:
-  action: reconcile-LOW-03
-  on_success:
-    phase: human_gate
-    gate: design_approval
-    action: approve-design
+  action: approve-design
+  on_approval:
+    phase: implementation
+    action: implement-bounded-step-reread-and-retry-gate

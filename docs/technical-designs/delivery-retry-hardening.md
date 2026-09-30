@@ -124,9 +124,15 @@ further mutation needs a new gate with the next `NN`. The delivery evidence
 records each retry with its scope, operation, and result.
 
 The same rules are stated in the `production_mutation_approval` bullet of
-`.codex/skills/work-orchestrator/SKILL.md` and in
-`.codex/skills/delivery-verification/SKILL.md`. `docs/operations/railway-ci-cd.md`
-documents the re-read schedule, the budget, and the fallback.
+`.codex/skills/work-orchestrator/SKILL.md`. In
+`.codex/skills/delivery-verification/SKILL.md`, the sentence at lines 12–13
+("read-only unless `next.action` records a bounded safe retry or a separate
+typed production gate authorizes mutation") is replaced. Delivery verification
+is read-only at `verify-delivery` and `retry-delivery-<NN>`. The only
+production mutation is the single pinned operation performed while
+`production_mutation_approval` is being used. The validator pins this wording
+with `requirePhrases`. `docs/operations/railway-ci-cd.md` documents the re-read
+schedule, the budget, and the fallback.
 
 ## Safety
 
