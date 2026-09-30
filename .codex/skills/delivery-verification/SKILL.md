@@ -12,6 +12,14 @@ This phase is read-only unless `next.action` records a bounded safe retry or a
 separate typed production gate authorizes mutation. Resolve only the canonical
 work branch and reject missing, ambiguous, inherited, or terminal identities.
 
+When Railway evidence is required, read
+[references/railway-evidence.md](references/railway-evidence.md) before making
+provider requests. Request and expose only the exact fields and bounded log
+events needed for the current proof. Never emit complete provider JSON, full
+build/runtime logs, variables, credentials, or unredacted configuration. If a
+narrow result omits a required fact, query only that missing fact or fail
+closed; absence from a projection is not positive evidence.
+
 Correlate the exact full `git.merged_sha` through protected `main`, the primary
 PR result, a push-event GitHub `Validate` run, Railway source metadata and
 `WAITING`, the pre-deploy `RAILWAY_GIT_COMMIT_SHA` verifier, migration,

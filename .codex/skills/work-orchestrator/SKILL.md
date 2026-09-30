@@ -72,6 +72,14 @@ A `blocked` state permits only its named non-mutating `supply-<blocker>` action.
 
 ## Automatic continuation
 
+When an invocation begins by supplying approval for the current human gate,
+consume exactly that gate, commit and publish the resulting transition, report
+the newly authorized action, and stop before dispatching it. Continue in the
+same invocation only when the user explicitly requests both that exact approval
+and continued execution. Generic approval or a generic request to proceed is
+not approval-and-continue. Before an explicit continuation, re-resolve the
+published state and run the full preflight.
+
 After every successful non-human phase, re-resolve the authoritative workflow
 using the applicable identity rules and run the full preflight against that
 fresh state. If it records another ready deterministic non-human action,
@@ -93,6 +101,16 @@ supplied safely, inconsistent or ambiguous state, unsafe or failed execution,
 or exact terminal completion. Ordinary phase completion is not a stop
 condition. Approval supplied for an earlier gate is never reused for a newly
 reached gate.
+
+## Context and command output
+
+Keep model-visible evidence proportional to the routing decision. Prefer exact
+paths and IDs, provider-side field selection, bounded result/time/log windows,
+and projections that emit only required scalars. Filter structured output in
+the same command that retrieves it; do not first expose a broad JSON response or
+complete logs and summarize afterward. Never print secret or variable
+collections. If narrow evidence is insufficient, retrieve only the missing
+fact and fail closed if it cannot be established.
 
 ## Gates
 

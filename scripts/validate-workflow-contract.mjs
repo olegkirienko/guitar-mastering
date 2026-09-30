@@ -2093,6 +2093,10 @@ for (const path of [
 }
 
 const orchestratorInstructions = read(".codex/skills/work-orchestrator/SKILL.md");
+assert.match(orchestratorInstructions, /consume exactly that gate, commit and publish the resulting transition/);
+assert.match(orchestratorInstructions, /stop before dispatching it/);
+assert.match(orchestratorInstructions, /only when the user explicitly requests both that exact approval/);
+assert.match(orchestratorInstructions, /Before an explicit continuation, re-resolve the\npublished state and run the full preflight/);
 assert.match(orchestratorInstructions, /After every successful non-human phase, re-resolve the authoritative workflow/);
 assert.match(orchestratorInstructions, /run the full preflight against that\nfresh state/);
 assert.match(orchestratorInstructions, /dispatch that action immediately in the same invocation/);
@@ -2101,6 +2105,46 @@ assert.match(orchestratorInstructions, /An unchanged fingerprint or an invalid o
 assert.match(orchestratorInstructions, /explicit human gate, a risky\nexternal mutation requiring its typed approval, blocked input/);
 assert.match(orchestratorInstructions, /Ordinary phase completion is not a stop\ncondition/);
 assert.match(orchestratorInstructions, /Approval supplied for an earlier gate is never reused/);
+assert.match(orchestratorInstructions, /provider-side field selection, bounded result\/time\/log windows/);
+
+function continuationDecision({ startedAtHumanGate, explicitApprovalAndContinue, nextIsReadyNonHuman, reachedGate }) {
+  if (reachedGate) return "stop";
+  if (startedAtHumanGate && !explicitApprovalAndContinue) return "stop";
+  return nextIsReadyNonHuman ? "dispatch" : "stop";
+}
+
+assert.equal(continuationDecision({
+  startedAtHumanGate: true,
+  explicitApprovalAndContinue: false,
+  nextIsReadyNonHuman: true,
+  reachedGate: false,
+}), "stop");
+assert.equal(continuationDecision({
+  startedAtHumanGate: true,
+  explicitApprovalAndContinue: true,
+  nextIsReadyNonHuman: true,
+  reachedGate: false,
+}), "dispatch");
+assert.equal(continuationDecision({
+  startedAtHumanGate: false,
+  explicitApprovalAndContinue: false,
+  nextIsReadyNonHuman: true,
+  reachedGate: false,
+}), "dispatch");
+assert.equal(continuationDecision({
+  startedAtHumanGate: true,
+  explicitApprovalAndContinue: true,
+  nextIsReadyNonHuman: true,
+  reachedGate: true,
+}), "stop");
+
+const deliveryInstructions = read(".codex/skills/delivery-verification/SKILL.md");
+const railwayEvidenceInstructions = read(".codex/skills/delivery-verification/references/railway-evidence.md");
+assert.match(deliveryInstructions, /references\/railway-evidence\.md/);
+assert.match(deliveryInstructions, /Never emit complete provider JSON, full\nbuild\/runtime logs/);
+assert.match(railwayEvidenceInstructions, /GraphQL query whose selection set contains only required\n   scalar fields/);
+assert.match(railwayEvidenceInstructions, /pipe it directly through a projector such as `jq`/);
+assert.match(railwayEvidenceInstructions, /Do not run\n+the unfiltered command first/);
 
 const fakeEntry = (name, file) => ({ name, isFile: () => file });
 assert.deepEqual(workflowPathsFromEntries([
