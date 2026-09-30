@@ -115,9 +115,13 @@ item, starting at `01`. One gate authorizes exactly one retry.
 Consumption semantics, mirroring `merge_approval`:
 
 1. When the gate is used, re-resolve the workflow and scope.
-2. Re-check the stop conditions against live provider state.
+2. Run the retry guard (below) and re-check the pinned stop conditions against
+   live provider state.
 3. Perform the pinned operation exactly once, then enter
    `delivery_verification / retry-delivery-<NN>`.
+
+If the guard or any stop condition fails, perform no mutation, leave the gate
+unconsumed, and report the reason to the owner.
 
 That state is a read-only re-verification of the resulting deployment. Any
 further mutation needs a new gate with the next `NN`. The delivery evidence
@@ -134,6 +138,31 @@ production mutation is the single pinned operation performed while
 with `requirePhrases`. `docs/operations/railway-ci-cd.md` documents the re-read
 schedule, the budget, and the fallback.
 
+### Retry guard
+
+The owner requested this at the design approval gate on 2026-09-30. A
+redeploy of `merged_sha` must never roll production back after newer code has
+been merged or deployed.
+
+`scripts/delivery-retry-guard.mjs`, run as
+`corepack pnpm delivery:retry-guard --sha <merged_sha>`, is read-only. It
+resolves the protected `main` head from GitHub and the newest deployment of the
+pinned production web service from Railway, and prints one line. A pure,
+exported `retryGuardDecision({ sha, mainSha, latest })` decides:
+
+- **clear (exit 0):** `mainSha === sha`, the newest deployment's commit is
+  `sha`, and its status is `FAILED` or `CRASHED`, so it is a retry candidate;
+- **stop (exit 1):** anything else, with a reason:
+  - `main advanced to <sha>`;
+  - `newer deployment <id> for <sha>`;
+  - `latest deployment already SUCCESS`;
+  - `deployment in progress (<status>)`;
+  - any missing or failed provider fact.
+
+The validator requires the `stop_conditions` of a post-merge production gate
+to name `delivery:retry-guard`, so the guard is part of the approved scope. The
+skills pin the command with `requirePhrases`.
+
 ## Safety
 
 - The re-read can only delay a decision. Missing or contradictory evidence can
@@ -144,6 +173,8 @@ schedule, the budget, and the fallback.
 - The new route is narrow: one gate type, only after merge, only from and to
   delivery verification, pinned to the merged SHA, with one mutation per
   approval.
+- The retry guard blocks a redeploy that would replace newer code, as well as
+  a retry of a deployment that has already succeeded or is still running.
 
 ## Validation
 
@@ -165,6 +196,14 @@ Verifier tests:
 - the existing network, 5xx, auth, rate-limit, and pagination tests are
   unchanged.
 
+Retry guard tests (`build/delivery-retry-guard.test.ts`, pure decision only):
+
+- clear for a FAILED or CRASHED newest deployment of `sha` while `main` is at
+  `sha`;
+- stop when `main` advanced, when the newest deployment is for another SHA,
+  when it already succeeded, when it is in progress, and when any fact is
+  missing.
+
 Validator fixtures:
 
 - **legal:** a post-merge gate routing to
@@ -175,6 +214,7 @@ Validator fixtures:
   - a pre-merge gate routing to `delivery_verification`;
   - a post-merge gate with `reviewed_sha: null`;
   - a mismatched `gate_scope.merged_sha`;
+  - a post-merge gate whose `stop_conditions` omit `delivery:retry-guard`;
 - **transition chain:** `delivery_verification` → gate →
   `retry-delivery-01` → `work_item_completion` passes; it fails when a SHA
   changes, and fails when the gate is entered from `implementation`.
@@ -191,8 +231,8 @@ configuration changes are involved.
 
 ### `bounded-step-reread-and-retry-gate`
 
-This is the only and final slice. It implements both parts above with their
-tests, the two skill instructions, and the operations note.
+This is the only and final slice. It implements both parts above and the retry
+guard, with their tests, the two skill instructions, and the operations note.
 
 Acceptance criteria:
 
@@ -201,8 +241,12 @@ Acceptance criteria:
   the observed state on every step failure;
 - explicit failures, config errors, and the existing retry behavior are
   unchanged, and the tests run without real delays;
-- the validator enforces the post-merge production gate rules and the
-  transition SHA continuity, with the listed fixtures;
+- the validator enforces the post-merge production gate rules, including the
+  required retry guard, and the transition SHA continuity, with the listed
+  fixtures;
+- `delivery:retry-guard` is read-only, and it clears only when `main` and the
+  newest failed or crashed deployment are both at `merged_sha`, as proven by
+  the guard tests;
 - the skills and the operations doc describe the behavior and the fallback;
 - all listed validation passes, with no CI, Railway, credential, or database
   change.
