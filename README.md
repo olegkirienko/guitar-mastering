@@ -159,11 +159,13 @@ and evidence.
 
 ## Work tracks
 
-Small, low-risk changes (copy, styling, docs, tooling, contained bug fixes)
-use the lite track from `AGENTS.md`: one branch, one session, one PR, with no
-workflow YAML, design document, or review artifacts. Lessons, auth/persistence,
-migrations, deployment, production, and credential work use the orchestrated
-track below.
+Small, low-risk changes (copy, styling, `src` UI code, course docs, or a
+contained fix of at most about 300 lines) use the lite track: one branch, one
+session, one PR, with no workflow YAML, design document, or review artifacts.
+`AGENTS.md` is binding for the exclusions: control-plane, CI, `scripts/`,
+`server/`, operations, and review paths, plus lessons, auth/persistence,
+migrations, deployment, production, and credential work, always use the
+orchestrated track below.
 
 ## Standard launcher
 

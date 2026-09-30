@@ -4,7 +4,7 @@ work_item_id: orchestration-usage-optimization
 work_item_type: maintenance
 title: "Orchestration usage optimization"
 
-phase: fixes
+phase: fix_rereview
 status: ready
 gate: none
 
@@ -62,4 +62,4 @@ blocking_findings:
     summary: "Withdrawn AGENTS.md non-goal in the design body lacks a superseded marker."
 
 next:
-  action: fix-MEDIUM-01-LOW-01-LOW-02
+  action: rereview-bounded-orchestration-execution

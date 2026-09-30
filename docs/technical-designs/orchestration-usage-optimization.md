@@ -100,8 +100,7 @@ Tests should validate behavioral invariants rather than an entire prose block.
   phases.
 - Reusing approvals, skipping reviews, weakening lifecycle identity checks, or
   weakening delivery evidence.
-- Rewriting `AGENTS.md` broadly. Its always-loaded contract can be evaluated in
-  a later work item after usage from these lower-risk changes is measured.
+- ~~Rewriting `AGENTS.md` broadly. Its always-loaded contract can be evaluated in a later work item after usage from these lower-risk changes is measured.~~ *Withdrawn by Amendment 01.*
 - Adding a dependency or a new orchestration service.
 
 ## Architecture and affected artifacts

@@ -2,7 +2,7 @@
 // for one merged SHA. Raw provider JSON and logs are processed here and never
 // printed, so the agent sees a few hundred bytes instead of tens of kilobytes.
 //
-// Usage: node scripts/railway-delivery-evidence.mjs --sha <full-40-hex-sha> [--no-logs]
+// Usage: node scripts/railway-delivery-evidence.mjs --sha <full-40-hex-sha>
 // Exit code 0 means every fact was found; 1 means a fact is missing or failed.
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -23,7 +23,6 @@ const MAX_MESSAGE_LENGTH = 240;
 const args = process.argv.slice(2).filter((argument) => argument !== "--");
 const shaIndex = args.indexOf("--sha");
 const sha = shaIndex === -1 ? undefined : args[shaIndex + 1];
-const includeLogs = !args.includes("--no-logs");
 
 if (!sha || !/^[0-9a-f]{40}$/.test(sha)) {
   console.error("Pass the exact merged commit as --sha <full 40-hex SHA>.");
@@ -133,7 +132,8 @@ async function railwayLogs(deploymentId) {
 try {
   await githubValidateRun();
   const deployment = await railwayDeployment();
-  if (deployment && includeLogs) await railwayLogs(deployment.id);
+  if (deployment) await railwayLogs(deployment.id);
+  else fail("railway release-path logs (no deployment to read)");
 } catch (error) {
   fail(`provider query failed: ${clip(error.stderr || error.message)}`);
 }
