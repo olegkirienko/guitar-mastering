@@ -4,9 +4,9 @@ work_item_id: orchestration-usage-optimization
 work_item_type: maintenance
 title: "Orchestration usage optimization"
 
-phase: fix_rereview
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: merge_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -14,7 +14,7 @@ git:
   lifecycle_generation: 611d90af-cf43-4e9d-8df0-734cf8973703
   lifecycle_anchor_sha: d7634b2f7c2d9f8f8783ac7ee17ccde7a5b2b186
   pr_number: 18
-  reviewed_sha: null
+  reviewed_sha: f766d26098a4bedd9b7284b567cc0597b304fb25
   merged_sha: null
 
 delivery:
@@ -45,21 +45,20 @@ current_slice:
   name: "Bounded orchestration execution"
 
 latest_review:
-  path: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
+  path: docs/reviews/orchestration-usage-optimization/fix-rereview-02-bounded-orchestration-execution.md
 
-blocking_findings:
-  - id: MEDIUM-01
-    class: implementation_defect
-    source: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
-    summary: "--no-logs makes the delivery evidence command report success without release-path facts."
-  - id: LOW-01
-    class: documentation_defect
-    source: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
-    summary: "README lite-track summary is looser than the binding AGENTS.md rule."
-  - id: LOW-02
-    class: documentation_defect
-    source: docs/reviews/orchestration-usage-optimization/implementation-review-01-bounded-orchestration-execution.md
-    summary: "Withdrawn AGENTS.md non-goal in the design body lacks a superseded marker."
+blocking_findings: []
+
+gate_scope:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/orchestration-usage-optimization
+  lifecycle_generation: 611d90af-cf43-4e9d-8df0-734cf8973703
+  pr_number: 18
+  target_branch: main
+  reviewed_sha: f766d26098a4bedd9b7284b567cc0597b304fb25
 
 next:
-  action: rereview-bounded-orchestration-execution
+  action: approve-merge
+  on_approval:
+    phase: delivery_verification
+    action: verify-delivery
