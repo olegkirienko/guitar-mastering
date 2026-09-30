@@ -36,8 +36,10 @@ Binding rules live in `AGENTS.md`, and the skills are `design`, `review`, and
    variables, secrets) run only after an explicit owner approval that names the
    exact target and command. A redeploy retry also requires
    `delivery:retry-guard --mode pre` to clear, and `--mode post` after it.
-4. The PR (draft or ready, checks, review) plus the design and review files
-   hold the state. Nothing else does.
+4. The PR holds the state: draft or ready, checks, and review comments that
+   start with `## Review` (the latest one is authoritative), plus a
+   `## Delivery` comment after merge. The design is the only other
+   state-bearing file.
 
 ## What is removed
 
@@ -52,6 +54,10 @@ Binding rules live in `AGENTS.md`, and the skills are `design`, `review`, and
 - Five role profiles. `implementer` and a new `reviewer` remain.
 - Lifecycle generations, annotated lifecycle tags, bootstrap anchors, typed gate
   scopes, reconciliation contracts, and immutable per-round review files.
+- The owner deleted the history they no longer need. It remains in git history:
+  - `docs/reviews/`: 104 review files, 578 KB;
+  - 11 completed operation plans and dated evidence files in
+    `docs/operations/`.
 
 ## What is kept
 
@@ -60,7 +66,9 @@ Binding rules live in `AGENTS.md`, and the skills are `design`, `review`, and
 - `pnpm evidence:delivery`, `pnpm delivery:retry-guard`, and
   `pnpm smoke:production`.
 - The context budget and the output discipline in `AGENTS.md`.
-- All designs, reviews, operations documents, and evidence as history.
+- The live operations documents: `railway-ci-cd.md`, `production-cutover.md`,
+  `privacy-and-retention.md`, and `auth-kdf-thresholds.md`.
+- All designs, which are history except for the current change's design.
 
 ## Migration
 

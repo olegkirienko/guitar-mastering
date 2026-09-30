@@ -1,6 +1,6 @@
 ---
 name: review
-description: Independently review a design or a PR diff, record findings with stable IDs in the change's review file, and give one verdict.
+description: Independently review a design or a PR diff, post findings with stable IDs and one verdict as a PR comment.
 ---
 
 # Review
@@ -11,6 +11,8 @@ that wrote the change must not review it.
 Read:
 
 - `AGENTS.md`;
+- the latest earlier review, if any:
+  `gh pr view <n> --json comments --jq '[.comments[] | select(.body | startswith("## Review"))][-1].body'`;
 - the design. For an implementation review, read its goal, non-goals,
   constraints, acceptance criteria, and the slice under review;
 - the change: `git diff --stat origin/main...HEAD` first, then diff single
@@ -28,18 +30,16 @@ concrete, high-confidence problems; style preferences are not findings.
 
 Verdict: `APPROVED` or `CHANGES REQUIRED`.
 
-Append a dated section to `docs/reviews/<topic>.md`, kept near 3 KB. It
-records:
-
-- the scope (design, or the commit SHA);
-- the validation results;
-- the findings;
-- the verdict.
+Post the review as one PR comment of about 3 KB: write the body to a file
+outside the repository, then run `gh pr comment <n> --body-file <file>`. The
+body starts with `## Review — <design | commit SHA> — <date>` and records the
+validation results, the findings, and the verdict. Do not add review files to
+the repository.
 
 On a re-review, check only the open findings plus direct regressions, and mark
 each one `FIXED` or `NOT FIXED`.
 
-Commit and push the review file, then stop with the next prompt:
+After posting, stop with the next prompt:
 
 - after `CHANGES REQUIRED`, the fix prompt;
 - after `APPROVED`, the owner's design approval, or the merge approval that

@@ -49,10 +49,9 @@ The approved target sequence is:
 5. A successful verifier permits `pnpm db:migrate`; readiness must pass before
    promotion, followed by production smoke and observation.
 
-The first positive and protected-branch negative production proof is governed
-by the reviewed
-[end-to-end acceptance plan](railway-end-to-end-cicd-acceptance-plan.md).
-Do not use a manual CLI deployment as a substitute for this release path.
+The first positive and protected-branch negative production proofs passed on
+2026-09-26; their plan and evidence are in git history. Do not use a manual CLI
+deployment as a substitute for this release path.
 
 ## Commit-SHA correlation
 
@@ -73,9 +72,8 @@ full SHA across:
 
 Missing Git metadata uses the fallback when one is supplied. Malformed nonempty
 `RAILWAY_GIT_COMMIT_SHA` fails startup instead of recording ambiguous release
-identity. The reviewed production retirement and post-deletion verification are
-recorded in
-[the retirement plan](railway-deployment-version-retirement-plan.md).
+identity. The production retirement and its post-deletion verification are recorded in
+git history.
 
 ## Manual Railway IaC and drift
 

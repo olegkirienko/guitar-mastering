@@ -42,9 +42,9 @@ guitar, and experimentation. Avoid long passive theory blocks.
 Every model call resends the whole thread, so keep it small:
 
 - Read only what the task needs: the files you change, their direct
-  dependencies, and the current PR's design and review files.
-- Do not read other changes' designs, reviews, operations plans, evidence, or
-  `docs/archive/` unless the current design names them. `.rgignore` hides that
+  dependencies, the current PR's design, and its latest review comment.
+- Do not read other changes' designs or `docs/archive/` unless the current
+  design names them. `.rgignore` hides that
   history from default `rg`; pass a path explicitly when it is named.
 - Locate before reading: `rg -n` with at most `-C 3`, then `sed -n` for the exact
   range. Do not dump whole long documents or several files at once.
@@ -65,9 +65,9 @@ Every model call resends the whole thread, so keep it small:
    skill, get one independent design review, and wait for the owner's approval
    before code. Other changes go straight to implementation.
 3. **Review** with the `review` skill in a separate session or agent that did
-   not write the change. Fix only the reported findings; the reviewer
-   re-checks only those. One review file per change:
-   `docs/reviews/<topic>.md`.
+   not write the change. Each review is a PR comment starting with
+   `## Review`, and the latest one is authoritative. Fix only the reported
+   findings; the reviewer re-checks only those.
 4. **Owner approval is required** for the design (when needed), the merge, and
    every production mutation (redeploy, restart, rollback, migration retry,
    variables, secrets). A merge approval names the PR head SHA; merge only that
@@ -76,6 +76,6 @@ Every model call resends the whole thread, so keep it small:
 5. **After merge** follow the `delivery-verification` skill:
    `corepack pnpm evidence:delivery --sha <merged SHA>` and
    `corepack pnpm smoke:production <origin>`.
-6. **State** lives in the PR, the design, and the review file. There is no
-   other workflow state. Run one step per session and stop with the prompt for
+6. **State** lives in the PR, including its review comments, and the design.
+   There is no other workflow state. Run one step per session and stop with the prompt for
    the next step.

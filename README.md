@@ -77,10 +77,8 @@ The approved target pre-deploy command is `pnpm release:predeploy`, which runs
 the exact-SHA GitHub Actions verifier before `pnpm db:migrate`. Production must
 use a sealed, repository-only `Actions: read` credential and never fall back to
 anonymous GitHub API access. The production source, Wait for CI, and autodeploy
-are active. The first positive and protected-branch negative proof follows the
-reviewed
-[`docs/operations/railway-end-to-end-cicd-acceptance-plan.md`](docs/operations/railway-end-to-end-cicd-acceptance-plan.md);
-do not change source, gate variables, or branch policy ad hoc.
+are active and were proven end to end on 2026-09-26. Do not change the
+source, gate variables, or branch policy ad hoc.
 The data-handling and backup-retention disclosure is in
 [`docs/operations/privacy-and-retention.md`](docs/operations/privacy-and-retention.md).
 
@@ -124,8 +122,8 @@ The binding rules are in `AGENTS.md`. Each change is one branch and one PR:
 6. **Owner approves the merge** of the exact PR head.
 7. **Verify delivery** with the `delivery-verification` skill.
 
-State lives in the PR, the design, and `docs/reviews/<topic>.md`. Start each
-step in a fresh Codex session.
+State lives in the PR, including its review comments, and the design. Start
+each step in a fresh Codex session.
 
 ## Prompts
 
@@ -134,7 +132,7 @@ Design <topic> per AGENTS.md on branch <type>/<topic>, open a draft PR, and stop
 Review the design of <topic> (PR <n>) with the review skill and stop.
 I approve the design of <topic>. Implement slice <slice> on branch <type>/<topic>, push, and stop.
 Review PR <n> at its current head with the review skill and stop.
-Fix findings <IDs> from docs/reviews/<topic>.md, push, and stop.
+Fix findings <IDs> from the latest review on PR <n>, push, and stop.
 I approve merging PR <n> at head <full SHA>. Merge it and verify delivery.
 ```
 

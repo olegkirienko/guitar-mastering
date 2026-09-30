@@ -12,9 +12,10 @@ This step is read-only unless the owner approves a production mutation.
    rules and for any fact the command does not report. Then run
    `corepack pnpm smoke:production <origin>`. A `MISSING` line or a nonzero
    exit is never success.
-2. **Record.** Add a short summary to the change's review file or as a PR
-   comment: the merged SHA, the CI run, the deployment ID and status, the
-   verifier, migration, startup, and readiness lines, and the smoke result.
+2. **Record.** Post a short PR comment starting with `## Delivery`, with the
+   merged SHA, the CI run, the deployment ID and status, the verifier,
+   migration, startup, and readiness lines, and the smoke result. Use
+   `gh pr comment <n> --body-file <file outside the repository>`.
 3. **If the deployment failed:**
    - Diagnose with bounded logs. A code defect is fixed forward in a new PR.
    - A transient failure may be retried only after the owner approves the
