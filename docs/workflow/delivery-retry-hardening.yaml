@@ -4,7 +4,7 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: design_review
+phase: reconciliation
 status: ready
 gate: none
 
@@ -39,29 +39,29 @@ current_slice:
   name: "Delivery retry hardening design"
 
 latest_review:
-  path: docs/reviews/delivery-retry-hardening/design-review-01.md
+  path: docs/reviews/delivery-retry-hardening/design-review-02.md
 
 blocking_findings:
-  - id: MEDIUM-01
-    class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-01.md
-    summary: "Post-merge production gate conflicts with the reviewed-SHA rule and lacks SHA continuity."
-  - id: MEDIUM-02
-    class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-01.md
-    summary: "Re-read window is not justified by the incident and does not pin the job identity."
-  - id: MEDIUM-03
-    class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-01.md
-    summary: "Post-merge approval is not pinned to merged_sha and its single mutation is undefined."
-  - id: LOW-01
+  - id: LOW-03
     class: documentation_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-01.md
-    summary: "Request and wall-time budget is misstated."
-  - id: LOW-02
-    class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-01.md
-    summary: "Immediate step failures do not report the observed state."
+    source: docs/reviews/delivery-retry-hardening/design-review-02.md
+    summary: "Design must name the replacement of the delivery-verification bounded-safe-retry mutation sentence."
+
+reconciliation:
+  id: RECON-01
+  kind: documentation_defect
+  basis:
+    path: docs/reviews/delivery-retry-hardening/design-review-02.md
+    finding_ids: [LOW-03]
+  allowed_paths:
+    - docs/technical-designs/delivery-retry-hardening.md
+    - docs/workflow/delivery-retry-hardening.yaml
+  acceptance:
+    - "The design skills paragraph states that delivery-verification SKILL.md lines 12-13 are replaced: the phase is read-only at verify-delivery and retry-delivery-<NN>, and the only mutation is the single pinned operation performed while consuming production_mutation_approval. No other design decision changes."
 
 next:
-  action: review-design
+  action: reconcile-LOW-03
+  on_success:
+    phase: human_gate
+    gate: design_approval
+    action: approve-design
