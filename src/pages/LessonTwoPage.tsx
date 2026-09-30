@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import { FrequencyComparison } from '@/components/lesson/FrequencyComparison';
@@ -47,6 +47,8 @@ export function LessonTwoPage() {
   const [focusedStep, setFocusedStep] = useState<LessonTwoStepId | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [reflection, setReflection] = useState('');
+  const [focusFinishStatus, setFocusFinishStatus] = useState(false);
+  const finishStatus = useRef<HTMLDivElement>(null);
   const { intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete } = lessonTwoContent;
   const visibleStep = progress.currentStepId;
   const staticMode = prefersReducedMotion || progress.prefersStatic;
@@ -59,6 +61,13 @@ export function LessonTwoPage() {
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   }, []);
+
+  // «Завершити урок» disappears once pressed, so focus moves to the result.
+  useEffect(() => {
+    if (!focusFinishStatus) return;
+    setFocusFinishStatus(false);
+    finishStatus.current?.focus();
+  }, [focusFinishStatus]);
 
   const setAudioEnabled = useCallback((enabled: boolean) => {
     setProgress((current) => current.audioEnabled === enabled ? current : { ...current, audioEnabled: enabled });
@@ -94,11 +103,14 @@ export function LessonTwoPage() {
     checkpointPassed: true,
     completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'checkpoint'])),
   })), [setProgress]);
-  const finishLesson = () => setProgress((current) => ({
-    ...current,
-    completedAt: current.completedAt ?? new Date().toISOString(),
-    completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'complete'])),
-  }));
+  const finishLesson = () => {
+    setFocusFinishStatus(true);
+    setProgress((current) => ({
+      ...current,
+      completedAt: current.completedAt ?? new Date().toISOString(),
+      completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'complete'])),
+    }));
+  };
 
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
@@ -237,14 +249,17 @@ export function LessonTwoPage() {
         <ul className="mt-4 space-y-1 rounded-lg bg-gray-50 p-4 text-sm font-medium text-gray-950">
           {complete.chains.map((chain) => <li key={chain}>{chain}</li>)}
         </ul>
-        {progress.completedAt === null ? <div className="mt-5 space-y-3">
+        {progress.completedAt === null && <div className="mt-5 space-y-3">
           <label htmlFor="lesson-two-reflection" className="block text-sm text-gray-700">{complete.reflectionLabel}</label>
           <textarea id="lesson-two-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={2} className="w-full rounded-lg border border-gray-300 p-3 text-sm text-gray-950 outline-none focus-visible:ring-2 focus-visible:ring-brand-600" />
           <button type="button" onClick={finishLesson} className={primaryButton}>{complete.finishLabel}</button>
-        </div> : <div className="mt-5 space-y-3" role="status">
-          <p className="font-semibold text-gray-950">{complete.finished}</p>
-          <p className="text-gray-700">{complete.feedback}</p>
         </div>}
+        <div ref={finishStatus} tabIndex={-1} role="status" data-testid="finish-status" className="mt-5 space-y-3 outline-none empty:mt-0">
+          {progress.completedAt !== null && <>
+            <p className="font-semibold text-gray-950">{complete.finished}</p>
+            <p className="text-gray-700">{complete.feedback}</p>
+          </>}
+        </div>
         {progress.completedAt !== null && <section aria-labelledby="lesson-two-bridge" className="mt-6 rounded-lg border border-brand-200 bg-brand-25 p-5">
           <h3 id="lesson-two-bridge" className="font-semibold text-gray-950">{complete.bridgeTitle}</h3>
           <p className="mt-2 text-lg font-medium text-gray-950">{complete.bridge}</p>

@@ -478,21 +478,23 @@ test("completes the whole lesson at 320 px with the keyboard only and no audio",
   await pressButton(page, "Далі: перевірка");
 
   await expect(page.getByText("500 герців — 500 повних коливань за секунду")).toBeAttached();
-  await answer(page, "Де за секунду більше повних коливань?", "500 Гц");
-  await answer(page, "Який звук буде вищим?", "500 Гц");
+  await answer(page, "Де за секунду більше повних коливань?", "500 герців");
+  await answer(page, "Який звук буде вищим?", "500 герців");
   await moveCardTo(page, "вищий звук", "Пізніше", 2);
+  await expect(page.getByTestId("chain-move-status")).toHaveText("«вищий звук» — тепер на місці 3 із 3.");
   await expect(page.getByRole("listitem").filter({ hasText: "1. більше повних коливань за секунду" })).toHaveCount(1);
   await pressButton(page, "Перевірити порядок");
   await expect(page.getByTestId("chain-status")).toBeFocused();
   await expect(page.getByTestId("chain-status")).toContainText("Так: більше повних коливань за секунду → більша частота → вищий звук.");
-  await answer(page, "500 Гц відтворили тихіше, але число Гц не змінили. Що сталося з висотою?", "Лишилася тією самою");
+  await answer(page, "500 герців відтворили тихіше, але число герців не змінили. Що сталося з висотою?", "Лишилася тією самою");
   await expect(page.getByText("Перевірку пройдено.")).toBeVisible();
   expect(await storedProgress(page)).toMatchObject({ checkpointPassed: true, completedAt: null });
   await pressButton(page, "Далі: підсумок");
 
   await expect(page.getByText("Крок 5 із 5")).toBeVisible();
   await pressButton(page, "Завершити урок");
-  await expect(page.getByText("Урок завершено.")).toBeVisible();
+  await expect(page.getByTestId("finish-status")).toBeFocused();
+  await expect(page.getByTestId("finish-status")).toContainText("Урок завершено.");
   await expect(page.getByText("Що можна змінити в самій струні", { exact: false })).toBeVisible();
   const finished = await storedProgress(page);
   expect(finished.completedStepIds).toEqual(["intro", "string", "repeats", "frequency", "loudness", "guitar", "checkpoint", "complete"]);
@@ -519,10 +521,10 @@ test("offers the explanation after repeated wrong orders and still requires the 
   await expect(page.getByTestId("chain-status")).toContainText("Більшу частоту ми чуємо як вищий звук.");
   expect((await storedProgress(page)).checkpointPassed).toBe(false);
 
-  await answer(page, "500 Гц відтворили тихіше, але число Гц не змінили. Що сталося з висотою?", "Стала нижчою");
+  await answer(page, "500 герців відтворили тихіше, але число герців не змінили. Що сталося з висотою?", "Стала нижчою");
   await expect(page.getByText("Гучність змінилася, але чи змінилося число Гц?").first()).toBeVisible();
   expect((await storedProgress(page)).checkpointPassed).toBe(false);
-  await answer(page, "500 Гц відтворили тихіше, але число Гц не змінили. Що сталося з висотою?", "Лишилася тією самою");
+  await answer(page, "500 герців відтворили тихіше, але число герців не змінили. Що сталося з висотою?", "Лишилася тією самою");
   expect((await storedProgress(page)).checkpointPassed).toBe(true);
 });
 

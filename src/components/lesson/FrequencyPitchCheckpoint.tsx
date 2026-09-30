@@ -30,6 +30,7 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
   const [explained, setExplained] = useState(false);
   const [counterCorrect, setCounterCorrect] = useState(passed);
   const [focusMove, setFocusMove] = useState<{ card: ChainCard; direction: 'earlier' | 'later' } | null>(null);
+  const [moveMessage, setMoveMessage] = useState('');
   const moveButtons = useRef(new Map<string, HTMLButtonElement>());
   const chainStatus = useRef<HTMLDivElement>(null);
   const focusStatusWhenDone = useRef(false);
@@ -64,6 +65,7 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
     setOrder(moveCard(order, index, direction));
     setOutcome(null);
     setFocusMove({ card: order[index], direction: direction === -1 ? 'earlier' : 'later' });
+    setMoveMessage(`«${content.cards[order[index]]}» — ${content.movedToLabel} ${target + 1} ${content.ofLabel} ${order.length}.`);
   };
   const checkOrder = () => {
     const result = chainAttemptOutcome(order, failedAttempts);
@@ -116,6 +118,7 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
           {index < order.length - 1 && outcome && outcome !== 'correct' && links[index] && <p className="pl-3 text-sm text-success-600">↓ {content.correctLink}</p>}
         </li>)}
       </ol>
+      <p aria-live="polite" data-testid="chain-move-status" className="sr-only">{chainDone ? '' : moveMessage}</p>
       {!chainDone && <button type="button" onClick={checkOrder} className="mt-4 min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.checkOrderLabel}</button>}
       <div ref={chainStatus} tabIndex={-1} role="status" data-testid="chain-status" className="mt-3 space-y-2 text-sm text-gray-700 outline-none">
         {outcome === 'correct' && <p>{content.orderCorrect}</p>}
@@ -127,6 +130,7 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
 
     {chainDone && <ChoiceQuestion
       question={content.counterQuestion}
+      spokenQuestion={content.counterQuestionSpoken}
       choices={content.counterChoices}
       correctChoiceId={content.counterCorrectId}
       onCheck={(_choiceId, isCorrect) => { if (isCorrect) setCounterCorrect(true); }}
