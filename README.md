@@ -118,7 +118,8 @@ The binding rules are in `AGENTS.md`. Each change is one branch and one PR:
 3. **Owner approves the design.**
 4. **Implement** each slice.
 5. **Review** by a separate session or agent, then fix only the reported
-   findings and re-review them.
+   findings. Only HIGH and MEDIUM findings get a re-review; LOW fixes are
+   listed in a `## Fixes` PR comment.
 6. **Owner approves the merge** of the exact PR head.
 7. **Verify delivery** with the `delivery-verification` skill.
 
