@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SameStringDiagram } from '@/components/lesson/SameStringDiagram';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
 
 type StringContent = typeof lessonTwoContent.string;
@@ -36,10 +37,6 @@ export function SameStringPitchExperience({ content, preferredPath, onReady }: S
 
   const virtualCard = <section key="virtual" aria-labelledby="same-string-virtual" className="rounded-lg border border-gray-200 bg-white p-5">
     <h3 id="same-string-virtual" className="font-semibold text-gray-950">{content.virtual.title}</h3>
-    <dl className="mt-3 space-y-1 text-sm text-gray-600">
-      <div><dt className="inline font-medium text-gray-950">1. </dt><dd className="inline">{content.states.open}</dd></div>
-      <div><dt className="inline font-medium text-gray-950">2. </dt><dd className="inline">{content.states.pressed}</dd></div>
-    </dl>
     <div className="mt-4 flex flex-wrap gap-2">
       <button type="button" onClick={pluckOpen} className="min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
         {content.virtual.openLabel}
@@ -54,7 +51,10 @@ export function SameStringPitchExperience({ content, preferredPath, onReady }: S
     </div>
   </section>;
 
-  return <div className="grid gap-4 sm:grid-cols-2">
-    {preferredPath === 'guitar' ? [guitarCard, virtualCard] : [virtualCard, guitarCard]}
+  return <div className="space-y-4">
+    <SameStringDiagram caption={content.diagramCaption} openLabel={content.states.open} pressedLabel={content.states.pressed} />
+    <div className="grid gap-4 sm:grid-cols-2">
+      {preferredPath === 'guitar' ? [guitarCard, virtualCard] : [virtualCard, guitarCard]}
+    </div>
   </div>;
 }

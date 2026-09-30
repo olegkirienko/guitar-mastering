@@ -30,13 +30,18 @@ test("completes screens 0–1 through the virtual string at 320 px and resumes a
   await page.getByRole("button", { name: "Немає гітари — відкрити віртуальну струну" }).click();
 
   await expect(page.getByRole("heading", { name: "Одна струна — два звуки" })).toBeFocused();
+  await expect(page.getByRole("figure", { name: "Перша струна у двох станах" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Відкрита перша струна" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Та сама струна, притиснута пальцем між двома металевими поріжками ближче до корпусу" })).toBeVisible();
   const pressed = page.getByRole("button", { name: "Притиснути й смикнути" });
   await expect(pressed).toBeDisabled();
   await expect(page.getByText("Який стан тієї самої струни дав вищий звук", { exact: false })).toHaveCount(0);
+  const liveResults = page.getByRole("region", { name: "Віртуальна струна" }).locator('[aria-live="polite"]');
+  await expect(liveResults).toHaveCount(1);
   await page.getByRole("button", { name: "Смикнути відкриту" }).click();
-  await expect(page.getByText("Відкрита струна — нижчий результат.")).toBeVisible();
+  await expect(liveResults).toContainText("Відкрита струна — нижчий результат.");
   await pressed.click();
-  await expect(page.getByText("Притиснута струна — вищий результат.")).toBeVisible();
+  await expect(liveResults).toContainText("Притиснута струна — вищий результат.");
 
   await page.getByRole("radio", { name: "Відкритий" }).check();
   await page.getByRole("button", { name: "Перевірити" }).click();
@@ -60,6 +65,7 @@ test("completes the string step on the guitar path with the keyboard only", asyn
   await start.focus();
   await start.press("Enter");
   await expect(page.getByRole("heading", { name: "Одна струна — два звуки" })).toBeFocused();
+  await expect(page.getByRole("img", { name: "Та сама струна, притиснута пальцем між двома металевими поріжками ближче до корпусу" })).toBeVisible();
   const guitarCard = page.getByRole("region", { name: "На гітарі" });
   await expect(guitarCard.getByText("Не крути кілки", { exact: false })).toBeVisible();
   const done = page.getByRole("button", { name: "Я послухав/ла обидва стани" });
