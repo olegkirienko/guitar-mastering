@@ -4,9 +4,9 @@ work_item_id: delivery-retry-hardening
 work_item_type: infrastructure
 title: "Delivery retry hardening"
 
-phase: design_review
-status: ready
-gate: none
+phase: human_gate
+status: awaiting_approval
+gate: design_approval
 
 git:
   repository: github.com/olegkirienko/guitar-mastering
@@ -39,13 +39,12 @@ current_slice:
   name: "Delivery retry hardening design"
 
 latest_review:
-  path: docs/reviews/delivery-retry-hardening/design-review-05.md
+  path: docs/reviews/delivery-retry-hardening/design-review-06.md
 
-blocking_findings:
-  - id: LOW-09
-    class: design_defect
-    source: docs/reviews/delivery-retry-hardening/design-review-05.md
-    summary: "Gate to blocked owner-decision exit is missing from validateTransition rules and fixtures."
+blocking_findings: []
 
 next:
-  action: review-design
+  action: approve-design
+  on_approval:
+    phase: implementation
+    action: implement-bounded-step-reread-and-retry-gate
