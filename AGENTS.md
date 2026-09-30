@@ -71,7 +71,8 @@ Every model call resends the whole thread, so keep it small:
 4. **Owner approval is required** for the design (when needed), the merge, and
    every production mutation (redeploy, restart, rollback, migration retry,
    variables, secrets). A merge approval names the PR head SHA; merge only that
-   exact head (`gh pr merge --match-head-commit`). A production approval names
+   exact head with
+   `gh pr merge <n> --merge --match-head-commit <full head SHA>`. A production approval names
    the exact target and command.
 5. **After merge** follow the `delivery-verification` skill:
    `corepack pnpm evidence:delivery --sha <merged SHA>` and

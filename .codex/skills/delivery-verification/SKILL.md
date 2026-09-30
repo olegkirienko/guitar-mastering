@@ -27,7 +27,9 @@ This step is read-only unless the owner approves a production mutation.
      deployment already exists, so report it to the owner.
    - Run the operation once. Then run
      `corepack pnpm delivery:retry-guard --mode post --sha <merged SHA> --retry-deployment <id>`.
-     A stop means a possible rollback: stop and report it.
+     A stop means a possible rollback: stop and report it. If the operation
+     returned no deployment ID, do not run `--mode post` without one; stop and
+     report to the owner.
    - Verify again with step 1.
 
 Never print variables, credentials, complete provider JSON, or full logs.
