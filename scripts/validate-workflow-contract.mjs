@@ -279,6 +279,14 @@ function validateRepositoryWorkflows(paths, readWorkflow, exists) {
   return identities;
 }
 
+// A v3.1 production mutation gate after merge authorizes one delivery retry.
+function isPostMergeProductionGate(state) {
+  return String(state.version) === "3.1"
+    && state.phase === "human_gate"
+    && state.gate === "production_mutation_approval"
+    && Boolean(state.git?.merged_sha);
+}
+
 function renderWorkflow(state) {
   const value = (entry) => {
     if (entry === null) return "null";
@@ -528,6 +536,14 @@ function validateState(state) {
       assert.equal(state.gate_scope.lifecycle_generation, state.git.lifecycle_generation);
       assert.equal(state.gate_scope.pr_number, state.git.pr_number);
       assert.equal(state.gate_scope.reviewed_sha, state.git.reviewed_sha);
+    } else if (isPostMergeProductionGate(state)) {
+      assert.equal(state.next.on_approval.phase, "delivery_verification");
+      assert.match(state.next.on_approval.action, /^retry-delivery-\d{2}$/);
+      assert.equal(state.gate_scope?.merged_sha, state.git.merged_sha, "post-merge production gate is bound to another merged SHA");
+      assert.ok(
+        JSON.stringify(state.gate_scope.stop_conditions).includes("delivery:retry-guard"),
+        "post-merge production gate stop conditions must name delivery:retry-guard",
+      );
     } else {
       assert.equal(state.next.on_approval.phase, "implementation");
       assert.match(state.next.on_approval.action, /^(implement|resume)-.+$/);
@@ -593,6 +609,7 @@ function validateState(state) {
     }
     const afterMerge = state.phase === "delivery_verification"
       || (state.phase === "human_gate" && state.gate === "work_item_completion")
+      || isPostMergeProductionGate(state)
       || state.phase === "complete";
     if (afterMerge) assert.ok(state.git.merged_sha);
     const requiresReviewedSha = (state.phase === "human_gate" && state.gate === "merge_approval") || afterMerge;
@@ -892,13 +909,36 @@ function validateTransition(from, to, {
   validateState(from);
   validateState(to);
 
+  if (isPostMergeProductionGate(to)) {
+    assert.equal(from.phase, "delivery_verification", "post-merge production gate is entered only from delivery_verification");
+  }
+  if (isPostMergeProductionGate(from) || isPostMergeProductionGate(to)) {
+    assert.equal(to.git?.reviewed_sha, from.git?.reviewed_sha, "reviewed SHA changed across the post-merge production gate");
+    assert.equal(to.git?.merged_sha, from.git?.merged_sha, "merged SHA changed across the post-merge production gate");
+  }
+
   if (from.phase === "reconciliation") {
     assert.equal(to.phase, from.next.on_success.phase);
     assert.equal(to.next.action, from.next.on_success.action);
     if (to.phase === "human_gate") assert.equal(to.gate, from.next.on_success.gate);
   } else if (from.phase === "human_gate") {
-    assert.equal(to.phase, from.next.on_approval.phase);
-    assert.equal(to.next.action, from.next.on_approval.action);
+    // A post-merge production gate may also block for the owner after a
+    // stopped post-check, or be withdrawn before any operation was issued.
+    const retryId = isPostMergeProductionGate(from)
+      ? /^retry-delivery-(\d{2})$/.exec(from.next.on_approval.action)[1]
+      : undefined;
+    const blockedExit = retryId !== undefined
+      && to.phase === "delivery_verification"
+      && to.status === "blocked"
+      && to.next.action === `supply-retry-${retryId}-owner-decision`;
+    const withdrawal = retryId !== undefined
+      && to.phase === "delivery_verification"
+      && to.status === "ready"
+      && to.next.action === "verify-delivery";
+    if (!blockedExit && !withdrawal) {
+      assert.equal(to.phase, from.next.on_approval.phase);
+      assert.equal(to.next.action, from.next.on_approval.action);
+    }
   } else {
     assert.ok(transitionTargets[from.phase].has(to.phase));
   }
@@ -2296,5 +2336,93 @@ const repositoryWorkflowIdentities = validateRepositoryWorkflows(
 );
 assert.equal(repositoryWorkflowIdentities.get("ci-workflow-contract-validation"), "docs/workflow/ci-workflow-contract-validation.yaml");
 assert.equal(repositoryWorkflowIdentities.get("stage-01-lesson-02"), "docs/workflow/stage-01-lesson-02.yaml");
+
+// Post-merge production retry gate (docs/technical-designs/delivery-retry-hardening.md).
+const retryDeliveryState = v31Legal.find((state) => state.phase === "delivery_verification" && state.status === "ready");
+const retryCompletionGate = v31Legal.find((state) => state.gate === "work_item_completion");
+const postMergeRetryGate = {
+  ...retryDeliveryState,
+  phase: "human_gate",
+  status: "awaiting_approval",
+  gate: "production_mutation_approval",
+  gate_scope: {
+    provider: "railway",
+    environment_id: "production",
+    targets: ["service-a"],
+    operation: "railway redeploy --service service-a --yes",
+    stop_conditions: ["Run corepack pnpm delivery:retry-guard --mode pre last and stop unless it clears."],
+    merged_sha: shaB,
+  },
+  next: {
+    action: "approve-production-mutation",
+    on_approval: { phase: "delivery_verification", action: "retry-delivery-01" },
+  },
+};
+const retryVerificationState = { ...retryDeliveryState, next: { action: "retry-delivery-01" } };
+const retryBlockedState = { ...retryDeliveryState, status: "blocked", next: { action: "supply-retry-01-owner-decision" } };
+const preMergeProductionGate = {
+  ...v31Base,
+  phase: "human_gate",
+  status: "awaiting_approval",
+  gate: "production_mutation_approval",
+  gate_scope: { ...postMergeRetryGate.gate_scope, merged_sha: undefined },
+  next: { action: "approve-production-mutation", on_approval: { phase: "implementation", action: "implement-slice-a" } },
+};
+delete preMergeProductionGate.gate_scope.merged_sha;
+const implementationState = v31Legal.find((state) => state.phase === "implementation");
+
+validateState(postMergeRetryGate);
+validateState(parseWorkflow(renderWorkflow(postMergeRetryGate)));
+validateState(retryVerificationState);
+validateState(preMergeProductionGate);
+for (const illegal of [
+  { ...postMergeRetryGate, next: { ...postMergeRetryGate.next, on_approval: { phase: "implementation", action: "implement-slice-a" } } },
+  { ...preMergeProductionGate, next: { ...preMergeProductionGate.next, on_approval: { phase: "delivery_verification", action: "retry-delivery-01" } } },
+  { ...postMergeRetryGate, git: { ...postMergeRetryGate.git, reviewed_sha: null } },
+  { ...postMergeRetryGate, gate_scope: { ...postMergeRetryGate.gate_scope, merged_sha: shaC } },
+  { ...postMergeRetryGate, gate_scope: { ...postMergeRetryGate.gate_scope, stop_conditions: ["target mismatch"] } },
+  { ...postMergeRetryGate, next: { ...postMergeRetryGate.next, on_approval: { phase: "delivery_verification", action: "retry-delivery-x" } } },
+]) assert.throws(() => validateState(illegal));
+
+validateTransition(retryDeliveryState, postMergeRetryGate);
+validateTransition(postMergeRetryGate, retryVerificationState);
+validateTransition(retryVerificationState, retryCompletionGate, { finalSlice: true, deliveryEvidence: authoritativeDeliveryEvidence });
+validateTransition(postMergeRetryGate, retryBlockedState);
+validateTransition(postMergeRetryGate, retryDeliveryState);
+const movedSha = (state) => ({ ...state, git: { ...state.git, merged_sha: shaC } });
+const movedReviewed = (state) => ({ ...state, git: { ...state.git, reviewed_sha: shaC } });
+assert.throws(() => validateTransition(postMergeRetryGate, movedReviewed(retryVerificationState)), /reviewed SHA changed/);
+assert.throws(() => validateTransition(postMergeRetryGate, movedReviewed(retryBlockedState)), /reviewed SHA changed/);
+assert.throws(() => validateTransition(postMergeRetryGate, movedReviewed(retryDeliveryState)), /reviewed SHA changed/);
+assert.throws(() => validateTransition(movedReviewed(retryDeliveryState), postMergeRetryGate), /reviewed SHA changed/);
+assert.throws(() => validateTransition(postMergeRetryGate, { ...retryBlockedState, next: { action: "supply-retry-02-owner-decision" } }));
+assert.throws(() => validateTransition(postMergeRetryGate, movedSha(retryVerificationState)), /merged SHA changed/);
+assert.throws(() => validateTransition(postMergeRetryGate, movedSha(retryBlockedState)), /merged SHA changed/);
+assert.throws(() => validateTransition(postMergeRetryGate, movedSha(retryDeliveryState)), /merged SHA changed/);
+assert.throws(() => validateTransition(movedSha(retryDeliveryState), postMergeRetryGate), /merged SHA changed/);
+assert.throws(() => validateTransition(preMergeProductionGate, retryBlockedState));
+assert.throws(() => validateTransition(preMergeProductionGate, retryDeliveryState));
+assert.throws(() => validateTransition(retryCompletionGate, retryDeliveryState));
+assert.throws(() => validateTransition(implementationState, postMergeRetryGate), /entered only from delivery_verification/);
+
+requirePhrases(".codex/skills/delivery-verification/SKILL.md", [
+  "This phase is read-only, including at `verify-delivery` and `retry-delivery-<NN>`.",
+  "The only production mutation is the single pinned operation",
+  "stop conditions that name `delivery:retry-guard`",
+  "corepack pnpm delivery:retry-guard --mode pre --sha <merged SHA>",
+  "Issue the operation exactly once. Issuing it consumes the gate.",
+  "corepack pnpm delivery:retry-guard --mode post --sha <merged SHA> --retry-deployment <id>",
+  "delivery_verification / blocked / supply-retry-<NN>-owner-decision",
+  "before any operation",
+  "Withdrawal keeps both SHAs unchanged",
+  "records the guard's reason",
+  "Any further mutation needs a new gate with the next `NN`.",
+  "guard results, and outcome in the delivery evidence",
+]);
+requirePhrases(".codex/skills/work-orchestrator/SKILL.md", [
+  "After merge it is entered only from delivery verification.",
+  "a `delivery:retry-guard` stop condition",
+  "issues its operation exactly once while being used",
+]);
 
 console.log(`workflow-contract: ${legal.length + v31Legal.length} legal states, ${invalid.length} illegal states, ${validTransitions.length + 11} transitions, and ${discoveredWorkflowPaths.length} repository workflows verified`);

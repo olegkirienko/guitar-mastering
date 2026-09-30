@@ -1,0 +1,60 @@
+version: 3.1
+
+work_item_id: delivery-retry-hardening
+work_item_type: infrastructure
+title: "Delivery retry hardening"
+
+phase: human_gate
+status: awaiting_approval
+gate: merge_approval
+
+git:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/delivery-retry-hardening
+  lifecycle_generation: d63fa900-5d14-4d07-8092-5b5256411dee
+  lifecycle_anchor_sha: f3d0b7995fc2dd29759aba0d34e121e9894cf8b4
+  pr_number: 19
+  reviewed_sha: ceb527974ff4c6f0b2938eb6b8ec6ceae580db90
+  merged_sha: null
+
+delivery:
+  evidence_path: null
+
+design:
+  path: docs/technical-designs/delivery-retry-hardening.md
+
+context:
+  - AGENTS.md
+  - .codex/skills/work-orchestrator/references/contract.md
+  - .codex/skills/work-orchestrator/SKILL.md
+  - .codex/skills/delivery-verification/SKILL.md
+  - docs/operations/railway-ci-cd.md
+  - server/verify-ci.ts
+  - server/verify-ci.test.ts
+  - scripts/delivery-retry-guard.mjs
+  - build/delivery-retry-guard.test.ts
+
+completed_slices: []
+
+current_slice:
+  id: bounded-step-reread-and-retry-gate
+  name: "Bounded step re-read and retry gate"
+
+latest_review:
+  path: docs/reviews/delivery-retry-hardening/fix-rereview-02-bounded-step-reread-and-retry-gate.md
+
+blocking_findings: []
+
+gate_scope:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/delivery-retry-hardening
+  lifecycle_generation: d63fa900-5d14-4d07-8092-5b5256411dee
+  pr_number: 19
+  target_branch: main
+  reviewed_sha: ceb527974ff4c6f0b2938eb6b8ec6ceae580db90
+
+next:
+  action: approve-merge
+  on_approval:
+    phase: delivery_verification
+    action: verify-delivery
