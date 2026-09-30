@@ -1,0 +1,50 @@
+version: 3.1
+
+work_item_id: orchestration-usage-optimization
+work_item_type: maintenance
+title: "Orchestration usage optimization"
+
+phase: work_item_init
+status: ready
+gate: none
+
+git:
+  repository: github.com/olegkirienko/guitar-mastering
+  branch: work/orchestration-usage-optimization
+  lifecycle_generation: 611d90af-cf43-4e9d-8df0-734cf8973703
+  lifecycle_anchor_sha: null
+  pr_number: null
+  reviewed_sha: null
+  merged_sha: null
+
+delivery:
+  evidence_path: null
+
+design:
+  path: docs/technical-designs/orchestration-usage-optimization.md
+
+context:
+  - AGENTS.md
+  - .codex/agents/designer.toml
+  - .codex/agents/plan-reviewer.toml
+  - .codex/agents/implementer.toml
+  - .codex/agents/implementation-reviewer.toml
+  - .codex/agents/fixer.toml
+  - .codex/agents/fix-reviewer.toml
+  - .codex/skills/work-orchestrator/SKILL.md
+  - .codex/skills/delivery-verification/SKILL.md
+  - scripts/validate-workflow-contract.mjs
+
+completed_slices: []
+
+current_slice:
+  id: design
+  name: "Workflow optimization design"
+
+latest_review:
+  path: null
+
+blocking_findings: []
+
+next:
+  action: initialize-work-item
