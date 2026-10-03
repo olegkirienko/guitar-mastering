@@ -1,8 +1,8 @@
 import { ArrowRight, BookOpen01 } from '@untitledui/icons';
 import { Link } from 'react-router';
 import { lessons } from '@/data/lessons/constants';
-import { LessonCard } from '@/components/LessonCard';
-import { SectionHeading } from '@/components/SectionHeading';
+import { LessonCard } from '@/components/lesson-card/lesson-card';
+import { SectionHeading } from '@/components/section-heading/section-heading';
 
 export function HomePage() {
   return (

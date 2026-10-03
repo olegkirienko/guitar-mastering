@@ -1,6 +1,6 @@
 import { createBrowserRouter, redirect } from 'react-router';
-import { RootLayout } from '@/components/RootLayout';
-import { RouteError } from '@/components/RouteError';
+import { RootLayout } from '@/components/root-layout/root-layout';
+import { RouteError } from '@/components/route-error/route-error';
 
 export const router = createBrowserRouter([
   {
