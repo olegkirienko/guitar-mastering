@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { safeGain, toneDurationSeconds } from '@/data/lessons/stage-01-lesson-02-model';
+import { safeGain } from '@/data/lessons/stage-01-lesson-02-model/utils/lab';
+import { toneDurationSeconds } from '@/data/lessons/stage-01-lesson-02-model/constants';
 
 export type LessonAudioStatus = 'idle' | 'ready' | 'unavailable' | 'blocked';
 

@@ -105,7 +105,7 @@ the same dependencies.
 1. **PR 1: rule, auth, and non-UI code.** Add the rule to `CLAUDE.md`, replace
    the `untitled-ui` skill sentence "Other project files keep the repo's
    existing names." with "All files and folders are kebab-case; each `.tsx`
-   lives in a folder of the same name (see CLAUDE.md, Component structure).",
+   lives in a folder of the same name (see CLAUDE.md, Code structure).",
    and update the README source tree. Restructure `auth/` (so `useAuth` and
    `ApiError` already live at their final paths, which `use-lesson-progress`
    needs), `data/`, and `progress/`. Update the four `build/` tests' relative

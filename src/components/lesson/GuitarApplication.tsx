@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import { SameStringPitchExperience, type PitchPath } from '@/components/lesson/SameStringPitchExperience';
 import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
-import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
+import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
 
 type GuitarContent = typeof lessonTwoContent.guitar;
 

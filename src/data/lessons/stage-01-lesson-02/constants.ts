@@ -1,13 +1,3 @@
-export type LessonTwoStepId =
-  | 'intro'
-  | 'string'
-  | 'repeats'
-  | 'frequency'
-  | 'loudness'
-  | 'guitar'
-  | 'checkpoint'
-  | 'complete';
-
 export const sameStringExperience = {
   diagramCaption: 'Перша струна у двох станах',
   states: {

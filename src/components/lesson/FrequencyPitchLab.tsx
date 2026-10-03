@@ -2,15 +2,10 @@ import { ArrowRight } from '@untitledui/icons';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
-import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
-import {
-  labFeedback,
-  labFrequencies,
-  stepFrequency,
-  toneGain,
-  visualCycles,
-  type LabFrequency,
-} from '@/data/lessons/stage-01-lesson-02-model';
+import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
+import { labFeedback, stepFrequency, visualCycles } from '@/data/lessons/stage-01-lesson-02-model/utils/lab';
+import { labFrequencies, toneGain } from '@/data/lessons/stage-01-lesson-02-model/constants';
+import { type LabFrequency } from '@/data/lessons/stage-01-lesson-02-model/types';
 
 type FrequencyContent = typeof lessonTwoContent.frequency;
 

@@ -1,19 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  hasMeaningfulLessonOneProgress,
-  defaultLessonOneProgress,
-  lessonOneGuestStorageKey,
-  lessonOneProgressAdapter,
-  lessonOnePreferencesStorageKey,
-  lessonOneProgressFingerprint,
-  lessonOneUserStorageKey,
-  mergeLessonOneProgress,
-  parseLessonOneProgress,
-  readLessonOneProgress,
-  toSyncedLessonOneProgress,
-  writeLessonOneProgress,
-} from '../src/progress/lesson-one.ts';
-import type { LessonProgressAdapter } from '../src/progress/core.ts';
+import { hasMeaningfulLessonOneProgress, lessonOneProgressFingerprint, mergeLessonOneProgress, toSyncedLessonOneProgress } from '../src/progress/lesson-one/utils/merge-progress.ts';
+import { defaultLessonOneProgress, lessonOneGuestStorageKey, lessonOnePreferencesStorageKey } from '../src/progress/lesson-one/constants.ts';
+import { lessonOneProgressAdapter } from '../src/progress/lesson-one/lesson-one.ts';
+import { lessonOneUserStorageKey } from '../src/progress/lesson-one/utils/storage-keys.ts';
+import { parseLessonOneProgress } from '../src/progress/lesson-one/utils/parse-progress.ts';
+import { readLessonOneProgress, writeLessonOneProgress } from '../src/progress/lesson-one/utils/storage.ts';
+import type { LessonProgressAdapter } from '../src/progress/core/types.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 

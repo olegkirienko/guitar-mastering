@@ -1,5 +1,3 @@
-export type LessonOneStepId = 'intro' | 'string' | 'air' | 'checkpoint' | 'complete';
-
 export const lessonOneContent = {
   id: 'stage-01-lesson-01',
   stageLabel: 'Етап I · Звук',

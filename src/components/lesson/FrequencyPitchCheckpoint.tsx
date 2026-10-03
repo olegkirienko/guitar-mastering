@@ -1,16 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
-import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
-import {
-  chainAttemptOutcome,
-  checkpointPassed,
-  correctAdjacentLinks,
-  correctChain,
-  initialChain,
-  moveCard,
-  type ChainAttemptOutcome,
-  type ChainCard,
-} from '@/data/lessons/stage-01-lesson-02-model';
+import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
+import { chainAttemptOutcome, checkpointPassed, correctAdjacentLinks, moveCard } from '@/data/lessons/stage-01-lesson-02-model/utils/chain';
+import { correctChain, initialChain } from '@/data/lessons/stage-01-lesson-02-model/constants';
+import { type ChainAttemptOutcome, type ChainCard } from '@/data/lessons/stage-01-lesson-02-model/types';
 
 type CheckpointContent = typeof lessonTwoContent.checkpoint;
 

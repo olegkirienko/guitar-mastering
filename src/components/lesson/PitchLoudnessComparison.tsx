@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import { RepeatDensityTrack } from '@/components/lesson/FrequencyPitchLab';
 import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
-import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
-import { loudnessGain } from '@/data/lessons/stage-01-lesson-02-model';
+import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
+import { loudnessGain } from '@/data/lessons/stage-01-lesson-02-model/constants';
 
 type LoudnessContent = typeof lessonTwoContent.loudness;
 

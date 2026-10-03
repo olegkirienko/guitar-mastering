@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createProgressApi, mergeProgress, ProgressSyncQueue, type ProgressValue } from '../src/progress/core.ts';
+import { createProgressApi } from '../src/progress/core/utils/progress-api.ts';
+import { mergeProgress } from '../src/progress/core/utils/merge-progress.ts';
+import { ProgressSyncQueue } from '../src/progress/core/utils/progress-sync-queue.ts';
+import { type ProgressValue } from '../src/progress/core/types.ts';
 
 type Step = 'intro' | 'string' | 'air' | 'checkpoint' | 'complete';
 const order: readonly Step[] = ['intro', 'string', 'air', 'checkpoint', 'complete'];

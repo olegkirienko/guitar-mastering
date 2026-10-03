@@ -38,8 +38,9 @@ Existing hand-written lesson components stay until their lesson migrates.
 
 - Import React Aria with the `Aria` prefix:
   `import { Button as AriaButton } from "react-aria-components"`.
-- Name new files in the Untitled UI folders in kebab-case
-  (`date-picker.tsx`). Other project files keep the repo's existing names.
+- All files and folders are kebab-case; each `.tsx` lives in a folder of the
+  same name (see CLAUDE.md, Code structure). In the Untitled UI folders the
+  CLI creates `date-picker.tsx` files; keep them as generated.
 - Use semantic color tokens, never raw palette classes: `text-primary`,
   `text-secondary`, `bg-primary`, `bg-brand-solid`, `border-secondary`,
   `text-error-primary`. Find a token with `rg -n "<name>" src/styles/theme.css`

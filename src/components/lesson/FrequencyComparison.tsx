@@ -1,17 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
-import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02';
-import {
-  advanceElapsed,
-  comparisonDurationMs,
-  comparisonMoments,
-  comparisonRepeats,
-  completedRepeats,
-  momentFraction,
-  toneGain,
-  trackOffset,
-} from '@/data/lessons/stage-01-lesson-02-model';
+import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
+import { advanceElapsed, completedRepeats, momentFraction, trackOffset } from '@/data/lessons/stage-01-lesson-02-model/utils/comparison-timing';
+import { comparisonDurationMs, comparisonMoments, comparisonRepeats, toneGain } from '@/data/lessons/stage-01-lesson-02-model/constants';
 
 type RepeatsContent = typeof lessonTwoContent.repeats;
 
