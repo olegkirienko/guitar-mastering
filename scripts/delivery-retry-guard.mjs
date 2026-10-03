@@ -1,6 +1,6 @@
 // Read-only guard for a post-merge production retry. It prevents a redeploy of
 // the merged SHA from rolling production back after newer code was merged or
-// deployed (docs/technical-designs/delivery-retry-hardening.md).
+// deployed.
 //
 // Usage: node scripts/delivery-retry-guard.mjs --mode pre|post --sha <merged-sha> [--retry-deployment <id>]
 // Exit code 0 means clear, 1 means stop, and 2 means invalid usage.
