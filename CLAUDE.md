@@ -31,7 +31,10 @@ guitar, and experimentation. Avoid long passive theory blocks.
 - Use TypeScript, Tailwind CSS, and `@/*` imports for `src`.
 - Prefer reusable lesson primitives over page-specific duplication.
 - Keep educational content separate from generic UI components.
-- Do not add dependencies unless necessary.
+- Do not add dependencies unless necessary. The Untitled UI set is already
+  approved; the `untitled-ui` skill adds its components through the CLI.
+- Build UI from Untitled UI components with the `untitled-ui` skill; do not
+  hand-roll one it has, and edit generated files only for styling or defects.
 - Use the Node version from `.nvmrc`; call `corepack pnpm` directly.
 - After meaningful changes run `corepack pnpm test`, `corepack pnpm build`
   (it already runs lint), and `git diff --check`; run

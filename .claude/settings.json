@@ -10,12 +10,19 @@
       "Bash(corepack pnpm smoke:production https://guitar-mastering-web-production-production.up.railway.app)",
       "Bash(gh pr view *)",
       "Bash(gh pr checks *)",
-      "Bash(gh pr diff *)"
+      "Bash(gh pr diff *)",
+      "mcp__untitledui__list_components",
+      "mcp__untitledui__search_components",
+      "mcp__untitledui__get_component",
+      "mcp__untitledui__get_component_bundle",
+      "mcp__untitledui__get_page_templates",
+      "mcp__untitledui__search_icons"
     ],
     "ask": [
       "Bash(gh pr merge *)",
       "Bash(railway *)",
-      "mcp__railway"
+      "mcp__railway",
+      "mcp__untitledui__get_page_template_files"
     ],
     "deny": [
       "Bash(git push * main)",
