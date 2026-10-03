@@ -1,7 +1,7 @@
 import { useId, useState, type DragEvent } from 'react';
 import { CheckCircle, HelpCircle } from '@untitledui/icons';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
-import { cx } from '@/lib/cx';
+import { cx } from '@/utils/cx';
 
 interface CheckpointCard {
   id: string;

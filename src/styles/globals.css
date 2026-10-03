@@ -1,21 +1,49 @@
 @import "tailwindcss";
+@import "./theme.css";
+
+@plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
 
 @theme {
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  --color-brand-25: #fcf9f7;
-  --color-brand-50: #f8eee8;
-  --color-brand-100: #f0ddd2;
-  --color-brand-200: #e4c0ae;
-  --color-brand-300: #d59b80;
-  --color-brand-400: #c17756;
-  --color-brand-500: #aa5c3b;
-  --color-brand-600: #91472c;
-  --color-brand-700: #783923;
-  --color-brand-800: #62301f;
-  --color-brand-900: #51291d;
+  /* Keep the line heights the shipped lessons were built with. Untitled UI
+     uses 18px for text-xs and 30px for text-xl. Remove these two lines when
+     the pages move to Untitled UI components. */
+  --text-xs--line-height: calc(var(--spacing) * 4);
+  --text-xl--line-height: calc(var(--spacing) * 7);
 
+  --color-success-25: #f6fef9;
+  --color-success-50: #ecfdf3;
+  --color-success-100: #dcfae6;
+  --color-success-200: #abefc6;
+  --color-success-300: #75e0a7;
+  --color-success-400: #47cd89;
+  --color-success-500: #17b26a;
   --color-success-600: #079455;
+  --color-success-700: #067647;
+  --color-success-800: #085d3a;
+  --color-success-900: #074d31;
+}
+
+@utility scrollbar-hide {
+  &::-webkit-scrollbar {
+    display: none;
+    -webkit-appearance: none;
+  }
+
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@utility transition-inherit-all {
+  transition-property: inherit;
+  transition-duration: inherit;
+  transition-timing-function: inherit;
 }
 
 :root {
@@ -35,4 +63,22 @@ button,
 a,
 summary {
   -webkit-tap-highlight-color: transparent;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
 }

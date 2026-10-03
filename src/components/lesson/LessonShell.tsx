@@ -1,6 +1,6 @@
 import { ArrowLeft } from '@untitledui/icons';
 import { Link } from 'react-router-dom';
-import { cx } from '@/lib/cx';
+import { cx } from '@/utils/cx';
 
 interface LessonShellProps {
   stageLabel: string;
