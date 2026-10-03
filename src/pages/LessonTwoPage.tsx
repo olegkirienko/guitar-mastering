@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ChoiceQuestion } from '@/components/lesson/ChoiceQuestion';
 import { FrequencyComparison } from '@/components/lesson/FrequencyComparison';
 import { FrequencyPitchCheckpoint } from '@/components/lesson/FrequencyPitchCheckpoint';

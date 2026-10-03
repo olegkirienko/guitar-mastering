@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { RouterProvider } from 'react-aria-components';
-import type { NavigateOptions } from 'react-router-dom';
-import { useHref, useNavigate } from 'react-router-dom';
+import type { NavigateOptions } from 'react-router';
+import { useHref, useNavigate } from 'react-router';
 
 declare module 'react-aria-components' {
   interface RouterConfig {
