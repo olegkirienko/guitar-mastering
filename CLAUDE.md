@@ -43,9 +43,7 @@ Every turn resends the whole conversation, so keep it small:
 
 - Read only what the task needs: the files you change, their direct
   dependencies, the current PR's design, and its latest review comment.
-- Do not read other changes' designs or `docs/archive/` unless the current
-  design names them. `.rgignore` hides that history from search; pass a path
-  explicitly when it is named.
+- Do not read other changes' designs unless the current design names them.
 - Locate before reading: search first, then read only the needed line range.
   Do not read whole long documents or several files at once.
 - Git: start with `git status --short` and `git diff --stat`, then diff single

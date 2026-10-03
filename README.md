@@ -156,6 +156,6 @@ I approve merging PR <n> at head <full SHA>. Merge it and verify delivery.
 
 ## History
 
-The v1–v3.1 work-item state machine was retired on 2026-09-30. Its files are
-in `docs/archive/`, and the decision is recorded in
-`docs/technical-designs/process-simplification.md`.
+Delivered technical designs, the retired v1–v3.1 workflow, and the Codex setup
+are kept only in git history, for example
+`git log --diff-filter=D --name-only -- docs/`.
