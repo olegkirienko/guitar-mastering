@@ -1,5 +1,4 @@
 import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { FrequencyComparison } from '@/components/lesson/frequency-comparison/frequency-comparison';
@@ -11,115 +10,12 @@ import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { PitchLoudnessComparison } from '@/components/lesson/pitch-loudness-comparison/pitch-loudness-comparison';
 import { SameStringPitchExperience } from '@/components/lesson/same-string-pitch-experience/same-string-pitch-experience';
-import { type PitchPath } from '@/components/lesson/same-string-pitch-experience/types';
-import { useLessonTwoAudio } from '@/hooks/use-lesson-two-audio/use-lesson-two-audio';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
-import type { LessonTwoStepId } from '@/data/lessons/stage-01-lesson-02/types';
-import { useLessonTwoProgress } from '@/progress/use-lesson-two-progress';
-
-const stopByStep: Record<LessonTwoStepId, number> = {
-  intro: 1,
-  string: 1,
-  repeats: 2,
-  frequency: 3,
-  loudness: 3,
-  guitar: 4,
-  checkpoint: 5,
-  complete: 5,
-};
-
-const primaryButton = 'inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2';
-const backButton = 'inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2';
+import { stopByStep, primaryButton, backButton } from '@/pages/lesson-two-page/constants';
+import { useLessonTwoPage } from '@/pages/lesson-two-page/hooks/use-lesson-two-page';
 
 export function LessonTwoPage() {
-  const {
-    progress,
-    setProgress,
-    storageAvailable,
-    sync,
-    accountState,
-    importGuestProgress,
-    confirmGuestImport,
-    keepGuestProgressSeparate,
-    clearCurrentAccountCache,
-    retrySync,
-  } = useLessonTwoProgress();
-  const [preferredPath, setPreferredPath] = useState<PitchPath>('guitar');
-  const [stringReady, setStringReady] = useState(false);
-  const [focusedStep, setFocusedStep] = useState<LessonTwoStepId | null>(null);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [reflection, setReflection] = useState('');
-  const [focusFinishStatus, setFocusFinishStatus] = useState(false);
-  const finishStatus = useRef<HTMLDivElement>(null);
-  const { intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete } = lessonTwoContent;
-  const visibleStep = progress.currentStepId;
-  const staticMode = prefersReducedMotion || progress.prefersStatic;
-  const isCompleted = (step: LessonTwoStepId) => progress.completedStepIds.includes(step);
-
-  useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setPrefersReducedMotion(query.matches);
-    update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
-
-  // «Завершити урок» disappears once pressed, so focus moves to the result.
-  useEffect(() => {
-    if (!focusFinishStatus) return;
-    setFocusFinishStatus(false);
-    finishStatus.current?.focus();
-  }, [focusFinishStatus]);
-
-  const setAudioEnabled = useCallback((enabled: boolean) => {
-    setProgress((current) => current.audioEnabled === enabled ? current : { ...current, audioEnabled: enabled });
-  }, [setProgress]);
-  const audio = useLessonTwoAudio(progress.audioEnabled, setAudioEnabled, visibleStep);
-
-  const completeStep = useCallback((step: LessonTwoStepId) => setProgress((current) => current.completedStepIds.includes(step)
-    ? current
-    : { ...current, completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, step])) }), [setProgress]);
-  const goTo = (step: LessonTwoStepId) => {
-    setFocusedStep(step);
-    setProgress((current) => ({ ...current, currentStepId: step }));
-  };
-  const begin = (path: PitchPath) => {
-    setPreferredPath(path);
-    setFocusedStep('string');
-    setProgress((current) => ({
-      ...current,
-      currentStepId: 'string',
-      completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'intro'])),
-    }));
-  };
-  const toggleAudio = () => {
-    if (progress.audioEnabled) setAudioEnabled(false);
-    else void audio.enable();
-  };
-  const completeRepeats = useCallback(() => completeStep('repeats'), [completeStep]);
-  const completeFrequency = useCallback(() => completeStep('frequency'), [completeStep]);
-  const completeLoudness = useCallback(() => completeStep('loudness'), [completeStep]);
-  const completeGuitar = useCallback(() => completeStep('guitar'), [completeStep]);
-  const passCheckpoint = useCallback(() => setProgress((current) => ({
-    ...current,
-    checkpointPassed: true,
-    completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'checkpoint'])),
-  })), [setProgress]);
-  const finishLesson = () => {
-    setFocusFinishStatus(true);
-    setProgress((current) => ({
-      ...current,
-      completedAt: current.completedAt ?? new Date().toISOString(),
-      completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'complete'])),
-    }));
-  };
-
-  const audioMessage = audio.status === 'unavailable'
-    ? preferences.audioUnavailable
-    : audio.status === 'blocked'
-      ? preferences.audioBlocked
-      : null;
-
+  const { progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
   return <LessonShell {...lessonTwoContent} currentStop={stopByStep[visibleStep]} backTo="/">
     <LessonProgressPanel
       storageAvailable={storageAvailable}
