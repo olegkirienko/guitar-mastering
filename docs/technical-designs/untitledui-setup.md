@@ -74,7 +74,7 @@ and cannot be proven by CI. This PR (#25) holds only the design.
 - `main.tsx`: the tree becomes `HashRouter` > `RouteProvider` > `App`,
   because `RouteProvider` uses `useNavigate`/`useHref` from `react-router-dom`
   and needs the router above it. No ThemeProvider.
-- Smoke: `corepack pnpm dlx untitledui@latest add button -y`; keep the result
+- Smoke: `corepack pnpm dlx untitledui@<pinned version> add button -y`; keep the result
   as the base for migrations.
 
 **PR B: agent tooling** (after PR A is merged)
@@ -91,7 +91,7 @@ and cannot be proven by CI. This PR (#25) holds only the design.
   code; semantic color tokens only; `sortCx`/`cx`; `opacity-50` for disabled;
   `transition duration-100 ease-linear`; base/application/foundations
   placement; icons as component references; find via MCP, add via
-  `corepack pnpm dlx untitledui@latest add <name> -y`. Upstream suggests the
+  `corepack pnpm dlx untitledui@<pinned version> add <name> -y`. Upstream suggests the
   whole `AGENT.md` (about 6,000 words) as `CLAUDE.md`, which would resend about
   8K tokens every turn; the skill avoids that.
 - `CLAUDE.md`: about 5 lines under "Development rules" (build UI from Untitled
