@@ -3,6 +3,5 @@ import type { labFrequencies } from '@/data/lessons/stage-01-lesson-02-model/con
 export type LabFrequency = (typeof labFrequencies)[number];
 export type PitchChange = 'higher' | 'lower' | 'same';
 
-// Screen 6: the causal chain, ordered from observation to perception.
 export type ChainCard = 'repeats' | 'frequency' | 'pitch';
 export type ChainAttemptOutcome = 'correct' | 'hint' | 'offer-explanation';
