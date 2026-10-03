@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { LessonProgressController } from '@/progress/useLessonProgress';
+import type { LessonProgressController } from '@/progress/use-lesson-progress/types';
 
 type LessonProgressPanelProps = Pick<
   LessonProgressController<unknown>,

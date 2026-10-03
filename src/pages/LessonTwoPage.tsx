@@ -12,8 +12,9 @@ import { LessonStep } from '@/components/lesson/LessonStep';
 import { PitchLoudnessComparison } from '@/components/lesson/PitchLoudnessComparison';
 import { SameStringPitchExperience, type PitchPath } from '@/components/lesson/SameStringPitchExperience';
 import { useLessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
-import { lessonTwoContent, type LessonTwoStepId } from '@/data/lessons/stage-01-lesson-02';
-import { useLessonTwoProgress } from '@/progress/useLessonTwoProgress';
+import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
+import type { LessonTwoStepId } from '@/data/lessons/stage-01-lesson-02/types';
+import { useLessonTwoProgress } from '@/progress/use-lesson-two-progress';
 
 const stopByStep: Record<LessonTwoStepId, number> = {
   intro: 1,

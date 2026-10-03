@@ -1,0 +1,15 @@
+import type { Dispatch, SetStateAction } from 'react';
+import type { SyncSnapshot } from '@/progress/core/types';
+
+export type LessonProgressController<Local> = {
+  progress: Local;
+  setProgress: Dispatch<SetStateAction<Local>>;
+  storageAvailable: boolean;
+  sync: SyncSnapshot;
+  accountState: 'guest' | 'loading' | 'authenticated' | 'unavailable';
+  importGuestProgress: boolean;
+  confirmGuestImport(): void;
+  keepGuestProgressSeparate(): void;
+  clearCurrentAccountCache(): boolean;
+  retrySync(): void;
+};

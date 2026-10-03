@@ -7,8 +7,9 @@ import { RealWorldExperiment } from '@/components/lesson/RealWorldExperiment';
 import { SoundPropagationLab } from '@/components/lesson/SoundPropagationLab';
 import { SoundPathCheckpoint } from '@/components/lesson/SoundPathCheckpoint';
 import { VirtualGuitarString } from '@/components/lesson/VirtualGuitarString';
-import { lessonOneContent, type LessonOneStepId } from '@/data/lessons/stage-01-lesson-01';
-import { useLessonOneProgress } from '@/progress/useLessonOneProgress';
+import { lessonOneContent } from '@/data/lessons/stage-01-lesson-01/constants';
+import type { LessonOneStepId } from '@/data/lessons/stage-01-lesson-01/types';
+import { useLessonOneProgress } from '@/progress/use-lesson-one-progress';
 
 export function LessonOnePage() {
   const {

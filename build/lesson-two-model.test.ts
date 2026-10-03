@@ -1,29 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  chainAttemptOutcome,
-  chainIsCorrect,
-  checkpointPassed,
-  correctAdjacentLinks,
-  correctChain,
-  initialChain,
-  moveCard,
-  advanceElapsed,
-  comparisonDurationMs,
-  comparisonMoments,
-  comparisonRepeats,
-  completedRepeats,
-  labFeedback,
-  labFrequencies,
-  loudnessGain,
-  momentFraction,
-  peakGainCap,
-  pitchChange,
-  safeGain,
-  stepFrequency,
-  toneGain,
-  trackOffset,
-  visualCycles,
-} from '../src/data/lessons/stage-01-lesson-02-model.ts';
+import { chainAttemptOutcome, chainIsCorrect, checkpointPassed, correctAdjacentLinks, moveCard } from '../src/data/lessons/stage-01-lesson-02-model/utils/chain.ts';
+import { correctChain, initialChain, comparisonDurationMs, comparisonMoments, comparisonRepeats, labFrequencies, loudnessGain, peakGainCap, toneGain } from '../src/data/lessons/stage-01-lesson-02-model/constants.ts';
+import { advanceElapsed, completedRepeats, momentFraction, trackOffset } from '../src/data/lessons/stage-01-lesson-02-model/utils/comparison-timing.ts';
+import { labFeedback, pitchChange, safeGain, stepFrequency, visualCycles } from '../src/data/lessons/stage-01-lesson-02-model/utils/lab.ts';
 
 describe('Lesson 2 repeat comparison', () => {
   it('ends with 4 and 8 full repeats in the same time window', () => {

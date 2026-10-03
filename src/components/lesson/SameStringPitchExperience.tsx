@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { SameStringDiagram } from '@/components/lesson/SameStringDiagram';
 import type { LessonTwoAudio } from '@/components/lesson/useLessonTwoAudio';
-import { stringPluckFrequency } from '@/data/lessons/stage-01-lesson-02-model';
-import { sameStringExperience } from '@/data/lessons/stage-01-lesson-02';
+import { stringPluckFrequency } from '@/data/lessons/stage-01-lesson-02-model/constants';
+import { sameStringExperience } from '@/data/lessons/stage-01-lesson-02/constants';
 
 type StringContent = typeof sameStringExperience;
 export type PitchPath = 'guitar' | 'virtual';

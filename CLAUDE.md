@@ -40,6 +40,38 @@ guitar, and experimentation. Avoid long passive theory blocks.
   (it already runs lint), and `git diff --check`; run
   `corepack pnpm test:browser` when a page or flow changes.
 
+## Code structure
+
+Every unit gets a kebab-case folder named after it: any `.tsx` file, and any
+`.ts` module that mixes several responsibilities. Inside, one responsibility
+per file, and only files that have content:
+
+```
+unit-name/
+  unit-name.tsx          the component (one exported component per file)
+  types.ts               types and interfaces
+  constants.ts           constants, static data, context objects
+  hooks/use-hook-name.ts one hook per file
+  utils/topic.ts         pure helpers, grouped by topic
+  components/            sub-components used only by this unit, same rule
+```
+
+- Imports use explicit file paths through `@/` (no `index.ts` barrels); named
+  exports only; exported identifiers keep their names.
+- Used by one unit: keep it in that unit's folder. Used by two or more: move
+  it to `src/hooks`, `src/utils`, or `src/constants`. Types stay in the owning
+  unit's `types.ts`. A unit's sub-components may import the parent's `types.ts`
+  and `constants.ts`.
+- A unit with state, effects, refs, or timers keeps them in one
+  `hooks/use-<unit>.ts`; when restructuring, move the body verbatim (same
+  order, same dependencies).
+- Not restructured: `src/main.tsx`, `src/router.tsx`, `src/vite-env.d.ts`, and
+  Untitled UI CLI-owned files (`src/components/{base,application,foundations}/**`,
+  `src/utils/{cx,is-react-component}.ts`,
+  `src/hooks/{use-breakpoint,use-clipboard}.ts`).
+- Design: `docs/technical-designs/component-structure.md`. Code that is still
+  flat migrates in the component and page PRs of that design.
+
 ## Context budget
 
 Every turn resends the whole conversation, so keep it small:

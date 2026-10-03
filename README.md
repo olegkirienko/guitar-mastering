@@ -100,14 +100,23 @@ procedure.
 
 ```text
 src/
-├── components/   # reusable UI
-├── data/         # course data
-├── lib/          # utilities
+├── auth/         # AuthProvider unit (auth-provider/)
+├── components/   # UI units: base/ (Untitled UI), lesson/, app layout pieces
+├── data/         # course data and models (lessons/)
+├── hooks/        # shared hooks (use-auth, Untitled UI hooks)
 ├── pages/        # route-level pages
-├── styles/       # global Tailwind/theme
-├── App.tsx
+├── progress/     # lesson progress storage, sync, and hooks
+├── providers/    # RouteProvider
+├── styles/       # Tailwind theme and globals
+├── utils/        # shared helpers (cx, api-error)
+├── router.tsx
 └── main.tsx
 ```
+
+Each unit is a kebab-case folder with one responsibility per file
+(`unit-name.tsx`, `types.ts`, `constants.ts`, `hooks/`, `utils/`); see
+`CLAUDE.md`, "Code structure". Code that is still flat moves in the
+component and page steps of `docs/technical-designs/component-structure.md`.
 
 ## UI components
 

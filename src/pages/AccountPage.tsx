@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ApiError, useAuth, type Profile } from '@/auth/AuthProvider';
+import type { Profile } from '@/auth/auth-provider/types';
+import { useAuth } from '@/hooks/use-auth';
+import { ApiError } from '@/utils/api-error';
 
 const avatars = [
   { id: 'cedar', label: 'Кедр', symbol: '🌲', colors: 'bg-amber-100 text-amber-900' },

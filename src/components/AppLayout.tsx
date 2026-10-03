@@ -1,6 +1,6 @@
 import { Link, Outlet } from 'react-router';
 import { BookOpen01, Home01 } from '@untitledui/icons';
-import { useAuth } from '@/auth/AuthProvider';
+import { useAuth } from '@/hooks/use-auth';
 
 export function AppLayout() {
   const auth = useAuth();

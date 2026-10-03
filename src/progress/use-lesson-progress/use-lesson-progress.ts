@@ -1,30 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { useAuth } from '@/auth/AuthProvider';
-import {
-  createProgressApi,
-  ProgressApiError,
-  ProgressSyncQueue,
-  type LessonProgressAdapter,
-  type ProgressValue,
-  type SyncSnapshot,
-} from '@/progress/core';
-
-const idleSync: SyncSnapshot = { status: 'idle', revision: 0, error: null };
-
-export type { LessonProgressAdapter } from '@/progress/core';
-
-export type LessonProgressController<Local> = {
-  progress: Local;
-  setProgress: Dispatch<SetStateAction<Local>>;
-  storageAvailable: boolean;
-  sync: SyncSnapshot;
-  accountState: 'guest' | 'loading' | 'authenticated' | 'unavailable';
-  importGuestProgress: boolean;
-  confirmGuestImport(): void;
-  keepGuestProgressSeparate(): void;
-  clearCurrentAccountCache(): boolean;
-  retrySync(): void;
-};
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { type LessonProgressAdapter, type ProgressValue, type SyncSnapshot } from '@/progress/core/types';
+import { ProgressApiError, createProgressApi } from '@/progress/core/utils/progress-api';
+import { ProgressSyncQueue } from '@/progress/core/utils/progress-sync-queue';
+import { idleSync } from '@/progress/use-lesson-progress/constants';
+import type { LessonProgressController } from '@/progress/use-lesson-progress/types';
 
 export function useLessonProgress<StepId extends string, Local extends ProgressValue<StepId>>(
   adapter: LessonProgressAdapter<StepId, Local>,

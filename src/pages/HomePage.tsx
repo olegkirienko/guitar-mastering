@@ -1,6 +1,6 @@
 import { ArrowRight, BookOpen01 } from '@untitledui/icons';
 import { Link } from 'react-router';
-import { lessons } from '@/data/lessons';
+import { lessons } from '@/data/lessons/constants';
 import { LessonCard } from '@/components/LessonCard';
 import { SectionHeading } from '@/components/SectionHeading';
 

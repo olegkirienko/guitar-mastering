@@ -1,24 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  defaultLessonTwoProgress,
-  lessonTwoGuestStorageKey,
-  lessonTwoPreferencesStorageKey,
-  lessonTwoProgressAdapter,
-  lessonTwoStepOrder,
-  lessonTwoUserStorageKey,
-  mergeLessonTwoProgress,
-  parseLessonTwoProgress,
-  readLessonTwoProgress,
-  toSyncedLessonTwoProgress,
-  writeLessonTwoProgress,
-} from '../src/progress/lesson-two.ts';
-import {
-  lessonOneGuestStorageKey,
-  lessonOneUserStorageKey,
-  readLessonOneProgress,
-  writeLessonOneProgress,
-  defaultLessonOneProgress,
-} from '../src/progress/lesson-one.ts';
+import { defaultLessonTwoProgress, lessonTwoGuestStorageKey, lessonTwoPreferencesStorageKey, lessonTwoStepOrder } from '../src/progress/lesson-two/constants.ts';
+import { lessonTwoProgressAdapter } from '../src/progress/lesson-two/lesson-two.ts';
+import { lessonTwoUserStorageKey } from '../src/progress/lesson-two/utils/storage-keys.ts';
+import { mergeLessonTwoProgress, toSyncedLessonTwoProgress } from '../src/progress/lesson-two/utils/merge-progress.ts';
+import { parseLessonTwoProgress } from '../src/progress/lesson-two/utils/parse-progress.ts';
+import { readLessonTwoProgress, writeLessonTwoProgress } from '../src/progress/lesson-two/utils/storage.ts';
+import { lessonOneGuestStorageKey, defaultLessonOneProgress } from '../src/progress/lesson-one/constants.ts';
+import { lessonOneUserStorageKey } from '../src/progress/lesson-one/utils/storage-keys.ts';
+import { readLessonOneProgress, writeLessonOneProgress } from '../src/progress/lesson-one/utils/storage.ts';
 import { productionProgressCatalog } from '../server/progress-catalog.ts';
 
 function memoryStorage() {
