@@ -57,4 +57,10 @@ await request("/", 200, async (response) => {
   if (!body.includes("<div id=\"root\"></div>")) throw new Error("Production origin did not serve the SPA shell.");
 });
 
+await request("/lessons/01", 200, async (response) => {
+  requireHeader(response, "cache-control", "no-cache");
+  const body = await response.text();
+  if (!body.includes("<div id=\"root\"></div>")) throw new Error("A client route did not fall back to the SPA shell.");
+});
+
 process.stdout.write(`Production smoke passed for ${origin.origin}.\n`);

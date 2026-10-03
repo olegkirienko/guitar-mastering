@@ -23,7 +23,7 @@ async function noHorizontalScroll(page: Page) {
 test("completes screens 0–1 through the virtual string at 320 px and resumes after reload", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
   await expect(page.getByText("Крок 1 із 5")).toBeVisible();
@@ -64,7 +64,7 @@ async function focusIsNotLost(page: Page) {
 test("completes the string step on the guitar path with the keyboard only", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   const start = page.getByRole("button", { name: "Почати з гітарою" });
   await start.focus();
@@ -120,7 +120,7 @@ test("imports guest Lesson 2 progress into the account without preference fields
     } });
   });
 
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
   await expect(page.getByRole("heading", { name: "Додати прогрес гостя до акаунта?" })).toBeVisible();
   await page.getByRole("button", { name: "Об’єднати прогрес" }).click();
   await expect(page.getByText("Прогрес збережено на цьому пристрої та в акаунті.")).toBeVisible();
@@ -146,7 +146,7 @@ test("explains unavailable storage and still lets the lesson start", async ({ pa
     };
   }, guestKey);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByText("Збереження недоступне — прогрес доступний лише протягом цього сеансу.")).toBeVisible();
   await page.getByRole("button", { name: "Немає гітари — відкрити віртуальну струну" }).click();
@@ -155,13 +155,13 @@ test("explains unavailable storage and still lets the lesson start", async ({ pa
 
 test("links Lesson 2 from the home page while Lesson 1 still opens Lesson 1", async ({ page }) => {
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/`);
+  await page.goto(`${applicationOrigin}/`);
   await page.getByRole("link", { name: "Чому звуки бувають високими й низькими?", exact: true }).click();
-  await expect(page).toHaveURL(/#\/lessons\/02$/);
+  await expect(page).toHaveURL(/\/lessons\/02$/);
   await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
-  await page.goto(`${applicationOrigin}/#/`);
+  await page.goto(`${applicationOrigin}/`);
   await page.getByRole("link", { name: "Що таке звук?", exact: true }).click();
-  await expect(page).toHaveURL(/#\/lessons\/01$/);
+  await expect(page).toHaveURL(/\/lessons\/01$/);
 });
 
 async function seedStep(page: Page, currentStepId: string, completedStepIds: string[]) {
@@ -230,7 +230,7 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
   await page.emulateMedia({ reducedMotion: "reduce" });
   await seedStep(page, "repeats", ["intro", "string"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Передбач і перевір" })).toBeVisible();
   await expect(page.getByText("Крок 2 із 5")).toBeVisible();
@@ -267,7 +267,7 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
 test("finishes the animated comparison on one shared timer", async ({ page }) => {
   await seedStep(page, "repeats", ["intro", "string"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await answer(page, "Де повторів буде більше, поки час іде однаково?", "Однаково");
   await expect(page.getByRole("button", { name: "Наступний момент" })).toHaveCount(0);
@@ -291,7 +291,7 @@ test("reveals the names before the lab and checks a predicted change on screen 3
   await page.setViewportSize({ width: 320, height: 800 });
   await seedStep(page, "frequency", ["intro", "string", "repeats"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Змінюй частоту" })).toHaveCount(0);
   const physics = page.getByRole("list", { name: "Що відбувається" });
@@ -347,7 +347,7 @@ test("reveals the names before the lab and checks a predicted change on screen 3
 test("separates loudness from pitch on screen 4 without audio", async ({ page }) => {
   await seedStep(page, "loudness", ["intro", "string", "repeats", "frequency"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByText("Перед прослуховуванням зроби гучність пристрою комфортною", { exact: false })).toBeVisible();
   await expect(page.getByText("Частота: 330 Гц")).toHaveCount(2);
@@ -360,7 +360,7 @@ test("separates loudness from pitch on screen 4 without audio", async ({ page })
 test("explains missing and blocked audio and keeps the text path", async ({ page }) => {
   await page.addInitScript(() => { delete (window as unknown as { AudioContext?: unknown }).AudioContext; });
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
   await pressButton(page, "Звук: вимкнено");
   await expect(page.getByText("Звук недоступний у цьому браузері.", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Звук: вимкнено" })).toHaveAttribute("aria-pressed", "false");
@@ -375,7 +375,7 @@ test("explains missing and blocked audio and keeps the text path", async ({ page
     (window as unknown as { AudioContext: unknown }).AudioContext = BlockedAudioContext;
   });
   await mockSession(blocked, null);
-  await blocked.goto(`${applicationOrigin}/#/lessons/02`);
+  await blocked.goto(`${applicationOrigin}/lessons/02`);
   await pressButton(blocked, "Звук: вимкнено");
   await expect(blocked.getByText("Браузер не дозволив увімкнути звук.", { exact: false })).toBeVisible();
   await pressButton(blocked, "Немає гітари — відкрити віртуальну струну");
@@ -386,7 +386,7 @@ test("plays capped tones one at a time and silences them when the tab is hidden"
   await installFakeAudio(page);
   await seedStep(page, "repeats", ["intro", "string"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await pressButton(page, "Звук: вимкнено");
   await expect(page.getByRole("button", { name: "Звук: увімкнено" })).toHaveAttribute("aria-pressed", "true");
@@ -419,7 +419,7 @@ test("offers listening in the lab only for a value that was predicted and checke
   await installFakeAudio(page);
   await seedStep(page, "frequency", ["intro", "string", "repeats"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await pressButton(page, "Звук: вимкнено");
   for (let row = 0; row < 3; row += 1) await pressButton(page, "Відкрити наступний рядок");
@@ -444,7 +444,7 @@ async function moveCardTo(page: Page, card: string, direction: "Раніше" | 
 test("completes the whole lesson at 320 px with the keyboard only and no audio", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await pressButton(page, "Показувати покадрово");
   await pressButton(page, "Немає гітари — відкрити віртуальну струну");
@@ -509,7 +509,7 @@ test("completes the whole lesson at 320 px with the keyboard only and no audio",
 test("offers the explanation after repeated wrong orders and still requires the counterexample", async ({ page }) => {
   await seedStep(page, "checkpoint", ["intro", "string", "repeats", "frequency", "loudness", "guitar"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await pressButton(page, "Перевірити порядок");
   await expect(page.getByTestId("chain-status")).toContainText("Спочатку назви спостереження, потім фізичну величину, потім те, що ми чуємо.");
@@ -531,7 +531,7 @@ test("offers the explanation after repeated wrong orders and still requires the 
 test("applies the discovery on screen 5 through the ready text result", async ({ page }) => {
   await seedStep(page, "guitar", ["intro", "string", "repeats", "frequency", "loudness"]);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("button", { name: "Не почув/ла різниці" })).toHaveCount(0);
   await answer(page, "У якому стані коливання мають повторюватися частіше?", "Не знаю");
@@ -548,7 +548,7 @@ test("applies the discovery on screen 5 through the ready text result", async ({
 test("falls back safely from corrupted guest storage and keeps a valid completion", async ({ page }) => {
   await page.addInitScript((key) => localStorage.setItem(key, "{not json"), guestKey);
   await mockSession(page, null);
-  await page.goto(`${applicationOrigin}/#/lessons/02`);
+  await page.goto(`${applicationOrigin}/lessons/02`);
   await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
   await expect(page.getByText("Прогрес зберігається на цьому пристрої.")).toBeVisible();
 
@@ -560,6 +560,6 @@ test("falls back safely from corrupted guest storage and keeps a valid completio
     completedAt: "2026-09-30T12:00:00.000Z",
   })), guestKey);
   await mockSession(completed, null);
-  await completed.goto(`${applicationOrigin}/#/lessons/02`);
+  await completed.goto(`${applicationOrigin}/lessons/02`);
   await expect(completed.getByText("Урок завершено.")).toBeVisible();
 });

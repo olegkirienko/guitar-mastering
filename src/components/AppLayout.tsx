@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router';
 import { BookOpen01, Home01 } from '@untitledui/icons';
 import { useAuth } from '@/auth/AuthProvider';
 
