@@ -6,20 +6,20 @@ description: Independently review a design or a PR diff, post findings with stab
 # Review
 
 Review only. Never modify the reviewed design or code. The session or agent
-that wrote the change must not review it. If the author keeps working during
-the review, review in a separate git worktree at the PR head, and never switch
-branches in a shared checkout:
+that wrote the change must not review it. Review the exact PR head without
+switching branches in a shared checkout. The `reviewer` subagent already runs
+in its own worktree, so it only detaches to the head; a separate session
+creates the worktree itself:
 
 ```sh
 git fetch origin
-git worktree add --detach <dir> "$(gh pr view <n> --json headRefOid --jq .headRefOid)"
-# … review inside <dir> …
-git worktree remove <dir>
+head="$(gh pr view <n> --json headRefOid --jq .headRefOid)"
+git checkout --detach "$head"            # inside the reviewer subagent's worktree
+git worktree add --detach <dir> "$head"  # separate session; remove it afterwards
 ```
 
 Read:
 
-- `AGENTS.md`;
 - the latest earlier review, if any:
   `gh pr view <n> --json comments --jq '[.comments[] | select(.author.login == "olegkirienko" and (.body | startswith("## Review")))][-1].body'`;
 - the design. For an implementation review, read its goal, non-goals,
@@ -41,7 +41,7 @@ Run one targeted command only when a finding needs evidence that CI cannot
 provide.
 
 Assess correctness, design compliance, scope, regressions, security, and
-privacy. For a lesson, also assess the pedagogy against `AGENTS.md`,
+privacy. For a lesson, also assess the pedagogy against `CLAUDE.md`,
 accessibility, and cognitive load.
 
 Scale the depth to the risk:

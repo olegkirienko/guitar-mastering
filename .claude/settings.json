@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(corepack pnpm test)",
+      "Bash(corepack pnpm test *)",
+      "Bash(corepack pnpm test:browser)",
+      "Bash(corepack pnpm test:browser *)",
+      "Bash(corepack pnpm build)",
+      "Bash(corepack pnpm lint)",
+      "Bash(corepack pnpm evidence:delivery *)",
+      "Bash(corepack pnpm smoke:production *)",
+      "Bash(git diff *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr diff *)"
+    ],
+    "ask": [
+      "Bash(gh pr merge *)",
+      "Bash(railway redeploy *)",
+      "Bash(railway up *)",
+      "Bash(railway down *)",
+      "Bash(railway restart *)",
+      "Bash(railway variables *)",
+      "mcp__railway__redeploy",
+      "mcp__railway__restart-service",
+      "mcp__railway__create-deployment",
+      "mcp__railway__accept-deploy",
+      "mcp__railway__set-variables"
+    ],
+    "deny": [
+      "Bash(git push origin main)",
+      "Bash(git push origin main *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Read(./.env)",
+      "Read(./.env.local)"
+    ]
+  },
+  "worktree": {
+    "symlinkDirectories": [
+      "node_modules"
+    ]
+  }
+}

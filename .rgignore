@@ -1,4 +1,4 @@
-# Historical artifacts that default `rg` searches skip (see AGENTS.md "Context
+# Historical artifacts that default `rg` searches skip (see CLAUDE.md "Context
 # budget"). They stay in git and are still read or searched when their path is
 # passed explicitly, e.g. `rg -n foo docs/archive/`.
 
