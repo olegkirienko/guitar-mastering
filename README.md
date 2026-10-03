@@ -109,6 +109,22 @@ src/
 └── main.tsx
 ```
 
+## UI components
+
+The UI uses [Untitled UI React](https://www.untitledui.com/react) (free
+components): React Aria Components with Tailwind CSS 4. Components are copied
+into `src/components/{base,application,foundations}` by the CLI, pinned at
+`untitledui@0.1.69`:
+
+```sh
+corepack pnpm dlx untitledui@0.1.69 add <component> -y
+```
+
+`components.json` holds the path aliases and `src/styles/theme.css` the design
+tokens (our terracotta `brand-*` scale). The project `.mcp.json` registers the
+Untitled UI MCP server (approve it once in Claude Code); the `untitled-ui`
+skill holds the conventions. Existing lesson components are migrated gradually.
+
 # Working with Claude Code
 
 The binding rules are in `CLAUDE.md`, which Claude Code loads in every
