@@ -27,14 +27,17 @@ test("redirects an unknown path to the home page", async ({ page }) => {
 });
 
 test("navigates with the header links without a page reload and scrolls to the top", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 600 });
   await mockGuestSession(page);
   await page.goto(`${applicationOrigin}/lessons/01`);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.evaluate(() => {
     (window as unknown as { marker: string }).marker = "kept";
     window.scrollTo(0, 400);
   });
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.getByRole("link", { name: "Курс" }).click();
   await expect(page).toHaveURL(`${applicationOrigin}/`);
   expect(await page.evaluate(() => (window as unknown as { marker?: string }).marker)).toBe("kept");
-  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
