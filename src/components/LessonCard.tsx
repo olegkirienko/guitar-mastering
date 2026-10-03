@@ -1,7 +1,7 @@
 import { ArrowRight, Lock01 } from '@untitledui/icons';
 import { Link } from 'react-router-dom';
 import type { Lesson } from '@/data/lessons';
-import { cx } from '@/lib/cx';
+import { cx } from '@/utils/cx';
 
 interface LessonCardProps {
   lesson: Lesson;
