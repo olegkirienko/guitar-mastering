@@ -1,5 +1,5 @@
 # Dependencies
-node_modules/
+node_modules
 
 # Build
 dist/
@@ -29,5 +29,6 @@ playwright-report/
 .DS_Store
 Thumbs.db
 
-# Local agent worktrees
+# Local Claude Code state
 .claude/worktrees/
+.claude/settings.local.json

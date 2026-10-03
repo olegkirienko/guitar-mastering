@@ -109,39 +109,50 @@ src/
 └── main.tsx
 ```
 
-# Working with Codex
+# Working with Claude Code
 
-The binding rules are in `AGENTS.md`. Each change is one branch and one PR:
+The binding rules are in `CLAUDE.md`, which Claude Code loads in every
+session. Each change is one branch and one PR:
 
 1. **Design** (lessons and risky changes only), using the `design` skill.
-2. **Design review** by a separate session or agent, using the `review` skill.
+2. **Design review** by the `reviewer` subagent or a separate session, using
+   the `review` skill.
 3. **Owner approves the design.**
 4. **Implement** each slice.
-5. **Review** by a separate session or agent, then fix only the reported
-   findings. Only HIGH and MEDIUM findings get a re-review; LOW fixes are
-   listed in a `## Fixes` PR comment.
+5. **Review** by the `reviewer` subagent or a separate session, then fix only
+   the reported findings. Only HIGH and MEDIUM findings get a re-review; LOW
+   fixes are listed in a `## Fixes` PR comment.
 6. **Owner approves the merge** of the exact PR head.
 7. **Verify delivery** with the `delivery-verification` skill.
 
 State lives in the PR, including its review comments, and the design. Start
-each step in a fresh Codex session.
+each step in a fresh session (`/clear`).
 
 ## Prompts
 
 ```text
-Design <topic> per AGENTS.md on branch <type>/<topic>, open a draft PR, and stop.
-Review the design of <topic> (PR <n>) with the review skill and stop.
+Design <topic> per CLAUDE.md on branch <type>/<topic>, open a draft PR, and stop.
+Review the design of <topic> (PR <n>) with the reviewer agent and stop.
 I approve the design of <topic>. Implement slice <slice> on branch <type>/<topic>, push, and stop.
-Review PR <n> at its current head with the review skill and stop.
+Review PR <n> at its current head with the reviewer agent and stop.
 Fix findings <IDs> from the latest review on PR <n>, push, and stop.
 I approve merging PR <n> at head <full SHA>. Merge it and verify delivery.
 ```
 
-## Model policy
+## Configuration
 
-- `implementer` (`.codex/agents/implementer.toml`): Terra / medium.
-- `reviewer` (`.codex/agents/reviewer.toml`): Sol / medium.
-- The main session keeps the personal profile default.
+- `.claude/skills/`: `design`, `review`, `delivery-verification`.
+- `.claude/agents/reviewer.md`: Sonnet / medium effort, no file-editing
+  tools, the `review` skill preloaded, own git worktree.
+- `.claude/settings.json`: the exact validation commands, the delivery
+  evidence and production smoke commands, and read-only `gh pr` commands run
+  without a prompt (Claude Code already treats read-only git commands as
+  safe). `gh pr merge` and every Railway CLI or MCP call always ask. Pushes to
+  `main`, force pushes, and reading `.env` files are denied; these patterns
+  are a guard, not a boundary (a bare `git push` from local `main` is not
+  matched).
+- The main session implements; personal model and plugin choices live in the
+  untracked `.claude/settings.local.json`.
 
 ## History
 

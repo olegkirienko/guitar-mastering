@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(corepack pnpm test)",
+      "Bash(corepack pnpm test:browser)",
+      "Bash(corepack pnpm build)",
+      "Bash(corepack pnpm lint)",
+      "Bash(corepack pnpm evidence:delivery --sha *)",
+      "Bash(corepack pnpm smoke:production https://guitar-mastering-web-production-production.up.railway.app)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr diff *)"
+    ],
+    "ask": [
+      "Bash(gh pr merge *)",
+      "Bash(railway *)",
+      "mcp__railway"
+    ],
+    "deny": [
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push *:main)",
+      "Bash(git push *:main *)",
+      "Bash(git push *--force*)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(git push * +*)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)"
+    ]
+  },
+  "worktree": {
+    "symlinkDirectories": [
+      "node_modules"
+    ]
+  }
+}

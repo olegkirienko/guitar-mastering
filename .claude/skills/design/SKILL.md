@@ -9,13 +9,13 @@ Write the design at `docs/lesson-designs/<topic>.md` for a lesson or at
 `docs/technical-designs/<topic>.md` for anything else. Do not modify
 application code.
 
-Read `AGENTS.md`, the request, and only the code the change touches. For a
+Read the request and only the code the change touches. For a
 lesson, also read the matching `docs/course-map/` stage document.
 
 Cover what applies:
 
 - **lesson:**
-  - the learning outcome and the discovery sequence from `AGENTS.md`;
+  - the learning outcome and the discovery sequence from `CLAUDE.md`;
   - the terminology boundaries;
   - the screens and the completion criteria;
   - accessibility and mobile behavior;
