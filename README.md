@@ -142,13 +142,15 @@ I approve merging PR <n> at head <full SHA>. Merge it and verify delivery.
 ## Configuration
 
 - `.claude/skills/`: `design`, `review`, `delivery-verification`.
-- `.claude/agents/reviewer.md`: Sonnet / medium effort, read-only tools, own
-  git worktree.
+- `.claude/agents/reviewer.md`: Sonnet / medium effort, no file-editing
+  tools, the `review` skill preloaded, own git worktree.
 - `.claude/settings.json`: the exact validation commands, the delivery
   evidence and production smoke commands, and read-only `gh pr` commands run
   without a prompt (Claude Code already treats read-only git commands as
-  safe); `gh pr merge` and Railway mutations always ask; pushes to `main`,
-  force pushes, and reading `.env` files are denied.
+  safe). `gh pr merge` and every Railway CLI or MCP call always ask. Pushes to
+  `main`, force pushes, and reading `.env` files are denied; these patterns
+  are a guard, not a boundary (a bare `git push` from local `main` is not
+  matched).
 - The main session implements; personal model and plugin choices live in the
   untracked `.claude/settings.local.json`.
 

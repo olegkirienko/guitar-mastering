@@ -14,24 +14,22 @@
     ],
     "ask": [
       "Bash(gh pr merge *)",
-      "Bash(railway redeploy *)",
-      "Bash(railway up *)",
-      "Bash(railway down *)",
-      "Bash(railway restart *)",
-      "Bash(railway variables *)",
-      "mcp__railway__redeploy",
-      "mcp__railway__restart-service",
-      "mcp__railway__create-deployment",
-      "mcp__railway__accept-deploy",
-      "mcp__railway__set-variables"
+      "Bash(railway *)",
+      "mcp__railway"
     ],
     "deny": [
-      "Bash(git push origin main)",
-      "Bash(git push origin main *)",
-      "Bash(git push --force *)",
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push *:main)",
+      "Bash(git push *:main *)",
+      "Bash(git push *--force*)",
       "Bash(git push -f *)",
-      "Read(./.env)",
-      "Read(./.env.local)"
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(git push * +*)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)"
     ]
   },
   "worktree": {

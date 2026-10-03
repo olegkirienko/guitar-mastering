@@ -7,16 +7,14 @@ description: Independently review a design or a PR diff, post findings with stab
 
 Review only. Never modify the reviewed design or code. The session or agent
 that wrote the change must not review it. Review the exact PR head without
-switching branches in a shared checkout. The `reviewer` subagent already runs
-in its own worktree, so it only detaches to the head; a separate session
-creates the worktree itself:
+switching branches in a shared checkout. Run these as separate commands with
+the literal SHA; command substitution is refused by the permission check:
 
-```sh
-git fetch origin
-head="$(gh pr view <n> --json headRefOid --jq .headRefOid)"
-git checkout --detach "$head"            # inside the reviewer subagent's worktree
-git worktree add --detach <dir> "$head"  # separate session; remove it afterwards
-```
+1. `git fetch origin`
+2. `gh pr view <n> --json headRefOid --jq .headRefOid`
+3. The `reviewer` subagent already runs in its own worktree:
+   `git checkout --detach <SHA>`. A separate session creates one instead:
+   `git worktree add --detach <dir> <SHA>`, and removes it afterwards.
 
 Read:
 

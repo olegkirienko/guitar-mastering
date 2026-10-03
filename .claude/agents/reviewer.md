@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Independently reviews a design or a PR diff with the review skill and posts one "## Review" PR comment. Use for every design review, PR review, and re-review of a change this session did not write.
-tools: Bash, Read, Grep, Glob, Skill
+tools: Bash, Read, Grep, Glob
 model: sonnet
 effort: medium
 isolation: worktree
