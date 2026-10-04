@@ -81,7 +81,8 @@ test("requires confirmed deletion and keeps failure recoverable", async ({ page 
   const confirm = page.getByRole("button", { name: "Підтвердити видалення" });
   await expect(confirm).toBeDisabled();
   await page.getByLabel("Поточний пароль").fill("wrong horse guitar");
-  await page.getByRole("checkbox").check();
+  await page.getByText("Я розумію, що цю дію не можна скасувати.").click();
+  await expect(page.getByRole("checkbox")).toBeChecked();
   await confirm.click();
   await expect(page.getByRole("alert")).toContainText("Невірний пароль");
   await page.getByLabel("Поточний пароль").fill("correct horse guitar");
