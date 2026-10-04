@@ -21,40 +21,40 @@ export function LessonTwoPage() {
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonTwoContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
-    <div className="mb-5 grid gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 sm:grid-cols-2">
+    <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3 sm:grid-cols-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600">
-          <p className="font-semibold text-gray-950">{preferences.motionTitle}</p>
+        <div className="min-w-0 flex-1 text-sm leading-6 text-tertiary">
+          <p className="font-semibold text-primary">{preferences.motionTitle}</p>
           <p>{prefersReducedMotion ? preferences.motionSystem : preferences.motionManual}</p>
         </div>
         <Button color="secondary" size="lg" isDisabled={prefersReducedMotion} aria-pressed={staticMode} onClick={toggleStatic}>{prefersReducedMotion ? preferences.motionSystemLabel : staticMode ? preferences.motionStaticLabel : preferences.motionAnimatedLabel}</Button>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600">
-          <p className="font-semibold text-gray-950">{preferences.audioTitle}</p>
+        <div className="min-w-0 flex-1 text-sm leading-6 text-tertiary">
+          <p className="font-semibold text-primary">{preferences.audioTitle}</p>
           <p>{preferences.audioNote}</p>
         </div>
         <Button color="secondary" size="lg" aria-pressed={audioEnabled} onClick={toggleAudio}>{audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}</Button>
       </div>
-      <div aria-live="polite" className="text-sm text-gray-700 sm:col-span-2">{audioMessage && <p>{audioMessage}</p>}</div>
+      <div aria-live="polite" className="text-sm text-secondary sm:col-span-2">{audioMessage && <p>{audioMessage}</p>}</div>
     </div>
 
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.invitation} shouldFocus={focusedStep === 'intro'}>
-      <ol className="flex flex-wrap items-center gap-2 text-sm text-gray-700" aria-label="Що ми вже знаємо з уроку 1">
+      <ol className="flex flex-wrap items-center gap-2 text-sm text-secondary" aria-label="Що ми вже знаємо з уроку 1">
         {intro.chain.map((link, index) => <li key={link} className="flex items-center gap-2">
-          {index > 0 && <ArrowRight className="size-4 text-gray-400" aria-hidden="true" />}
-          <span className="rounded-md bg-gray-100 px-2 py-1">{link}</span>
+          {index > 0 && <ArrowRight className="size-4 text-fg-quaternary" aria-hidden="true" />}
+          <span className="rounded-md bg-tertiary px-2 py-1">{link}</span>
         </li>)}
       </ol>
       <div className="mt-5 rounded-lg border border-brand-200 bg-brand-25 p-5">
-        <p className="text-lg font-medium text-gray-950">{intro.question}</p>
-        <p className="mt-2 text-sm text-gray-600">{intro.hypothesisNote}</p>
+        <p className="text-lg font-medium text-primary">{intro.question}</p>
+        <p className="mt-2 text-sm text-tertiary">{intro.hypothesisNote}</p>
       </div>
       <div className="mt-6 flex flex-wrap gap-3">
         <Button size="lg" iconTrailing={ArrowRight} onClick={() => begin('guitar')}>{intro.guitarLabel}</Button>
         <Button color="secondary" size="lg" onClick={() => begin('virtual')}>{intro.virtualLabel}</Button>
       </div>
-      <p className="mt-4 text-sm text-gray-600">{intro.reassurance}</p>
+      <p className="mt-4 text-sm text-tertiary">{intro.reassurance}</p>
     </LessonStep>}
 
     {visibleStep === 'string' && <div className="space-y-5">
@@ -127,27 +127,27 @@ export function LessonTwoPage() {
 
     {visibleStep === 'complete' && <div className="space-y-5">
       <LessonStep title={complete.title} shouldFocus={focusedStep === 'complete'}>
-        <ul className="space-y-2 text-gray-700">
+        <ul className="space-y-2 text-secondary">
           {complete.discoveries.map((discovery) => <li key={discovery} className="flex gap-2"><CheckCircle className="mt-0.5 size-5 shrink-0 text-success-600" aria-hidden="true" />{discovery}</li>)}
         </ul>
-        <ul className="mt-4 space-y-1 rounded-lg bg-gray-50 p-4 text-sm font-medium text-gray-950">
+        <ul className="mt-4 space-y-1 rounded-lg bg-secondary p-4 text-sm font-medium text-primary">
           {complete.chains.map((chain) => <li key={chain}>{chain}</li>)}
         </ul>
         {progress.completedAt === null && <div className="mt-5 space-y-3">
-          <label htmlFor="lesson-two-reflection" className="block text-sm text-gray-700">{complete.reflectionLabel}</label>
-          <textarea id="lesson-two-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={2} className="w-full rounded-lg border border-gray-300 p-3 text-sm text-gray-950 outline-none focus-visible:ring-2 focus-visible:ring-brand-600" />
+          <label htmlFor="lesson-two-reflection" className="block text-sm text-secondary">{complete.reflectionLabel}</label>
+          <textarea id="lesson-two-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={2} className="w-full rounded-lg border border-primary p-3 text-sm text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-600" />
           <Button size="lg" onClick={finishLesson}>{complete.finishLabel}</Button>
         </div>}
         <div ref={finishStatus} tabIndex={-1} role="status" data-testid="finish-status" className="mt-5 space-y-3 outline-none empty:mt-0">
           {progress.completedAt !== null && <>
-            <p className="font-semibold text-gray-950">{complete.finished}</p>
-            <p className="text-gray-700">{complete.feedback}</p>
+            <p className="font-semibold text-primary">{complete.finished}</p>
+            <p className="text-secondary">{complete.feedback}</p>
           </>}
         </div>
         {progress.completedAt !== null && <section aria-labelledby="lesson-two-bridge" className="mt-6 rounded-lg border border-brand-200 bg-brand-25 p-5">
-          <h3 id="lesson-two-bridge" className="font-semibold text-gray-950">{complete.bridgeTitle}</h3>
-          <p className="mt-2 text-lg font-medium text-gray-950">{complete.bridge}</p>
-          <p className="mt-2 text-sm text-gray-600">{complete.bridgeNote}</p>
+          <h3 id="lesson-two-bridge" className="font-semibold text-primary">{complete.bridgeTitle}</h3>
+          <p className="mt-2 text-lg font-medium text-primary">{complete.bridge}</p>
+          <p className="mt-2 text-sm text-tertiary">{complete.bridgeNote}</p>
         </section>}
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">

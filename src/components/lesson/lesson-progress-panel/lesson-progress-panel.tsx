@@ -5,7 +5,7 @@ import type { LessonProgressPanelProps } from '@/components/lesson/lesson-progre
 // and a notice when a lesson preference could not be saved and was switched back.
 export function LessonProgressPanel({ sync, retrySync, preferencesSaveFailed }: LessonProgressPanelProps) {
   return <>
-  <div className={sync.status === 'error' ? 'mb-4 text-sm text-error-primary' : 'mb-4 text-sm text-gray-600'} aria-live="polite">
+  <div className={sync.status === 'error' ? 'mb-4 text-sm text-error-primary' : 'mb-4 text-sm text-tertiary'} aria-live="polite">
     {sync.status === 'pending'
       ? 'Зберігаємо прогрес в акаунті…'
       : sync.status === 'error'

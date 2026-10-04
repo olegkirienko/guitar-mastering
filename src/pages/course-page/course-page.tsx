@@ -12,7 +12,7 @@ export function CoursePage() {
   return <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14">
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-primary">Курс</h1>
+        <h1 className="font-display text-4xl font-semibold tracking-tight text-primary">Курс</h1>
         <p className="mt-2 text-sm leading-6 text-tertiary">Повертайся до будь-якого кроку, який уже відкрив.</p>
       </div>
       <Button href={resumePath} size="lg" iconTrailing={ArrowRight}>Продовжити</Button>

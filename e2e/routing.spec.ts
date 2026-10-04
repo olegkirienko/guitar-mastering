@@ -22,7 +22,7 @@ test("redirects a guest from protected pages to sign-in without showing lesson c
 test("sends the landing call to action to sign-in for a guest", async ({ page }) => {
   await mockGuestSession(page);
   await page.goto(`${applicationOrigin}/`);
-  await page.getByRole("link", { name: "Перейти до курсу" }).click();
+  await page.getByRole("link", { name: "Перейти до курсу" }).first().click();
   await expect(page).toHaveURL(`${applicationOrigin}/auth`);
 });
 
@@ -47,7 +47,7 @@ test("redirects a signed-in visitor of the sign-in page and the landing CTA to t
   await page.goto(`${applicationOrigin}/auth`);
   await expect(page).toHaveURL(`${applicationOrigin}/lessons/01/air`);
   await page.goto(`${applicationOrigin}/`);
-  await expect(page.getByRole("link", { name: "Перейти до курсу" })).toHaveAttribute("href", "/lessons/01/air");
+  await expect(page.getByRole("link", { name: "Перейти до курсу" }).first()).toHaveAttribute("href", "/lessons/01/air");
 });
 
 test("redirects unknown lessons, unknown steps and unreachable targets without a content flash", async ({ page }) => {

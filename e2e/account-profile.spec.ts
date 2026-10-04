@@ -69,8 +69,13 @@ test("supports guest registration, logout, and login", async ({ page }) => {
   await expect(page).toHaveURL(`${applicationOrigin}/lessons/01/intro`);
   await expect(page.getByRole("heading", { name: "Почнімо з досліду" })).toBeVisible();
 
-  await page.getByRole("link", { name: "@Player.One" }).click();
-  await page.getByRole("button", { name: "Вийти" }).click();
+  // The header account menu opens the account page and signs out.
+  const accountMenu = page.getByRole("button", { name: "Меню акаунта @Player.One" });
+  await accountMenu.click();
+  await page.getByRole("menuitem", { name: "Акаунт" }).click();
+  await expect(page).toHaveURL(`${applicationOrigin}/account`);
+  await accountMenu.press("Enter");
+  await page.getByRole("menuitem", { name: "Вийти" }).press("Enter");
   await expect(page).toHaveURL(`${applicationOrigin}/`);
   await page.getByRole("link", { name: "Увійти" }).click();
   await page.getByLabel("Ім’я користувача").fill("Player.One");
