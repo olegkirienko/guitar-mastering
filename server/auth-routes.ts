@@ -85,6 +85,9 @@ export function createAuthRouter({ auth, publicOrigin, secureCookies }: AuthRout
   router.patch("/profile", async (request, response) => {
     response.json({ profile: await auth.updateProfile(readSessionCookie(request, secureCookies), request.body) });
   });
+  router.put("/preferences", async (request, response) => {
+    response.json({ preferences: await auth.updatePreferences(readSessionCookie(request, secureCookies), request.body) });
+  });
   router.delete("/account", async (request, response) => {
     await auth.deleteAccount(readSessionCookie(request, secureCookies), request.body);
     clearSessionCookie(response, secureCookies);

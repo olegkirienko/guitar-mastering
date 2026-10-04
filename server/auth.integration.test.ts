@@ -105,6 +105,25 @@ describePostgres("authentication PostgreSQL acceptance", () => {
     });
   });
 
+  it("defaults, validates, upserts, and cascades lesson preferences", async () => {
+    const auth = new AuthService(pool, config);
+    const registered = await auth.register({ username: "Player.One", password: "correct horse guitar" }, "network-a");
+    expect(registered.user.preferences).toEqual({ audioEnabled: false, prefersStatic: false });
+    await expect(auth.updatePreferences(undefined, { audioEnabled: true, prefersStatic: false })).rejects.toMatchObject({ status: 401, code: "UNAUTHENTICATED" });
+    for (const body of [null, [], {}, { audioEnabled: true }, { audioEnabled: "yes", prefersStatic: false }, { audioEnabled: true, prefersStatic: false, extra: 1 }]) {
+      await expect(auth.updatePreferences(registered.token, body)).rejects.toMatchObject({ status: 422, code: "INVALID_FIELDS" });
+    }
+    await expect(auth.updatePreferences(registered.token, { audioEnabled: true, prefersStatic: false })).resolves.toEqual({ audioEnabled: true, prefersStatic: false });
+    await expect(auth.updatePreferences(registered.token, { audioEnabled: true, prefersStatic: true })).resolves.toEqual({ audioEnabled: true, prefersStatic: true });
+    await expect(auth.session(registered.token)).resolves.toMatchObject({ preferences: { audioEnabled: true, prefersStatic: true } });
+    await expect(auth.login({ username: "Player.One", password: "correct horse guitar" }, "network-a")).resolves.toMatchObject({
+      user: { preferences: { audioEnabled: true, prefersStatic: true } },
+    });
+    await expect(pool.query("SELECT count(*)::int AS count FROM user_preferences")).resolves.toMatchObject({ rows: [{ count: 1 }] });
+    await auth.deleteAccount(registered.token, { password: "correct horse guitar" });
+    await expect(pool.query("SELECT count(*)::int AS count FROM user_preferences")).resolves.toMatchObject({ rows: [{ count: 0 }] });
+  });
+
   it("preserves disjoint concurrent profile subset updates", async () => {
     const auth = new AuthService(pool, config);
     const registered = await auth.register({ username: "Player.One", password: "correct horse guitar" }, "network-a");

@@ -35,6 +35,7 @@ function fakeAuth(overrides: Partial<Record<keyof AuthService, unknown>> = {}): 
     login: vi.fn(async () => ({ user: { id: "u1", username: "Player.One", profile: { firstName: null, lastName: null, avatarId: null } }, token: "new-token" })),
     logout: vi.fn(async () => undefined), session: vi.fn(async () => null), deleteAccount: vi.fn(async () => undefined),
     updateProfile: vi.fn(async () => ({ firstName: "Леся", lastName: null, avatarId: "forest" })),
+    updatePreferences: vi.fn(async () => ({ audioEnabled: true, prefersStatic: false })),
     ...overrides,
   } as unknown as AuthService;
 }
@@ -121,5 +122,27 @@ describe("authentication HTTP boundary", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(updateProfile).toHaveBeenCalledWith("session-token", { firstName: " Леся ", avatarId: "forest" });
     await expect(response.json()).resolves.toEqual({ profile: { firstName: "Леся", lastName: null, avatarId: "forest" } });
+  });
+
+  it("updates authenticated preferences only through PUT with origin and JSON checks", async () => {
+    const updatePreferences = vi.fn(async () => ({ audioEnabled: true, prefersStatic: false }));
+    const origin = await start(fakeAuth({ updatePreferences }));
+    const headers = { origin: "https://guitar.example", "content-type": "application/json", cookie: "__Host-gm_session=session-token" };
+    const body = JSON.stringify({ audioEnabled: true, prefersStatic: false });
+
+    const response = await fetch(`${origin}/api/v1/preferences`, { method: "PUT", headers, body });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(updatePreferences).toHaveBeenCalledWith("session-token", { audioEnabled: true, prefersStatic: false });
+    await expect(response.json()).resolves.toEqual({ preferences: { audioEnabled: true, prefersStatic: false } });
+
+    const wrongMethod = await fetch(`${origin}/api/v1/preferences`, { method: "POST", headers, body });
+    expect(wrongMethod.status).toBe(405);
+    expect(wrongMethod.headers.get("allow")).toBe("PUT");
+    const foreign = await fetch(`${origin}/api/v1/preferences`, { method: "PUT", headers: { ...headers, origin: "https://evil.example" }, body });
+    expect(foreign.status).toBe(403);
+    const text = await fetch(`${origin}/api/v1/preferences`, { method: "PUT", headers: { ...headers, "content-type": "text/plain" }, body });
+    expect(text.status).toBe(415);
+    expect(updatePreferences).toHaveBeenCalledTimes(1);
   });
 });

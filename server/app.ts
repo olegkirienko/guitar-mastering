@@ -93,7 +93,7 @@ export function createApp({ pool, distDirectory, deploymentVersion, logger = app
   if (auth && publicOrigin) {
     const authMethods = new Map([
       ["/api/v1/auth/register", "POST"], ["/api/v1/auth/login", "POST"],
-      ["/api/v1/auth/logout", "POST"], ["/api/v1/session", "GET"], ["/api/v1/profile", "PATCH"],
+      ["/api/v1/auth/logout", "POST"], ["/api/v1/session", "GET"], ["/api/v1/profile", "PATCH"], ["/api/v1/preferences", "PUT"],
       ["/api/v1/account", "DELETE"],
     ]);
     app.use((request, response, next) => {
