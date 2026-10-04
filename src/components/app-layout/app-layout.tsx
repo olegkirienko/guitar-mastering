@@ -17,13 +17,13 @@ export function AppLayout() {
 
           <nav className="flex items-center gap-1 text-sm">
             <Link
-              to="/"
+              to="/course"
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950"
             >
               <Home01 className="size-4" />
               Курс
             </Link>
-            <Link to="/account" className="rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950">
+            <Link to={auth.user ? '/account' : '/auth'} className="rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950">
               {auth.user ? `@${auth.user.username}` : 'Увійти'}
             </Link>
             <span className="hidden rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500 sm:inline-flex">

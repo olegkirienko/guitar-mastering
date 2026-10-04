@@ -30,7 +30,7 @@ describe('Lesson 1 progress adapter', () => {
     });
   });
 
-  it('merges account progress monotonically while keeping preferences device-local', () => {
+  it('merges account reach monotonically, keeps the local position and device-local preferences', () => {
     const local = parseLessonOneProgress({
       currentStepId: 'air',
       completedStepIds: ['intro', 'string'],
@@ -46,7 +46,7 @@ describe('Lesson 1 progress adapter', () => {
     });
 
     expect(merged).toMatchObject({
-      currentStepId: 'checkpoint',
+      currentStepId: 'air',
       completedStepIds: ['intro', 'string', 'air'],
       audioEnabled: true,
       prefersStatic: true,

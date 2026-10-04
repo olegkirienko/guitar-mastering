@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/base/buttons/button';
 import { Checkbox } from '@/components/base/checkbox/checkbox';
 import { Input } from '@/components/base/input/input';
-import { ErrorSummary } from '@/pages/account-page/components/error-summary/error-summary';
+import { ErrorSummary } from '@/components/error-summary/error-summary';
 import { useAuth } from '@/hooks/use-auth';
 import { ApiError } from '@/utils/api-error';
 

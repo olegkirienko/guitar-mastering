@@ -12,6 +12,11 @@ async function mockSession(page: Page, value: typeof user | null) {
   await page.route("**/api/v1/session", (route) => json(route, 200, { user: value }));
 }
 
+// The course list behind the lesson gate; Lesson 1 needs no earlier lesson.
+async function mockCourseList(page: Page) {
+  await page.route("**/api/v1/progress", (route) => json(route, 200, { items: [] }));
+}
+
 test("restores an authenticated session and updates profile and avatar accessibly at 320 px", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   await mockSession(page, user);
@@ -47,22 +52,30 @@ test("restores an authenticated session and updates profile and avatar accessibl
 
 test("supports guest registration, logout, and login", async ({ page }) => {
   await mockSession(page, null);
+  await mockCourseList(page);
+  await page.route("**/api/v1/progress/stage-01-lesson-01", (route) => json(route, 404, { error: { code: "PROGRESS_NOT_FOUND", message: "Немає." } }));
   await page.route("**/api/v1/auth/register", (route) => json(route, 201, { user }));
   await page.route("**/api/v1/auth/logout", (route) => route.fulfill({ status: 204 }));
   await page.route("**/api/v1/auth/login", (route) => json(route, 200, { user }));
 
   await page.goto(`${applicationOrigin}/account`);
+  await expect(page).toHaveURL(`${applicationOrigin}/auth?next=%2Faccount`);
   await page.getByRole("button", { name: "Реєстрація" }).click();
   await page.getByLabel("Ім’я користувача").fill("Player.One");
   await page.getByLabel("Пароль").fill("correct horse guitar");
   await page.getByRole("button", { name: "Створити акаунт" }).click();
-  await expect(page.getByRole("heading", { name: "Профіль @Player.One" })).toBeVisible();
+  // Registration always starts Lesson 1, even with a `next`.
+  await expect(page).toHaveURL(`${applicationOrigin}/lessons/01/intro`);
+  await expect(page.getByRole("heading", { name: "Почнімо з досліду" })).toBeVisible();
+
+  await page.getByRole("link", { name: "@Player.One" }).click();
   await page.getByRole("button", { name: "Вийти" }).click();
-  await page.getByRole("button", { name: "Увійти", exact: true }).click();
+  await expect(page).toHaveURL(`${applicationOrigin}/`);
+  await page.getByRole("link", { name: "Увійти" }).click();
   await page.getByLabel("Ім’я користувача").fill("Player.One");
   await page.getByLabel("Пароль").fill("correct horse guitar");
   await page.locator("form").getByRole("button", { name: "Увійти", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Профіль @Player.One" })).toBeVisible();
+  await expect(page).toHaveURL(`${applicationOrigin}/lessons/01/intro`);
 });
 
 test("requires confirmed deletion and keeps failure recoverable", async ({ page }) => {
@@ -90,12 +103,13 @@ test("requires confirmed deletion and keeps failure recoverable", async ({ page 
   await expect(page.getByRole("button", { name: "Реєстрація" })).toBeVisible();
 });
 
-test("distinguishes API outage from guest state while lesson access continues", async ({ page }) => {
+test("distinguishes API outage from guest state and keeps lessons closed", async ({ page }) => {
   await page.route("**/api/v1/session", (route) => route.abort("connectionfailed"));
   await page.goto(`${applicationOrigin}/account`);
   await expect(page.getByText("Сервер тимчасово недоступний")).toBeVisible();
   await page.goto(`${applicationOrigin}/lessons/01`);
-  await expect(page.getByText("Що таке звук?", { exact: false }).first()).toBeVisible();
+  await expect(page.getByText("Сервер тимчасово недоступний")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Почнімо з досліду" })).toHaveCount(0);
 });
 
 test("shows the account entry on the application origin", async ({ page }) => {
@@ -116,6 +130,7 @@ test("confirms guest progress import, merges it, and reports account sync", asyn
     }));
   });
   await mockSession(page, user);
+  await mockCourseList(page);
   await page.route("**/api/v1/progress/stage-01-lesson-01", async (route) => {
     if (route.request().method() === "GET") {
       return json(route, 200, { item: {
@@ -125,9 +140,10 @@ test("confirms guest progress import, merges it, and reports account sync", asyn
       } });
     }
     const request = route.request().postDataJSON();
+    // The import adds reach; the position stays the server's latest step.
     expect(request).toMatchObject({
       baseRevision: 4,
-      progress: { currentStepId: "air", completedStepIds: ["intro", "string"] },
+      progress: { currentStepId: "string", completedStepIds: ["intro", "string"] },
     });
     expect(request.progress).not.toHaveProperty("audioEnabled");
     return json(route, 200, { item: {
@@ -141,7 +157,8 @@ test("confirms guest progress import, merges it, and reports account sync", asyn
   await mergeButton.focus();
   await mergeButton.press("Enter");
   await expect(page.getByText("Прогрес збережено на цьому пристрої та в акаунті.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Як рух доходить до вуха?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Зустріч зі струною" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Дослідити рух у повітрі" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
@@ -156,6 +173,7 @@ test("merges an optimistic conflict before retrying queued Lesson 1 progress", a
   });
   await mockSession(page, user);
   let writes = 0;
+  await mockCourseList(page);
   await page.route("**/api/v1/progress/stage-01-lesson-01", async (route) => {
     if (route.request().method() === "GET") {
       return json(route, 200, { item: {
@@ -178,9 +196,10 @@ test("merges an optimistic conflict before retrying queued Lesson 1 progress", a
         },
       } });
     }
+    // Reach is merged from both copies; the local position is the latest action and wins.
     expect(request).toMatchObject({
       baseRevision: 2,
-      progress: { currentStepId: "checkpoint", completedStepIds: ["intro", "string", "air"] },
+      progress: { currentStepId: "string", completedStepIds: ["intro", "string", "air"] },
     });
     return json(route, 200, { item: {
       lessonId: "stage-01-lesson-01", ...request, revision: 3, updatedAt: "2026-09-16T00:00:02.000Z",
@@ -189,36 +208,8 @@ test("merges an optimistic conflict before retrying queued Lesson 1 progress", a
 
   await page.goto(`${applicationOrigin}/lessons/01`);
   await expect(page.getByText("Прогрес збережено на цьому пристрої та в акаунті.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Збери шлях звуку" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Зустріч зі струною" })).toBeVisible();
   expect(writes).toBe(2);
-});
-
-test("preserves completed guest progress offline when preference storage is corrupt", async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 800 });
-  await page.addInitScript(() => {
-    localStorage.setItem("guitar-mastering:stage-01-lesson-01", JSON.stringify({
-      currentStepId: "complete",
-      completedStepIds: ["intro", "string", "air", "checkpoint", "complete"],
-      checkpointPassed: true,
-      completedAt: "2026-09-16T12:00:00.000Z",
-      audioEnabled: true,
-      prefersStatic: false,
-    }));
-    localStorage.setItem("guitar-mastering:lesson-preferences", "{broken");
-  });
-  await page.route("**/api/v1/session", (route) => route.abort("connectionfailed"));
-
-  await page.goto(`${applicationOrigin}/lessons/01`);
-  await expect(page.getByRole("heading", { name: "Урок завершено" })).toBeVisible();
-  await page.getByRole("button", { name: "Показувати покадрово" }).click();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("guitar-mastering:stage-01-lesson-01") ?? "{}"))).toMatchObject({
-    currentStepId: "complete",
-    completedAt: "2026-09-16T12:00:00.000Z",
-    prefersStatic: true,
-  });
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "Урок завершено" })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("shows pending and error states and retries the latest local account progress", async ({ page }) => {
@@ -227,6 +218,7 @@ test("shows pending and error states and retries the latest local account progre
   let releaseFirstSave!: () => void;
   const firstSave = new Promise<void>((resolve) => { releaseFirstSave = resolve; });
   let writes = 0;
+  await mockCourseList(page);
   await page.route("**/api/v1/progress/stage-01-lesson-01", async (route) => {
     if (route.request().method() === "GET") {
       return json(route, 200, { item: {
@@ -278,6 +270,7 @@ test("clears only the confirmed current-user cache and isolates guest and later 
   await page.route("**/api/v1/session", (route) => json(route, 200, { user: currentUser }));
   await page.route("**/api/v1/auth/logout", (route) => { currentUser = null; return route.fulfill({ status: 204 }); });
   await page.route("**/api/v1/auth/login", (route) => { currentUser = secondUser; return json(route, 200, { user: secondUser }); });
+  await mockCourseList(page);
   await page.route("**/api/v1/progress/stage-01-lesson-01", (route) => {
     const progress = currentUser?.id === "user-2" ? secondProgress : firstProgress;
     return json(route, 200, { item: {
@@ -301,12 +294,13 @@ test("clears only the confirmed current-user cache and isolates guest and later 
 
   await page.goto(`${applicationOrigin}/account`);
   await page.getByRole("button", { name: "Вийти" }).click();
+  await expect(page).toHaveURL(`${applicationOrigin}/`);
   await page.goto(`${applicationOrigin}/lessons/01`);
-  await expect(page.getByRole("heading", { name: "Зустріч зі струною" })).toBeVisible();
-  await page.goto(`${applicationOrigin}/account`);
+  await expect(page).toHaveURL(`${applicationOrigin}/auth?next=%2Flessons%2F01`);
+  await expect(page.getByRole("heading", { name: "Зустріч зі струною" })).toHaveCount(0);
   await page.getByLabel("Ім’я користувача").fill("Player.Two");
   await page.getByLabel("Пароль").fill("correct horse guitar");
   await page.locator("form").getByRole("button", { name: "Увійти", exact: true }).click();
-  await page.goto(`${applicationOrigin}/lessons/01`);
+  await expect(page).toHaveURL(/\/lessons\/01\/complete$/);
   await expect(page.getByRole("heading", { name: "Урок завершено" })).toBeVisible();
 });

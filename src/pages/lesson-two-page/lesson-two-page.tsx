@@ -7,6 +7,7 @@ import { FrequencyPitchCheckpoint } from '@/components/lesson/frequency-pitch-ch
 import { FrequencyPitchLab } from '@/components/lesson/frequency-pitch-lab/frequency-pitch-lab';
 import { GuitarApplication } from '@/components/lesson/guitar-application/guitar-application';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
+import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { PitchLoudnessComparison } from '@/components/lesson/pitch-loudness-comparison/pitch-loudness-comparison';
@@ -16,8 +17,9 @@ import { stopByStep, primaryButton } from '@/pages/lesson-two-page/constants';
 import { useLessonTwoPage } from '@/pages/lesson-two-page/hooks/use-lesson-two-page';
 
 export function LessonTwoPage() {
-  const { progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
-  return <LessonShell {...lessonTwoContent} currentStop={stopByStep[visibleStep]} backTo="/">
+  const { route, progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
+  if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
+  return <LessonShell {...lessonTwoContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel
       storageAvailable={storageAvailable}
       sync={sync}

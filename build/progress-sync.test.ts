@@ -13,17 +13,18 @@ const progress = (currentStepId: Step, completedStepIds: Step[] = []): ProgressV
 afterEach(() => vi.unstubAllGlobals());
 
 describe('progress sync core', () => {
-  it('merges monotonic progress and keeps the earliest completion', () => {
+  it('keeps the local position, merges reach monotonically, and keeps the earliest completion', () => {
     expect(mergeProgress(
       { ...progress('air', ['intro', 'string']), completedAt: '2026-09-16T12:00:00.000Z' },
       { ...progress('checkpoint', ['intro', 'air', 'checkpoint']), completedAt: '2026-09-15T12:00:00.000Z' },
       order,
     )).toEqual({
-      currentStepId: 'checkpoint',
+      currentStepId: 'air',
       completedStepIds: ['intro', 'string', 'air', 'checkpoint'],
       checkpointPassed: true,
       completedAt: '2026-09-15T12:00:00.000Z',
     });
+    expect(mergeProgress(progress('string', ['intro', 'string', 'air']), progress('air', ['intro', 'string', 'air']), order).currentStepId).toBe('string');
   });
 
   it('coalesces queued writes, exposes status, and retries the latest failure', async () => {

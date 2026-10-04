@@ -17,6 +17,7 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
   const [sync, setSync] = useState<SyncSnapshot>(idleSync);
   const [importGuestProgress, setImportGuestProgress] = useState(false);
   const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const progressRef = useRef(progress);
   const storageKeyRef = useRef(adapter.guestStorageKey);
   const userIdRef = useRef<string | null>(null);
@@ -81,6 +82,7 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
       progressRef.current = guest.progress;
       setProgressState(guest.progress);
       setStorageAvailable(guest.storageAvailable);
+      setLoaded(true);
       return () => { active = false; };
     }
 
@@ -95,6 +97,7 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
     setProgressState(cached.progress);
     setStorageAvailable(cached.storageAvailable && guest.storageAvailable);
     setSync({ status: 'pending', revision: 0, error: null });
+    setLoaded(false);
     try {
       const priorDecision = localStorage.getItem(adapter.importDecisionKey(userId));
       setImportGuestProgress(adapter.hasMeaningfulProgress(guest.progress) && priorDecision !== adapter.fingerprint(guest.progress));
@@ -105,7 +108,8 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
 
     void apiRef.current.get(adapter.lessonId).then((remote) => {
       if (!active || userIdRef.current !== userId) return;
-      const merged = adapter.merge(progressRef.current, remote.progress);
+      // On load the server holds the latest position, so it wins over the device cache.
+      const merged = adapter.merge({ ...progressRef.current, currentStepId: adapter.parse(remote.progress).currentStepId }, remote.progress);
       replaceProgress(merged, userKey);
       const queue = createQueue(userId, remote.revision);
       if (adapter.fingerprint(merged) !== JSON.stringify(remote.progress)) {
@@ -113,8 +117,10 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
       } else {
         setSync({ status: 'synced', revision: remote.revision, error: null });
       }
+      setLoaded(true);
     }).catch((error: unknown) => {
       if (!active || userIdRef.current !== userId) return;
+      setLoaded(true);
       if (error instanceof ProgressApiError && error.code === 'PROGRESS_NOT_FOUND') {
         const queue = createQueue(userId, 0);
         if (adapter.hasMeaningfulProgress(progressRef.current)) queue.enqueue(adapter.toSynced(progressRef.current));
@@ -176,6 +182,7 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
   return {
     progress,
     setProgress,
+    loaded,
     storageAvailable,
     sync,
     accountState: auth.state,

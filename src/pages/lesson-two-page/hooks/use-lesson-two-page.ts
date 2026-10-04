@@ -3,12 +3,15 @@ import { type PitchPath } from '@/components/lesson/same-string-pitch-experience
 import { useLessonTwoAudio } from '@/hooks/use-lesson-two-audio/use-lesson-two-audio';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
 import type { LessonTwoStepId } from '@/data/lessons/stage-01-lesson-02/types';
+import { useLessonRoute } from '@/hooks/use-lesson-route/use-lesson-route';
+import { lessonTwoProgressAdapter } from '@/progress/lesson-two/lesson-two';
 import { useLessonTwoProgress } from '@/progress/use-lesson-two-progress';
 
 export function useLessonTwoPage() {
   const {
     progress,
     setProgress,
+    loaded,
     storageAvailable,
     sync,
     accountState,
@@ -26,7 +29,8 @@ export function useLessonTwoPage() {
   const [focusFinishStatus, setFocusFinishStatus] = useState(false);
   const finishStatus = useRef<HTMLDivElement>(null);
   const { intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete } = lessonTwoContent;
-  const visibleStep = progress.currentStepId;
+  const { route, goTo: openStep } = useLessonRoute('02', lessonTwoProgressAdapter, { progress, loaded, setProgress });
+  const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const staticMode = prefersReducedMotion || progress.prefersStatic;
   const isCompleted = (step: LessonTwoStepId) => progress.completedStepIds.includes(step);
 
@@ -55,16 +59,16 @@ export function useLessonTwoPage() {
     : { ...current, completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, step])) }), [setProgress]);
   const goTo = (step: LessonTwoStepId) => {
     setFocusedStep(step);
-    setProgress((current) => ({ ...current, currentStepId: step }));
+    openStep(step);
   };
   const begin = (path: PitchPath) => {
     setPreferredPath(path);
     setFocusedStep('string');
     setProgress((current) => ({
       ...current,
-      currentStepId: 'string',
       completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'intro'])),
     }));
+    openStep('string');
   };
   const toggleAudio = () => {
     if (progress.audioEnabled) setAudioEnabled(false);
@@ -94,5 +98,5 @@ export function useLessonTwoPage() {
       ? preferences.audioBlocked
       : null;
 
-  return { progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage };
+  return { route, progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage };
 }

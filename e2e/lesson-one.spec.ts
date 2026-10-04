@@ -1,10 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-
-const applicationOrigin = "http://127.0.0.1:4173";
+import { applicationOrigin, mockAccount } from "./support/mock-account";
 
 async function openLesson(page: Page, reducedMotion: boolean) {
   await page.emulateMedia({ reducedMotion: reducedMotion ? "reduce" : "no-preference" });
-  await page.route("**/api/v1/session", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ user: null }) }));
+  await mockAccount(page);
   await page.goto(`${applicationOrigin}/lessons/01`);
   await page.getByRole("button", { name: "Почати дослід" }).click();
 }
