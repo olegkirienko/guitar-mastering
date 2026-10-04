@@ -257,7 +257,7 @@ test("shows the unavailable screen when lesson progress cannot load and retries 
   await expect(page.getByRole("heading", { name: "Почнімо з досліду" })).toBeVisible();
 });
 
-test("saves lesson preferences on the account and reverts a rejected change", async ({ page }) => {
+test("saves lesson preferences on the account, and reverts and announces a failed save", async ({ page }) => {
   await mockSession(page, { ...user, preferences: { audioEnabled: false, prefersStatic: true } });
   await mockCourseList(page);
   await page.route("**/api/v1/progress/stage-01-lesson-01", (route) => json(route, 404, { error: { code: "PROGRESS_NOT_FOUND", message: "Прогрес не знайдено." } }));
@@ -265,7 +265,7 @@ test("saves lesson preferences on the account and reverts a rejected change", as
   let reject = false;
   await page.route("**/api/v1/preferences", (route) => {
     saved.push(route.request().postDataJSON());
-    if (reject) return json(route, 400, { error: { code: "VALIDATION_ERROR", message: "Помилка." } });
+    if (reject) return json(route, 500, { error: { code: "INTERNAL_ERROR", message: "Помилка." } });
     return json(route, 200, { preferences: route.request().postDataJSON() });
   });
 
@@ -276,10 +276,19 @@ test("saves lesson preferences on the account and reverts a rejected change", as
   await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveAttribute("aria-pressed", "false");
   expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false }]);
 
+  const notice = page.getByText("Не вдалося зберегти налаштування, тому повернули попереднє. Спробуй ще раз.");
+  await expect(notice).toHaveCount(0);
   reject = true;
   await page.getByRole("button", { name: "Звук: вимкнено" }).click();
+  await expect(notice).toBeVisible();
   await expect(page.getByRole("button", { name: "Звук: вимкнено" })).toHaveAttribute("aria-pressed", "false");
   expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false }, { audioEnabled: true, prefersStatic: false }]);
+
+  // The next accepted change clears the notice.
+  reject = false;
+  await page.getByRole("button", { name: "Звук: вимкнено" }).click();
+  await expect(page.getByRole("button", { name: "Звук: увімкнено" })).toHaveAttribute("aria-pressed", "true");
+  await expect(notice).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });
 

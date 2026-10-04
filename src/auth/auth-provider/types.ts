@@ -8,12 +8,15 @@ export type AuthContextValue = {
   state: AuthState;
   user: AccountUser | null;
   preferences: Preferences;
+  // True when the latest preference change was rejected and reverted.
+  preferencesSaveFailed: boolean;
   refresh(): Promise<void>;
   register(credentials: Credentials): Promise<void>;
   login(credentials: Credentials): Promise<void>;
   logout(): Promise<void>;
   updateProfile(profile: Partial<Profile>): Promise<void>;
-  // Applies the change at once and reverts it when the server rejects it; never rejects.
+  // Applies the change at once and reverts it when the server rejects it, setting
+  // preferencesSaveFailed; never rejects.
   updatePreferences(preferences: Partial<Preferences>): Promise<void>;
   deleteAccount(password: string): Promise<void>;
 };

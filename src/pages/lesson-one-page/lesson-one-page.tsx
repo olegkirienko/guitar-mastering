@@ -13,10 +13,10 @@ import type { LessonOneStepId } from '@/data/lessons/stage-01-lesson-01/types';
 import { useLessonOnePage } from '@/pages/lesson-one-page/hooks/use-lesson-one-page';
 
 export function LessonOnePage() {
-  const { route, goTo, progress, setProgress, sync, retrySync, audioEnabled, setAudioEnabled, toggleStatic, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
+  const { route, goTo, progress, setProgress, sync, retrySync, preferencesSaveFailed, audioEnabled, setAudioEnabled, toggleStatic, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonOneContent} currentStop={isCheckpointStep || isCompleteStep ? 5 : isAirStep ? 4 : 1} steps={route.steps} currentStepId={route.stepId}>
-    <LessonProgressPanel sync={sync} retrySync={retrySync} />
+    <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
       <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600">
         <p className="font-semibold text-gray-950">Рух на екрані</p>

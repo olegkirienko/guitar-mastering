@@ -6,6 +6,7 @@ import { api } from '@/auth/auth-provider/utils/api';
 export function AuthProvider({ children, enabled }: { children: ReactNode; enabled: boolean }) {
   const [state, setState] = useState<AuthState>(enabled ? 'loading' : 'guest');
   const [user, setUser] = useState<AccountUser | null>(null);
+  const [preferencesSaveFailed, setPreferencesSaveFailed] = useState(false);
   // The latest requested preferences, so quick toggles build on each other before React re-renders.
   const preferencesRef = useRef<Preferences>(defaultPreferences);
   const applyUser = useCallback((next: AccountUser | null) => {
@@ -33,12 +34,14 @@ export function AuthProvider({ children, enabled }: { children: ReactNode; enabl
     const previous = preferencesRef.current;
     const next = { ...previous, ...patch };
     preferencesRef.current = next;
+    setPreferencesSaveFailed(false);
     setUser((current) => current ? { ...current, preferences: next } : current);
     try {
       await api<{ preferences: Preferences }>('/preferences', { method: 'PUT', body: JSON.stringify(next) });
     } catch {
       if (preferencesRef.current !== next) return;
       preferencesRef.current = previous;
+      setPreferencesSaveFailed(true);
       setUser((current) => current ? { ...current, preferences: previous } : current);
     }
   }, []);
@@ -46,6 +49,7 @@ export function AuthProvider({ children, enabled }: { children: ReactNode; enabl
     state,
     user,
     preferences: user?.preferences ?? defaultPreferences,
+    preferencesSaveFailed,
     refresh,
     register: (credentials) => authenticate('register', credentials),
     login: (credentials) => authenticate('login', credentials),
@@ -56,6 +60,6 @@ export function AuthProvider({ children, enabled }: { children: ReactNode; enabl
     },
     updatePreferences,
     deleteAccount: async (password) => { await api('/account', { method: 'DELETE', body: JSON.stringify({ password }) }); applyUser(null); setState('guest'); },
-  }), [applyUser, authenticate, refresh, state, updatePreferences, user]);
+  }), [applyUser, authenticate, preferencesSaveFailed, refresh, state, updatePreferences, user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

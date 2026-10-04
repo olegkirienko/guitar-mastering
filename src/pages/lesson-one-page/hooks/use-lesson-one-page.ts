@@ -14,7 +14,7 @@ export function useLessonOnePage() {
     sync,
     retrySync,
   } = useLessonOneProgress();
-  const { preferences, updatePreferences } = useAuth();
+  const { preferences, preferencesSaveFailed, updatePreferences } = useAuth();
   const [shouldFocusIntro, setShouldFocusIntro] = useState(false);
   const [shouldFocusString, setShouldFocusString] = useState(false);
   const [shouldFocusAir, setShouldFocusAir] = useState(false);
@@ -50,5 +50,5 @@ export function useLessonOnePage() {
     completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'complete'])),
   }));
 
-  return { route, goTo, progress, setProgress, sync, retrySync, audioEnabled: preferences.audioEnabled, setAudioEnabled, toggleStatic, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson };
+  return { route, goTo, progress, setProgress, sync, retrySync, preferencesSaveFailed, audioEnabled: preferences.audioEnabled, setAudioEnabled, toggleStatic, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson };
 }

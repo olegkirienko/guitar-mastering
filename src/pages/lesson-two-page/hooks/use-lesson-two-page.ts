@@ -17,7 +17,7 @@ export function useLessonTwoPage() {
     sync,
     retrySync,
   } = useLessonTwoProgress();
-  const { preferences: lessonPreferences, updatePreferences } = useAuth();
+  const { preferences: lessonPreferences, preferencesSaveFailed, updatePreferences } = useAuth();
   const [preferredPath, setPreferredPath] = useState<PitchPath>('guitar');
   const [stringReady, setStringReady] = useState(false);
   const [focusedStep, setFocusedStep] = useState<LessonTwoStepId | null>(null);
@@ -98,5 +98,5 @@ export function useLessonTwoPage() {
       ? preferences.audioBlocked
       : null;
 
-  return { route, progress, setProgress, sync, retrySync, audioEnabled: lessonPreferences.audioEnabled, toggleStatic, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage };
+  return { route, progress, setProgress, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, toggleStatic, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage };
 }
