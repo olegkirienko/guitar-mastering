@@ -38,7 +38,7 @@ describePostgres("PostgreSQL migrations", () => {
     await pool.end();
   });
 
-  it("creates every baseline table, constraint, index, and cascade", async () => {
+  it("creates every table, constraint, index, and cascade", async () => {
     await migrate();
     const tables = await pool.query<{ table_name: string }>(`
       SELECT table_name FROM information_schema.tables
@@ -75,6 +75,7 @@ describePostgres("PostgreSQL migrations", () => {
       "pgmigrations",
       "profiles",
       "sessions",
+      "user_preferences",
       "users",
     ]);
     expect(indexes.rows.map(({ indexname }) => indexname)).toEqual(expect.arrayContaining([
@@ -87,6 +88,7 @@ describePostgres("PostgreSQL migrations", () => {
       "lesson_progress",
       "profiles",
       "sessions",
+      "user_preferences",
     ]);
     expect(constraints.rows.map(({ constraint_name }) => constraint_name)).toEqual([
       "auth_rate_limits_count",
@@ -108,6 +110,8 @@ describePostgres("PostgreSQL migrations", () => {
       "sessions_pkey",
       "sessions_token_hash_length",
       "sessions_user_id_fkey",
+      "user_preferences_pkey",
+      "user_preferences_user_id_fkey",
       "users_pkey",
       "users_updated_after_created",
       "users_username_length",
@@ -119,6 +123,8 @@ describePostgres("PostgreSQL migrations", () => {
       { table_name: "sessions", column_name: "token_hash", data_type: "bytea" },
       { table_name: "lesson_progress", column_name: "progress", data_type: "jsonb" },
       { table_name: "auth_rate_limits", column_name: "window_started_at", data_type: "timestamp with time zone" },
+      { table_name: "user_preferences", column_name: "audio_enabled", data_type: "boolean" },
+      { table_name: "user_preferences", column_name: "prefers_static", data_type: "boolean" },
     ]));
   });
 
@@ -127,9 +133,9 @@ describePostgres("PostgreSQL migrations", () => {
     const third = await migrate();
     const applied = await pool.query<{ count: string }>("SELECT count(*) FROM pgmigrations");
 
-    expect(first.length + second.length).toBe(1);
+    expect(first.length + second.length).toBe(2);
     expect(third).toHaveLength(0);
-    expect(applied.rows[0]?.count).toBe("1");
+    expect(applied.rows[0]?.count).toBe("2");
   });
 
   it("rolls back the complete pending set when a migration fails", async () => {

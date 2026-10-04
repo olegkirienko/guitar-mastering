@@ -8,7 +8,8 @@ const USERNAME = /^[A-Za-z0-9._-]{3,32}$/;
 
 export const AVATAR_IDS = ["cedar", "ocean", "sunset", "forest"] as const;
 export interface ProfileView { firstName: string | null; lastName: string | null; avatarId: string | null }
-export interface UserView { id: string; username: string; profile: ProfileView }
+export interface PreferencesView { audioEnabled: boolean; prefersStatic: boolean }
+export interface UserView { id: string; username: string; profile: ProfileView; preferences: PreferencesView }
 export interface SessionResult { user: UserView; token: string }
 export class AuthError extends Error {
   readonly status: number;
@@ -47,6 +48,10 @@ function optionalProfileName(value: unknown, field: "firstName" | "lastName"): s
 
 function profileView(row: { first_name?: string | null; last_name?: string | null; avatar_id?: string | null }): ProfileView {
   return { firstName: row.first_name ?? null, lastName: row.last_name ?? null, avatarId: row.avatar_id ?? null };
+}
+
+function preferencesView(row: { audio_enabled?: boolean | null; prefers_static?: boolean | null }): PreferencesView {
+  return { audioEnabled: row.audio_enabled ?? false, prefersStatic: row.prefers_static ?? false };
 }
 
 function tokenHash(token: string): Buffer { return createHash("sha256").update(token, "base64url").digest(); }
@@ -124,7 +129,7 @@ export class AuthService {
           `, [id, username, normalized, passwordHash]);
           await client.query("INSERT INTO profiles(user_id, updated_at) VALUES ($1, now())", [id]);
           const token = await this.createSession(client, id);
-          return { user: { ...created.rows[0]!, profile: profileView({}) }, token };
+          return { user: { ...created.rows[0]!, profile: profileView({}), preferences: preferencesView({}) }, token };
         });
       } catch (error) {
         if ((error as { code?: string }).code === "23505") throw new AuthError(409, "USERNAME_UNAVAILABLE", "That username is unavailable.");
@@ -139,9 +144,10 @@ export class AuthService {
     const password = validPassword(record?.password);
     await this.rateLimit("login", normalized, network);
     return this.passwords.run(async () => {
-      const found = await this.pool.query<{ id: string; username: string; password_hash: string; first_name: string | null; last_name: string | null; avatar_id: string | null }>(
-        `SELECT u.id, u.username, u.password_hash, p.first_name, p.last_name, p.avatar_id
-         FROM users u JOIN profiles p ON p.user_id = u.id WHERE u.username_normalized = $1`, [normalized],
+      const found = await this.pool.query<{ id: string; username: string; password_hash: string; first_name: string | null; last_name: string | null; avatar_id: string | null; audio_enabled: boolean | null; prefers_static: boolean | null }>(
+        `SELECT u.id, u.username, u.password_hash, p.first_name, p.last_name, p.avatar_id, up.audio_enabled, up.prefers_static
+         FROM users u JOIN profiles p ON p.user_id = u.id LEFT JOIN user_preferences up ON up.user_id = u.id
+         WHERE u.username_normalized = $1`, [normalized],
       );
       const user = found.rows[0];
       const valid = user ? await this.passwordOperations.verify(password, user.password_hash) : (await this.passwordOperations.dummy(password), false);
@@ -155,7 +161,7 @@ export class AuthService {
           SELECT token_hash FROM sessions WHERE user_id = $1 AND expires_at > now() AND token_hash <> $2
           ORDER BY created_at DESC, token_hash DESC OFFSET 9
         )`, [user.id, tokenHash(token)]);
-        return { user: { id: user.id, username: user.username, profile: profileView(user) }, token };
+        return { user: { id: user.id, username: user.username, profile: profileView(user), preferences: preferencesView(user) }, token };
       });
     });
   }
@@ -168,12 +174,29 @@ export class AuthService {
 
   async session(token?: string): Promise<UserView | null> {
     if (!token) return null;
-    const result = await this.pool.query<{ id: string; username: string; first_name: string | null; last_name: string | null; avatar_id: string | null }>(`
-      SELECT u.id, u.username, p.first_name, p.last_name, p.avatar_id
+    const result = await this.pool.query<{ id: string; username: string; first_name: string | null; last_name: string | null; avatar_id: string | null; audio_enabled: boolean | null; prefers_static: boolean | null }>(`
+      SELECT u.id, u.username, p.first_name, p.last_name, p.avatar_id, up.audio_enabled, up.prefers_static
       FROM sessions s JOIN users u ON u.id = s.user_id JOIN profiles p ON p.user_id = u.id
+      LEFT JOIN user_preferences up ON up.user_id = u.id
       WHERE s.token_hash = $1 AND s.expires_at > now()`, [tokenHash(token)]);
     const user = result.rows[0];
-    return user ? { id: user.id, username: user.username, profile: profileView(user) } : null;
+    return user ? { id: user.id, username: user.username, profile: profileView(user), preferences: preferencesView(user) } : null;
+  }
+
+  async updatePreferences(token: string | undefined, body: unknown): Promise<PreferencesView> {
+    const user = await this.session(token);
+    if (!user) throw new AuthError(401, "UNAUTHENTICATED", "Authentication is required.");
+    const record = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : null;
+    const keys = record ? Object.keys(record).sort().join(",") : "";
+    if (!record || keys !== "audioEnabled,prefersStatic" || typeof record.audioEnabled !== "boolean" || typeof record.prefersStatic !== "boolean") {
+      throw new AuthError(422, "INVALID_FIELDS", "Provide audioEnabled and prefersStatic as booleans.");
+    }
+    const saved = await this.pool.query<{ audio_enabled: boolean; prefers_static: boolean }>(`
+      INSERT INTO user_preferences (user_id, audio_enabled, prefers_static) VALUES ($1, $2, $3)
+      ON CONFLICT (user_id) DO UPDATE SET audio_enabled = EXCLUDED.audio_enabled, prefers_static = EXCLUDED.prefers_static, updated_at = now()
+      RETURNING audio_enabled, prefers_static
+    `, [user.id, record.audioEnabled, record.prefersStatic]);
+    return preferencesView(saved.rows[0]!);
   }
 
   async updateProfile(token: string | undefined, body: unknown): Promise<ProfileView> {
