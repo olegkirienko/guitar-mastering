@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useCallback, useEffect } from 'react';
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useCourseProgress } from '@/hooks/use-course-progress/use-course-progress';
 import type { LessonRoute } from '@/hooks/use-lesson-route/types';
@@ -27,10 +27,14 @@ export function useLessonRoute<StepId extends string, Local extends ProgressValu
   const ready = course.status === 'ready' && loaded;
   const openStep = stepId !== undefined && adapter.isStepReachable(progress, stepId) ? stepId : null;
 
+  // Write the position only when the URL step changes, so a transition that already
+  // stored the next step is not reverted while the URL still shows the previous one.
+  const appliedStep = useRef<string | null>(null);
   const currentStepId = progress.currentStepId;
   useEffect(() => {
-    if (!ready || openStep === null || currentStepId === openStep) return;
-    setProgress((current) => ({ ...current, currentStepId: openStep }));
+    if (!ready || openStep === null || appliedStep.current === openStep) return;
+    appliedStep.current = openStep;
+    if (currentStepId !== openStep) setProgress((current) => ({ ...current, currentStepId: openStep }));
   }, [ready, openStep, currentStepId, setProgress]);
 
   const goTo = useCallback((step: StepId) => { void navigate(`/lessons/${routeId}/${step}`); }, [navigate, routeId]);

@@ -64,8 +64,10 @@ export function useLessonTwoPage() {
   const begin = (path: PitchPath) => {
     setPreferredPath(path);
     setFocusedStep('string');
+    // One write for both the reach and the new position.
     setProgress((current) => ({
       ...current,
+      currentStepId: 'string',
       completedStepIds: Array.from(new Set<LessonTwoStepId>([...current.completedStepIds, 'intro'])),
     }));
     openStep('string');

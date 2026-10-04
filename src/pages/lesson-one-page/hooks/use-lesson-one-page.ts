@@ -40,7 +40,7 @@ export function useLessonOnePage() {
     query.addEventListener('change', updatePreference);
     return () => query.removeEventListener('change', updatePreference);
   }, []);
-  const begin = () => { setShouldFocusIntro(false); setShouldFocusString(true); setProgress((current) => ({ ...current, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'intro'])) })); goTo('string'); };
+  const begin = () => { setShouldFocusIntro(false); setShouldFocusString(true); setProgress((current) => ({ ...current, currentStepId: 'string', completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'intro'])) })); goTo('string'); };
 
   const openAirLab = () => { setShouldFocusString(false); setShouldFocusAir(true); goTo('air'); };
   const openCheckpoint = () => { setShouldFocusAir(false); setShouldFocusCheckpoint(true); goTo('checkpoint'); };
