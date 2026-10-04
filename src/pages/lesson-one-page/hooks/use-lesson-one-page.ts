@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { LessonOneStepId } from '@/data/lessons/stage-01-lesson-01/types';
+import { useLessonRoute } from '@/hooks/use-lesson-route/use-lesson-route';
+import { lessonOneProgressAdapter } from '@/progress/lesson-one/lesson-one';
 import { useLessonOneProgress } from '@/progress/use-lesson-one-progress';
 
 export function useLessonOnePage() {
   const {
     progress,
     setProgress,
+    loaded,
     storageAvailable,
     sync,
     accountState,
@@ -23,10 +26,12 @@ export function useLessonOnePage() {
   const [reflection, setReflection] = useState('');
   const [explainedAloud, setExplainedAloud] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const isStringStep = progress.currentStepId === 'string';
-  const isAirStep = progress.currentStepId === 'air';
-  const isCheckpointStep = progress.currentStepId === 'checkpoint';
-  const isCompleteStep = progress.currentStepId === 'complete';
+  const { route, goTo } = useLessonRoute('01', lessonOneProgressAdapter, { progress, loaded, setProgress });
+  const stepId = route.kind === 'ready' ? route.stepId : progress.currentStepId;
+  const isStringStep = stepId === 'string';
+  const isAirStep = stepId === 'air';
+  const isCheckpointStep = stepId === 'checkpoint';
+  const isCompleteStep = stepId === 'complete';
   const staticMode = prefersReducedMotion || progress.prefersStatic;
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -35,16 +40,16 @@ export function useLessonOnePage() {
     query.addEventListener('change', updatePreference);
     return () => query.removeEventListener('change', updatePreference);
   }, []);
-  const begin = () => { setShouldFocusIntro(false); setShouldFocusString(true); setProgress((current) => ({ ...current, currentStepId: 'string', completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'intro'])) })); };
+  const begin = () => { setShouldFocusIntro(false); setShouldFocusString(true); setProgress((current) => ({ ...current, currentStepId: 'string', completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'intro'])) })); goTo('string'); };
 
-  const openAirLab = () => { setShouldFocusString(false); setShouldFocusAir(true); setProgress((current) => ({ ...current, currentStepId: 'air' })); };
-  const openCheckpoint = () => { setShouldFocusAir(false); setShouldFocusCheckpoint(true); setProgress((current) => ({ ...current, currentStepId: 'checkpoint' })); };
-  const openCompletion = () => { setShouldFocusCheckpoint(false); setShouldFocusComplete(true); setProgress((current) => ({ ...current, currentStepId: 'complete' })); };
+  const openAirLab = () => { setShouldFocusString(false); setShouldFocusAir(true); goTo('air'); };
+  const openCheckpoint = () => { setShouldFocusAir(false); setShouldFocusCheckpoint(true); goTo('checkpoint'); };
+  const openCompletion = () => { setShouldFocusCheckpoint(false); setShouldFocusComplete(true); goTo('complete'); };
   const finishLesson = () => setProgress((current) => ({
     ...current,
     completedAt: current.completedAt ?? new Date().toISOString(),
     completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'complete'])),
   }));
 
-  return { progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson };
+  return { route, goTo, progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson };
 }

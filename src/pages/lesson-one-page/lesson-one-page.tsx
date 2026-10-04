@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
+import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
@@ -12,8 +13,9 @@ import type { LessonOneStepId } from '@/data/lessons/stage-01-lesson-01/types';
 import { useLessonOnePage } from '@/pages/lesson-one-page/hooks/use-lesson-one-page';
 
 export function LessonOnePage() {
-  const { progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
-  return <LessonShell {...lessonOneContent} currentStop={isCheckpointStep || isCompleteStep ? 5 : isAirStep ? 4 : 1} backTo="/">
+  const { route, goTo, progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
+  if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
+  return <LessonShell {...lessonOneContent} currentStop={isCheckpointStep || isCompleteStep ? 5 : isAirStep ? 4 : 1} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel
       storageAvailable={storageAvailable}
       sync={sync}
@@ -46,20 +48,20 @@ export function LessonOnePage() {
       </LessonStep>
       <RealWorldExperiment title={lessonOneContent.experiment.title} withGuitar={lessonOneContent.experiment.guitar} withoutGuitar={lessonOneContent.experiment.alternative} safetyNote={lessonOneContent.experiment.safety} />
       {progress.completedStepIds.includes('string') && <Button size="lg" iconTrailing={ArrowRight} onClick={openAirLab}>Дослідити рух у повітрі</Button>}
-      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusString(false); setShouldFocusIntro(true); setProgress((current) => ({ ...current, currentStepId: 'intro' })); }}>До вступу</Button>
+      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusString(false); setShouldFocusIntro(true); goTo('intro'); }}>До вступу</Button>
     </div> : isAirStep ? <div className="space-y-5">
       <LessonStep title={lessonOneContent.air.title} intro={lessonOneContent.air.instruction} shouldFocus={shouldFocusAir}>
         <SoundPropagationLab content={lessonOneContent.air} staticMode={staticMode} onComplete={() => setProgress((current) => ({ ...current, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'air'])) }))} />
       </LessonStep>
       <RealWorldExperiment title={lessonOneContent.air.experiment.title} withGuitar={lessonOneContent.air.experiment.guitar} withoutGuitar={lessonOneContent.air.experiment.alternative} safetyNote={lessonOneContent.air.experiment.safety} />
       {progress.completedStepIds.includes('air') && <Button size="lg" iconTrailing={ArrowRight} onClick={openCheckpoint}>Зібрати шлях звуку</Button>}
-      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusAir(false); setShouldFocusString(true); setProgress((current) => ({ ...current, currentStepId: 'string' })); }}>До досліду зі струною</Button>
+      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusAir(false); setShouldFocusString(true); goTo('string'); }}>До досліду зі струною</Button>
     </div> : isCheckpointStep ? <div className="space-y-5">
       <LessonStep title={lessonOneContent.checkpoint.title} intro={lessonOneContent.checkpoint.instruction} shouldFocus={shouldFocusCheckpoint}>
         <SoundPathCheckpoint content={lessonOneContent.checkpoint} initiallyPassed={progress.checkpointPassed} onComplete={() => setProgress((current) => ({ ...current, checkpointPassed: true, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'checkpoint'])) }))} />
       </LessonStep>
       {progress.checkpointPassed && <Button size="lg" iconTrailing={ArrowRight} onClick={openCompletion}>Перейти до підсумку</Button>}
-      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusCheckpoint(false); setShouldFocusAir(true); setProgress((current) => ({ ...current, currentStepId: 'air' })); }}>До досліду з повітрям</Button>
+      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusCheckpoint(false); setShouldFocusAir(true); goTo('air'); }}>До досліду з повітрям</Button>
     </div> : <div className="space-y-5">
       <LessonStep key={progress.completedAt ? 'completed' : 'completion'} title={progress.completedAt ? lessonOneContent.completion.completedTitle : lessonOneContent.completion.title} intro={lessonOneContent.completion.instruction} shouldFocus={shouldFocusComplete}>
         <div className="rounded-lg border border-brand-200 bg-brand-25 p-5">
@@ -93,7 +95,7 @@ export function LessonOnePage() {
           <p className="mt-3 text-sm leading-6 text-gray-600">{lessonOneContent.completion.experiment}</p>
         </div>
       </LessonStep>
-      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusComplete(false); setShouldFocusCheckpoint(true); setProgress((current) => ({ ...current, currentStepId: 'checkpoint' })); }}>До шляху звуку</Button>
+      <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusComplete(false); setShouldFocusCheckpoint(true); goTo('checkpoint'); }}>До шляху звуку</Button>
     </div>}
   </LessonShell>;
 }

@@ -3,7 +3,7 @@ import type { Profile } from '@/auth/auth-provider/types';
 import { Button } from '@/components/base/buttons/button';
 import { Input } from '@/components/base/input/input';
 import { avatars } from '@/pages/account-page/constants';
-import { ErrorSummary } from '@/pages/account-page/components/error-summary/error-summary';
+import { ErrorSummary } from '@/components/error-summary/error-summary';
 import { useAuth } from '@/hooks/use-auth';
 import { ApiError } from '@/utils/api-error';
 

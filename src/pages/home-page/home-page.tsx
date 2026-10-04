@@ -1,10 +1,12 @@
 import { ArrowRight, BookOpen01 } from '@untitledui/icons';
-import { Link } from 'react-router';
+import { Button } from '@/components/base/buttons/button';
+import { useHomePage } from '@/pages/home-page/hooks/use-home-page';
 import { lessons } from '@/data/lessons/constants';
 import { LessonCard } from '@/components/lesson-card/lesson-card';
 import { SectionHeading } from '@/components/section-heading/section-heading';
 
 export function HomePage() {
+  const { courseHref } = useHomePage();
   return (
     <main>
       <section className="border-b border-gray-200 bg-gradient-to-b from-brand-25 to-white">
@@ -21,13 +23,9 @@ export function HomePage() {
               Починаємо з найпростішого й поступово будуємо цілісне розуміння того,
               як працює музика та класична шестиструнна гітара.
             </p>
-            <Link
-              to="/lessons/01"
-              className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-brand-700"
-            >
-              Почати урок 1
-              <ArrowRight className="size-4" />
-            </Link>
+            <Button href={courseHref} size="xl" className="mt-8" iconTrailing={ArrowRight}>
+              Перейти до курсу
+            </Button>
           </div>
         </div>
       </section>

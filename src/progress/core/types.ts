@@ -25,6 +25,7 @@ export type LessonProgressAdapter<StepId extends string, Local extends ProgressV
   lessonId: string;
   schemaVersion: number;
   contentVersion: number;
+  stepOrder: readonly StepId[];
   guestStorageKey: string;
   userStorageKey(userId: string): string;
   importDecisionKey(userId: string): string;
@@ -35,6 +36,8 @@ export type LessonProgressAdapter<StepId extends string, Local extends ProgressV
   merge(local: Local, remote: ProgressValue<StepId>): Local;
   hasMeaningfulProgress(progress: Local): boolean;
   fingerprint(progress: Local): string;
+  isStepReachable(progress: Local, stepId: string): stepId is StepId;
+  highestReachableStep(progress: Local): StepId;
 };
 
 export type ApiErrorBody<Value extends ProgressValue> = {

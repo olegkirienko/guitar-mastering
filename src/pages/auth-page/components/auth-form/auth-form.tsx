@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/base/buttons/button';
 import { Input } from '@/components/base/input/input';
-import { ErrorSummary } from '@/pages/account-page/components/error-summary/error-summary';
+import { ErrorSummary } from '@/components/error-summary/error-summary';
 import { useAuth } from '@/hooks/use-auth';
 import { ApiError } from '@/utils/api-error';
 
-export function AuthForm({ kind }: { kind: 'login' | 'register' }) {
+export function AuthForm({ kind, onAuthenticated }: { kind: 'login' | 'register'; onAuthenticated(kind: 'login' | 'register'): void }) {
   const auth = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +13,7 @@ export function AuthForm({ kind }: { kind: 'login' | 'register' }) {
   const [error, setError] = useState<ApiError | null>(null);
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError(null);
-    try { await auth[kind]({ username, password }); }
+    try { await auth[kind]({ username, password }); onAuthenticated(kind); }
     catch (caught) { setError(caught instanceof ApiError ? caught : new ApiError('UNKNOWN', 'Запит не виконано.')); }
     finally { setBusy(false); }
   };
