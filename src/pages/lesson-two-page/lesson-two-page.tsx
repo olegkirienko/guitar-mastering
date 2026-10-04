@@ -17,33 +17,24 @@ import { stopByStep, primaryButton } from '@/pages/lesson-two-page/constants';
 import { useLessonTwoPage } from '@/pages/lesson-two-page/hooks/use-lesson-two-page';
 
 export function LessonTwoPage() {
-  const { route, progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
+  const { route, progress, sync, retrySync, audioEnabled, toggleStatic, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonTwoContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
-    <LessonProgressPanel
-      storageAvailable={storageAvailable}
-      sync={sync}
-      accountState={accountState}
-      importGuestProgress={importGuestProgress}
-      confirmGuestImport={confirmGuestImport}
-      keepGuestProgressSeparate={keepGuestProgressSeparate}
-      clearCurrentAccountCache={clearCurrentAccountCache}
-      retrySync={retrySync}
-    />
+    <LessonProgressPanel sync={sync} retrySync={retrySync} />
     <div className="mb-5 grid gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 sm:grid-cols-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600">
           <p className="font-semibold text-gray-950">{preferences.motionTitle}</p>
           <p>{prefersReducedMotion ? preferences.motionSystem : preferences.motionManual}</p>
         </div>
-        <Button color="secondary" size="lg" isDisabled={prefersReducedMotion} aria-pressed={staticMode} onClick={() => setProgress((current) => ({ ...current, prefersStatic: !current.prefersStatic }))}>{prefersReducedMotion ? preferences.motionSystemLabel : staticMode ? preferences.motionStaticLabel : preferences.motionAnimatedLabel}</Button>
+        <Button color="secondary" size="lg" isDisabled={prefersReducedMotion} aria-pressed={staticMode} onClick={toggleStatic}>{prefersReducedMotion ? preferences.motionSystemLabel : staticMode ? preferences.motionStaticLabel : preferences.motionAnimatedLabel}</Button>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600">
           <p className="font-semibold text-gray-950">{preferences.audioTitle}</p>
           <p>{preferences.audioNote}</p>
         </div>
-        <Button color="secondary" size="lg" aria-pressed={progress.audioEnabled} onClick={toggleAudio}>{progress.audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}</Button>
+        <Button color="secondary" size="lg" aria-pressed={audioEnabled} onClick={toggleAudio}>{audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}</Button>
       </div>
       <div aria-live="polite" className="text-sm text-gray-700 sm:col-span-2">{audioMessage && <p>{audioMessage}</p>}</div>
     </div>

@@ -26,15 +26,10 @@ export type LessonProgressAdapter<StepId extends string, Local extends ProgressV
   schemaVersion: number;
   contentVersion: number;
   stepOrder: readonly StepId[];
-  guestStorageKey: string;
-  userStorageKey(userId: string): string;
-  importDecisionKey(userId: string): string;
-  read(key: string): { progress: Local; storageAvailable: boolean };
-  write(key: string, progress: Local): boolean;
+  defaultProgress: Local;
   parse(value: unknown): Local;
   toSynced(progress: Local): ProgressValue<StepId>;
   merge(local: Local, remote: ProgressValue<StepId>): Local;
-  hasMeaningfulProgress(progress: Local): boolean;
   fingerprint(progress: Local): string;
   isStepReachable(progress: Local, stepId: string): stepId is StepId;
   highestReachableStep(progress: Local): StepId;

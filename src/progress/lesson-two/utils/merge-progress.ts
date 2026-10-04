@@ -18,18 +18,7 @@ export function mergeLessonTwoProgress(
   local: LessonTwoProgress,
   remote: ProgressValue<LessonTwoStepId>,
 ): LessonTwoProgress {
-  return normalizeLessonTwoProgress({
-    ...mergeProgress(toSyncedLessonTwoProgress(local), remote, lessonTwoStepOrder),
-    audioEnabled: local.audioEnabled,
-    prefersStatic: local.prefersStatic,
-  });
-}
-
-export function hasMeaningfulLessonTwoProgress(progress: LessonTwoProgress): boolean {
-  return progress.currentStepId !== 'intro'
-    || progress.completedStepIds.length > 0
-    || progress.checkpointPassed
-    || progress.completedAt !== null;
+  return normalizeLessonTwoProgress(mergeProgress(toSyncedLessonTwoProgress(local), remote, lessonTwoStepOrder));
 }
 
 export function lessonTwoProgressFingerprint(progress: LessonTwoProgress): string {

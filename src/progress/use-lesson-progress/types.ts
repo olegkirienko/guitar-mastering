@@ -4,14 +4,10 @@ import type { SyncSnapshot } from '@/progress/core/types';
 export type LessonProgressController<Local> = {
   progress: Local;
   setProgress: Dispatch<SetStateAction<Local>>;
-  // True once the server copy (or its failure) has been applied.
+  // True once the server copy, or its absence, has been applied.
   loaded: boolean;
-  storageAvailable: boolean;
+  // True when the server copy could not be loaded; retrySync loads it again.
+  loadFailed: boolean;
   sync: SyncSnapshot;
-  accountState: 'guest' | 'loading' | 'authenticated' | 'unavailable';
-  importGuestProgress: boolean;
-  confirmGuestImport(): void;
-  keepGuestProgressSeparate(): void;
-  clearCurrentAccountCache(): boolean;
   retrySync(): void;
 };
