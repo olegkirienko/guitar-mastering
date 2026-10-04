@@ -49,7 +49,13 @@ Non-goals:
 - `guest`: `<Navigate to="/auth?next=<path>" replace>`.
 - `unavailable`: a "server unavailable" screen with a retry button.
 
-`/auth` accepts `next` only when it is an internal path. It must start with a single `/`, must not start with `//`, and must match a known route pattern. Otherwise `next` is ignored, so the parameter cannot be used as an open redirect.
+`/auth` accepts `next` only when `isSafeNext(next)` passes. Otherwise `next` is ignored. `isSafeNext` is a pure function:
+- reject values containing a backslash, a control character, or `%2f`/`%5c` in any case;
+- parse with `new URL(next, location.origin)` and require the same origin;
+- require a pathname matching a protected route pattern; `/auth` and `/` are excluded, so there is no loop;
+- keep only the pathname and drop the query and hash.
+
+Navigation uses the router (`navigate(path, { replace: true })`), never `location.href`.
 
 After a successful auth:
 - **register:** go to `/lessons/01/intro`.
@@ -57,10 +63,13 @@ After a successful auth:
 
 ### Resume path
 
-`resolveResumePath(items)` is a pure function in `src/progress/core/utils/` that runs on the result of the existing `GET /api/v1/progress`:
-- It picks the item with the newest `updatedAt` and returns `/lessons/<id>/<currentStepId>`.
-- If that lesson has `completedAt` and a next lesson exists, it returns `/lessons/<next>/intro`.
-- With no items, it returns `/lessons/01/intro`.
+`resolveResumePath(items, lessonOrder)` is a pure function in `src/progress/core/utils/` that runs on the result of the existing `GET /api/v1/progress`. Because every step view bumps `updatedAt`, revisiting a finished lesson must not move the learner on. Rules, in order:
+1. Among lessons without `completedAt`, pick the item with the newest `updatedAt` and return `/lessons/<id>/<currentStepId>`.
+2. Otherwise, if some lesson in `lessonOrder` has no item yet and the lesson before it is completed, return the first such lesson's `/intro`.
+3. Otherwise, when every available lesson is completed, return the newest item's `/lessons/<id>/<currentStepId>`.
+4. With no items, return `/lessons/01/intro`.
+
+Example: L1 is complete and L2 is in progress. Reopening an L1 step bumps L1's `updatedAt`, but L1 is completed, so rule 1 still resumes L2 at its own `currentStepId`.
 
 It is used in three places: the landing CTA for signed-in users, the `/auth` redirect, and the "Продовжити" button on `/course`.
 
@@ -69,7 +78,12 @@ It is used in three places: the landing CTA for signed-in users, the `/auth` red
 A step is reachable when it is `intro`, or when the step before it is in `completedStepIds`. `complete` additionally requires `checkpointPassed`. This is the rule already implemented by `normalize*Progress` and `highestUnlockedStep`; it becomes one exported `isStepReachable(progress, stepId)` per lesson adapter.
 
 - Lesson N+1 is reachable when Lesson N has `completedAt`. Lesson 1 is always reachable.
-- A URL for an unreachable step redirects, with `replace`, to the highest reachable step.
+- The lesson gate reads `GET /api/v1/progress`, which covers all lessons, through a `useCourseProgress` hook shared by `/course`, the lesson route and the CTA. The lesson route renders a skeleton until both the gate data and the lesson's own progress have loaded, so nothing flashes or redirects early.
+- Unknown ids and unreachable targets redirect with `replace`:
+  - an unknown `:lessonId` goes to `/course`;
+  - an unknown `:stepId`, or an unreachable step, goes to the highest reachable step;
+  - an unreachable lesson goes to `/course`.
+- Reach is enforced on the client only. The server `PUT` accepts any catalog step, which is acceptable because the data belongs to the learner who writes it.
 - Opening a step writes it as `currentStepId`. That is the "position"; `completedStepIds` is the "reach".
 - `mergeProgress` keeps the union of `completedStepIds`, ORs `checkpointPassed`, and keeps the earliest `completedAt`. For `currentStepId` it now takes the local value, because the latest action wins, instead of the furthest step. That is the only merge change.
 - The server's progress validation and format are unchanged, so no progress migration is needed.
@@ -78,7 +92,7 @@ A step is reachable when it is `intro`, or when the step before it is in `comple
 
 `useLessonProgress` becomes server state with no storage:
 1. On mount it calls `GET /progress/:lessonId`. On 404 `PROGRESS_NOT_FOUND` it starts from the lesson default at revision 0.
-2. State lives in React only. Every change is queued in the existing `ProgressSyncQueue` with `baseRevision`. A 409 merges with `current` and retries once, as today.
+2. State lives in React only. Every change, including a step open, is queued in the existing `ProgressSyncQueue`. The queue keeps only the latest value and runs one upload at a time with `baseRevision`, so rapid step changes coalesce into at most one in-flight write plus one pending write. A 409 merges with `current` and retries once, as today. With two tabs, the newer step open wins.
 3. The status is `pending`, `synced` or `error`, with the existing `retry`. If a save fails, the lesson stays usable in memory, and a banner says progress is not saved yet and offers the retry.
 
 Removed:
@@ -106,6 +120,10 @@ API contract:
 - `PUT /api/v1/preferences` takes the body `{ audioEnabled: boolean, prefersStatic: boolean }`, both required, no other keys. It upserts the row and returns `{ preferences }`.
   - It uses the same origin, JSON content-type, session and error mapping as `server/auth-routes.ts`.
   - Errors: 400 `VALIDATION_ERROR`, 401 `UNAUTHENTICATED`.
+  - The response sends `Cache-Control: no-store`.
+- **Server wiring:**
+  - `PUT /preferences` is added to the method allowlist in `server/app.ts`; other methods return 405.
+  - The preferences router is mounted after the auth router, so the origin and JSON checks in `auth-routes.ts` apply to it.
 - On the client, `useAuth` exposes `preferences` and `updatePreferences`. Lessons read them instead of `progress.audioEnabled` and `progress.prefersStatic`.
 - A system `prefers-reduced-motion` still forces static mode.
 
@@ -147,25 +165,30 @@ API contract:
 
 ## Migrations, deployment, rollback
 
-- `002_user_preferences` is additive and runs through the existing migration step before startup. Its down migration drops the table.
+- `002_user_preferences` is additive and runs through the existing migration step before startup. Like `001_baseline.cjs`, it is forward-only (`exports.down = false`), and `db:migrate` only runs `up`.
 - **Order:** the server PR with the migration ships first. The client PRs only start using the new fields after it is delivered.
 - **Rollback:**
-  - Client PRs: revert the merge commit. Old clients stop using `localStorage` only after the cleanup release. A rollback before then restores local behavior; after it, guests start fresh, which is acceptable.
-  - Server PR: revert the code. The table may stay, unused.
+  - Server PR: revert the code and leave the table in place, unused. Dropping the table is a manual step that is not needed for rollback, and it needs owner approval as a production mutation.
+  - Routes PR: revert the merge commit. Lessons become open again, with local progress as before.
+  - Server-only progress PR: revert the merge commit. Keys removed by the cleanup are gone, so learners without an account start fresh. Signed-in learners keep their server progress.
 
 ## Test strategy
 
 - **Unit tests:**
-  - `resolveResumePath`;
-  - `next` validation;
+  - `resolveResumePath`, including revisiting a finished lesson while the next one is in progress, all lessons completed, and no items;
+  - `isSafeNext`, as a table: `//x`, `/\x`, `/%2f%2fx`, `https://x`, `javascript:alert(1)`, `/auth`, `/`, `/lessons/01/air?x#y` (which becomes the bare path), and `/lessons/99/x`;
   - `isStepReachable` for both lessons;
   - the new `mergeProgress` rule for `currentStepId`;
   - the preferences body validator.
-- **Server:** route tests for `PUT /preferences` (origin, content type, validation, 401) and the session payload; an integration test for the upsert and the cascade (`test:postgres`).
+- **Server:**
+  - route tests for `PUT /preferences`: origin, content type, validation, 401, 405 for other methods, `no-store`, and the session payload;
+  - integration tests (`test:postgres`) for the upsert and the cascade;
+  - a migrations integration test showing that `002` applies once and stays idempotent under concurrent runs.
 - **E2E:**
   - Replace `seedStep` and `storedProgress` in `e2e/lesson-two.spec.ts` and `e2e/account-profile.spec.ts` with a `page.route` mock of `/api/v1/progress` that stores the state in memory.
   - New flows:
-    - a guest on `/lessons/01/air` goes to `/auth?next=…`;
+    - a guest on `/lessons/01/air`, `/course` or `/account` goes to `/auth?next=…` and never sees lesson content;
+    - direct deep links: an unknown lesson goes to `/course`, and an unknown or unreachable step goes to the highest reachable step, with no content flash;
     - registration leads to `/lessons/01/intro`;
     - sign-in with progress leads to the resume path;
     - on `/course`, a reached step opens and an unreached one is disabled;
@@ -177,17 +200,23 @@ API contract:
 
 ## Slices (four PRs after approval, in this order)
 
-1. **Server preferences:** the migration, `preferences` in the session, `PUT /preferences`, and tests.
-   - Accept when test, `test:postgres` and build are green, the migration applies and rolls back locally, and delivery is verified.
-2. **Server-only progress on the client:**
+The order ensures guests are locked out (PR 2) before local progress is removed (PR 3), so no release leaves guests in lessons that cannot save.
+
+1. **Server preferences:** the forward-only migration, `preferences` in the session, `PUT /preferences` with its allowlist and mount order, and tests.
+   - Accept when test, `test:postgres` (including the `002` migration integration test) and build are green, and delivery is verified.
+2. **Routes and navigation:**
+   - `/auth` with `isSafeNext`, `RequireAuth`, `/course`;
+   - step URLs, `useCourseProgress`, `resolveResumePath`;
+   - the step navigator, the merge rule, and redirects after auth.
+
+   Progress storage is unchanged in this PR. Signed-in learners already sync to the server, and guests can no longer reach lessons.
+   - Accept when the new e2e flows pass and guests reach only `/` and `/auth`.
+3. **Server-only progress on the client:**
    - the storage-free `useLessonProgress`;
    - preferences read from `useAuth`;
    - the key cleanup and the simplified panel;
-   - the merge rule;
    - the e2e mocks.
 
-   Accept when all existing lesson e2e pass on mocked progress and `localStorage` is empty.
-3. **Routes and navigation:** `/auth` with `next`, `RequireAuth`, `/course`, step URLs, `resolveResumePath`, the step navigator, and redirects after auth.
-   - Accept when the new e2e flows pass and guests reach only `/` and `/auth`.
+   Accept when all lesson e2e pass on mocked progress and `localStorage` is empty.
 4. **Visual redesign:** tokens, fonts, layout, landing, lesson-shell styling, `b5eb194`, and the `SKILL.md` note.
    - Accept when the pages render in the new style, contrast is AA, there is no horizontal scroll at 320 px, and all e2e pass.
