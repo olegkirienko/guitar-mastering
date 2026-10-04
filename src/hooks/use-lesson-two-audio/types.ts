@@ -5,6 +5,6 @@ export interface LessonTwoAudio {
   status: LessonAudioStatus;
   enable(): Promise<boolean>;
   playTone(frequency: number, gain: number): void;
-  playPluck(frequency: number): void;
+  playPluck(frequency: number, gain?: number): void;
   stop(): void;
 }

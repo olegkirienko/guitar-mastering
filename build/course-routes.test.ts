@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { isLessonOpen } from '../src/hooks/use-lesson-route/utils/lesson-gate.ts';
 import { safeNextPath, isSafeNext } from '../src/pages/auth-page/utils/is-safe-next.ts';
 import { courseLessons } from '../src/progress/course/constants.ts';
 import type { ProgressItem, ProgressValue } from '../src/progress/core/types.ts';
 import { resolveResumePath } from '../src/progress/core/utils/resolve-resume-path.ts';
 import { lessonOneProgressAdapter } from '../src/progress/lesson-one/lesson-one.ts';
+import { lessonThreeProgressAdapter } from '../src/progress/lesson-three/lesson-three.ts';
 import { lessonTwoProgressAdapter } from '../src/progress/lesson-two/lesson-two.ts';
 import { productionProgressCatalog } from '../server/progress-catalog.ts';
 
 const origin = 'https://course.example';
 const one = 'stage-01-lesson-01';
 const two = 'stage-01-lesson-02';
+const three = 'stage-01-lesson-03';
 
 function item(lessonId: string, progress: Partial<ProgressValue>, updatedAt: string): ProgressItem {
   return {
@@ -44,8 +47,17 @@ describe('resolveResumePath', () => {
     const items = [
       item(one, { currentStepId: 'string', completedAt: '2026-10-01T10:00:00.000Z' }, '2026-10-04T12:00:00.000Z'),
       item(two, { currentStepId: 'complete', completedAt: '2026-10-02T10:00:00.000Z' }, '2026-10-03T12:00:00.000Z'),
+      item(three, { currentStepId: 'complete', completedAt: '2026-10-03T10:00:00.000Z' }, '2026-10-03T10:00:00.000Z'),
     ];
     expect(resolveResumePath(items, courseLessons)).toBe('/lessons/01/string');
+  });
+
+  it('opens Lesson 3 once Lessons 1 and 2 are completed', () => {
+    const items = [
+      item(one, { currentStepId: 'complete', completedAt: '2026-10-01T10:00:00.000Z' }, '2026-10-01T10:00:00.000Z'),
+      item(two, { currentStepId: 'complete', completedAt: '2026-10-02T10:00:00.000Z' }, '2026-10-02T10:00:00.000Z'),
+    ];
+    expect(resolveResumePath(items, courseLessons)).toBe('/lessons/03/intro');
   });
 
   it('ignores progress of lessons outside the course order', () => {
@@ -96,6 +108,31 @@ describe('isStepReachable', () => {
     expect(lessonTwoProgressAdapter.stepOrder.filter((step) => lessonTwoProgressAdapter.isStepReachable(progress, step))).toEqual(['intro', 'string', 'repeats', 'frequency']);
     expect(lessonTwoProgressAdapter.highestReachableStep(progress)).toBe('frequency');
     expect(lessonTwoProgressAdapter.isStepReachable(progress, 'complete')).toBe(false);
+  });
+
+  it('opens Lesson 3 steps linearly', () => {
+    const progress = lessonThreeProgressAdapter.parse({ completedStepIds: ['intro', 'length'] });
+    expect(lessonThreeProgressAdapter.stepOrder.filter((step) => lessonThreeProgressAdapter.isStepReachable(progress, step))).toEqual(['intro', 'length', 'tension']);
+    expect(lessonThreeProgressAdapter.highestReachableStep(progress)).toBe('tension');
+    expect(lessonThreeProgressAdapter.isStepReachable(progress, 'complete')).toBe(false);
+  });
+});
+
+describe('lesson gate', () => {
+  const lessonOneDone = item(one, { currentStepId: 'complete', completedAt: '2026-10-01T10:00:00.000Z' }, '2026-10-01T10:00:00.000Z');
+
+  it('keeps /lessons/03/* closed (redirect to /course) until Lesson 2 has completedAt', () => {
+    expect(isLessonOpen('03', [])).toBe(false);
+    expect(isLessonOpen('03', [lessonOneDone])).toBe(false);
+    expect(isLessonOpen('03', [lessonOneDone, item(two, { currentStepId: 'checkpoint', checkpointPassed: true }, '2026-10-02T10:00:00.000Z')])).toBe(false);
+    expect(isLessonOpen('03', [lessonOneDone, item(two, { currentStepId: 'complete', completedAt: '2026-10-02T10:00:00.000Z' }, '2026-10-02T10:00:00.000Z')])).toBe(true);
+  });
+
+  it('opens the first lesson without progress and each next one after its predecessor', () => {
+    expect(isLessonOpen('01', [])).toBe(true);
+    expect(isLessonOpen('02', [])).toBe(false);
+    expect(isLessonOpen('02', [lessonOneDone])).toBe(true);
+    expect(isLessonOpen('03', [item(three, {}, '2026-10-02T10:00:00.000Z')])).toBe(false);
   });
 });
 

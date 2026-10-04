@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef } fr
 import { useNavigate, useParams } from 'react-router';
 import { useCourseProgress } from '@/hooks/use-course-progress/use-course-progress';
 import type { LessonRoute } from '@/hooks/use-lesson-route/types';
+import { isLessonOpen } from '@/hooks/use-lesson-route/utils/lesson-gate';
 import { courseLessons } from '@/progress/course/constants';
 import type { LessonProgressAdapter, ProgressValue } from '@/progress/core/types';
 
@@ -23,9 +24,7 @@ export function useLessonRoute<StepId extends string, Local extends ProgressValu
   const { stepId } = useParams();
   const navigate = useNavigate();
   const course = useCourseProgress();
-  const index = courseLessons.findIndex((lesson) => lesson.routeId === routeId);
-  const lesson = courseLessons[index];
-  const previous = courseLessons[index - 1];
+  const lesson = courseLessons.find((candidate) => candidate.routeId === routeId);
   const ready = course.status === 'ready' && loaded;
   const openStep = stepId !== undefined && adapter.isStepReachable(progress, stepId) ? stepId : null;
 
@@ -45,7 +44,7 @@ export function useLessonRoute<StepId extends string, Local extends ProgressValu
   if (course.status === 'error') route = { kind: 'unavailable', retry: course.retry };
   else if (loadFailed) route = { kind: 'unavailable', retry: retrySync };
   else if (!ready) route = { kind: 'loading' };
-  else if (previous && !course.items.some((item) => item.lessonId === previous.lessonId && item.progress.completedAt !== null)) route = { kind: 'redirect', to: '/course' };
+  else if (!isLessonOpen(routeId, course.items)) route = { kind: 'redirect', to: '/course' };
   else if (stepId === undefined) route = { kind: 'redirect', to: `/lessons/${routeId}/${progress.currentStepId}` };
   else if (openStep === null) route = { kind: 'redirect', to: `/lessons/${routeId}/${adapter.highestReachableStep(progress)}` };
   else route = {

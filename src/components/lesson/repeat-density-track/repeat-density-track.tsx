@@ -1,8 +1,7 @@
-import type { LabFrequency } from '@/data/lessons/stage-01-lesson-02-model/types';
 import { visualCycles } from '@/data/lessons/stage-01-lesson-02-model/utils/lab';
 
 // Schematic repeats: density follows the value, the line height never changes.
-export function RepeatDensityTrack({ frequency }: { frequency: LabFrequency }) {
+export function RepeatDensityTrack({ frequency }: { frequency: number }) {
   const cycles = visualCycles(frequency);
   const points = Array.from({ length: 161 }, (_, index) => {
     const x = (index / 160) * 300 + 10;
