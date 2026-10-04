@@ -9,21 +9,21 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
   const { order, outcome, explained, counterCorrect, setCounterCorrect, moveMessage, moveButtons, chainStatus, chainDone, links, move, checkOrder, explain } = useFrequencyPitchCheckpoint({ content, passed, onPass });
   return <div className="space-y-6">
     <div className="grid grid-cols-2 gap-3">
-      {content.pair.map((tone) => <div key={tone.hz} className="rounded-lg border border-gray-200 bg-white p-4 text-center">
-        <p className="text-lg font-semibold text-gray-950" aria-hidden="true">{tone.label}</p>
+      {content.pair.map((tone) => <div key={tone.hz} className="rounded-lg border border-secondary bg-primary p-4 text-center">
+        <p className="text-lg font-semibold text-primary" aria-hidden="true">{tone.label}</p>
         <p className="sr-only">{tone.spoken}</p>
       </div>)}
     </div>
     <ChoiceQuestion question={content.moreQuestion} choices={content.moreChoices} correctChoiceId="500" />
     <ChoiceQuestion question={content.higherQuestion} choices={content.higherChoices} correctChoiceId="500" />
 
-    <section aria-labelledby="chain-title" className="rounded-lg border border-gray-200 bg-white p-5">
-      <h3 id="chain-title" className="font-semibold text-gray-950">{content.chainTitle}</h3>
-      <p className="mt-1 text-sm text-gray-600">{content.chainInstruction}</p>
+    <section aria-labelledby="chain-title" className="rounded-lg border border-secondary bg-primary p-5">
+      <h3 id="chain-title" className="font-semibold text-primary">{content.chainTitle}</h3>
+      <p className="mt-1 text-sm text-tertiary">{content.chainInstruction}</p>
       <ol className="mt-4 space-y-2">
         {order.map((card, index) => <li key={card} className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 p-3">
-            <span className="text-sm font-medium text-gray-950">{index + 1}. {content.cards[card]}</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-secondary p-3">
+            <span className="text-sm font-medium text-primary">{index + 1}. {content.cards[card]}</span>
             <span className="flex gap-2">
               <Button
                 color="secondary"
@@ -50,7 +50,7 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
       </ol>
       <p aria-live="polite" data-testid="chain-move-status" className="sr-only">{chainDone ? '' : moveMessage}</p>
       {!chainDone && <Button size="lg" className="mt-4" onClick={checkOrder}>{content.checkOrderLabel}</Button>}
-      <div ref={chainStatus} tabIndex={-1} role="status" data-testid="chain-status" className="mt-3 space-y-2 text-sm text-gray-700 outline-none">
+      <div ref={chainStatus} tabIndex={-1} role="status" data-testid="chain-status" className="mt-3 space-y-2 text-sm text-secondary outline-none">
         {outcome === 'correct' && <p>{content.orderCorrect}</p>}
         {!chainDone && (outcome === 'hint' || outcome === 'offer-explanation') && <p>{content.orderHint}</p>}
         {explained && <p>{content.explanation}</p>}
@@ -65,6 +65,6 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
       correctChoiceId={content.counterCorrectId}
       onCheck={(_choiceId, isCorrect) => { if (isCorrect) setCounterCorrect(true); }}
     />}
-    <div aria-live="polite" className="text-sm font-semibold text-gray-950">{checkpointPassed(chainDone, counterCorrect) && <p>{content.passed}</p>}</div>
+    <div aria-live="polite" className="text-sm font-semibold text-primary">{checkpointPassed(chainDone, counterCorrect) && <p>{content.passed}</p>}</div>
   </div>;
 }

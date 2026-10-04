@@ -1,42 +1,75 @@
+import { LogOut01, MusicNote01, User01 } from '@untitledui/icons';
+import { Button as AriaButton } from 'react-aria-components';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router';
+import { Avatar } from '@/components/base/avatar/avatar';
+import { Button } from '@/components/base/buttons/button';
+import { Dropdown } from '@/components/base/dropdown/dropdown';
 import { useAuth } from '@/hooks/use-auth';
-import { BookOpen01, Home01 } from '@untitledui/icons';
-import { Link, Outlet } from 'react-router';
+import { cx } from '@/utils/cx';
 
 export function AppLayout() {
   const auth = useAuth();
+  const navigate = useNavigate();
+  const user = auth.user;
+  const name = user ? [user.profile.firstName, user.profile.lastName].filter(Boolean).join(' ') : '';
+  const initials = (name || user?.username || '').split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
+  // Leave the protected page first, so the guard does not send the signed-out visitor to sign-in.
+  const signOut = async () => { await navigate('/', { replace: true }); await auth.logout(); };
   return (
-    <div className="min-h-screen bg-white text-gray-950">
-      <header className="sticky top-0 z-20 border-b border-gray-200/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-              <BookOpen01 className="size-5" />
+    <div className="min-h-screen bg-primary text-primary">
+      <header className="sticky top-0 z-20 border-b border-secondary bg-primary/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-2.5 rounded-lg outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-brand-solid text-white shadow-xs">
+              <MusicNote01 className="size-5" aria-hidden="true" />
             </span>
-            <span className="hidden sm:inline">Гітара з нуля</span>
+            <span className="font-display text-lg font-semibold tracking-tight max-[359px]:sr-only">Гітара з нуля</span>
           </Link>
 
-          <nav className="flex items-center gap-1 text-sm">
-            <Link
+          <nav className="flex items-center gap-2 text-sm" aria-label="Основна навігація">
+            <NavLink
               to="/course"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950"
+              className={({ isActive }) => cx(
+                'rounded-lg px-3 py-2 font-semibold outline-focus-ring transition duration-100 ease-linear hover:bg-primary_hover focus-visible:outline-2',
+                isActive ? 'text-brand-secondary' : 'text-tertiary hover:text-secondary',
+              )}
             >
-              <Home01 className="size-4" />
               Курс
-            </Link>
-            <Link to={auth.user ? '/account' : '/auth'} className="rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-950">
-              {auth.user ? `@${auth.user.username}` : 'Увійти'}
-            </Link>
-            <span className="hidden rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500 sm:inline-flex">
-              v0.2.0
-            </span>
+            </NavLink>
+            {user ? (
+              <Dropdown.Root>
+                <AriaButton
+                  aria-label={`Меню акаунта @${user.username}`}
+                  className={({ isPressed, isFocusVisible }) => cx(
+                    'relative inline-flex cursor-pointer rounded-full outline-offset-2 outline-focus-ring',
+                    (isPressed || isFocusVisible) && 'outline-2',
+                  )}
+                >
+                  <Avatar size="sm" initials={initials} alt="" />
+                </AriaButton>
+                <Dropdown.Popover className="w-60">
+                  <div className="border-b border-secondary px-4 py-3">
+                    {name && <p className="truncate text-sm font-semibold text-primary">{name}</p>}
+                    <p className="truncate text-sm text-tertiary">@{user.username}</p>
+                  </div>
+                  <Dropdown.Menu aria-label="Акаунт">
+                    <Dropdown.Item icon={User01} href="/account">Акаунт</Dropdown.Item>
+                    <Dropdown.Separator />
+                    <Dropdown.Item icon={LogOut01} onAction={() => void signOut()}>Вийти</Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown.Root>
+            ) : (
+              <Button href="/auth" size="sm" color="secondary">Увійти</Button>
+            )}
           </nav>
         </div>
       </header>
 
       <Outlet />
 
-      <footer className="border-t border-gray-200 bg-gray-50">
-        <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-gray-500 sm:px-6 lg:px-8">
+      <footer className="border-t border-secondary bg-secondary">
+        <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-tertiary sm:px-6 lg:px-8">
           Створюємо курс крок за кроком 🎸
         </div>
       </footer>

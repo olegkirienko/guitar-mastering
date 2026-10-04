@@ -17,16 +17,16 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
       mode="prediction"
       onCheck={() => setPredicted(true)}
     />
-    {predicted && <section aria-labelledby="repeats-lab-title" className="rounded-lg border border-gray-200 bg-white p-5">
-      <h3 id="repeats-lab-title" className="font-semibold text-gray-950">{content.summaryCaption}</h3>
-      <p className="mt-1 text-sm text-gray-600">{content.modelNote}</p>
+    {predicted && <section aria-labelledby="repeats-lab-title" className="rounded-lg border border-secondary bg-primary p-5">
+      <h3 id="repeats-lab-title" className="font-semibold text-primary">{content.summaryCaption}</h3>
+      <p className="mt-1 text-sm text-tertiary">{content.modelNote}</p>
       <div className="mt-4 space-y-3">
         <Track label={content.trackA} offset={trackOffset(comparisonRepeats.a, fraction)} />
         <Track label={content.trackB} offset={trackOffset(comparisonRepeats.b, fraction)} />
         <div>
-          <p className="text-sm text-gray-600">{content.timerLabel}</p>
-          <div className="mt-1 h-2 rounded-full bg-gray-100" aria-hidden="true">
-            <div className="h-2 rounded-full bg-gray-500" style={{ width: `${fraction * 100}%` }} />
+          <p className="text-sm text-tertiary">{content.timerLabel}</p>
+          <div className="mt-1 h-2 rounded-full bg-tertiary" aria-hidden="true">
+            <div className="h-2 rounded-full bg-fg-quaternary" style={{ width: `${fraction * 100}%` }} />
           </div>
         </div>
       </div>
@@ -36,12 +36,12 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
           <Button color="secondary" size="lg" className={disabledLook} aria-disabled={finished} onClick={showSummary}>{content.showSummaryLabel}</Button>
         </> : <Button size="lg" className={disabledLook} aria-disabled={running} onClick={run}>{finished ? content.rerunLabel : content.runLabel}</Button>}
       </div>
-      <table className="mt-4 w-full text-left text-sm text-gray-700">
+      <table className="mt-4 w-full text-left text-sm text-secondary">
         <caption className="sr-only">{content.summaryCaption}</caption>
         <thead><tr><th scope="col" className="py-1 font-medium">{content.trackA}</th><th scope="col" className="py-1 font-medium">{content.trackB}</th></tr></thead>
         <tbody><tr><td className="py-1">{countA}</td><td className="py-1">{countB}</td></tr></tbody>
       </table>
-      <div aria-live="polite" className="mt-3 text-sm text-gray-700">
+      <div aria-live="polite" className="mt-3 text-sm text-secondary">
         {finished && <p>{`A: ${countA} повтори; B: ${countB} повторів; час однаковий.`} {content.countFeedback}</p>}
       </div>
     </section>}
@@ -58,8 +58,8 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
         <Button color="secondary" size="lg" onClick={() => audio.playTone(220, toneGain[220])}>{content.listenA}</Button>
         <Button color="secondary" size="lg" onClick={() => audio.playTone(440, toneGain[440])}>{content.listenB}</Button>
       </div>}
-      <div aria-live="polite" className="text-sm text-gray-700">
-        {resultShown && <p><strong className="font-semibold text-gray-950">{content.result}</strong> {content.resultFeedback}</p>}
+      <div aria-live="polite" className="text-sm text-secondary">
+        {resultShown && <p><strong className="font-semibold text-primary">{content.result}</strong> {content.resultFeedback}</p>}
       </div>
     </div>}
   </div>;

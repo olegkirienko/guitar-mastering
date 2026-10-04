@@ -1,7 +1,7 @@
 @theme {
     /* FONT FAMILY */
-    --font-body: var(--font-inter, "Inter"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    --font-display: var(--font-inter, "Inter"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-body: "Inter", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
     --font-mono: ui-monospace, "Roboto Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
     /* FONT SIZE */
@@ -118,6 +118,14 @@
     --color-brand-800: #62301f;
     --color-brand-900: #51291d;
     --color-brand-950: #3d1f16;
+
+    /* CREAM: warm studio surfaces and borders; 600 is muted text that keeps AA on every surface. */
+    --color-cream-25: #fffcf7;
+    --color-cream-50: #fcf7ef;
+    --color-cream-100: #f6eee1;
+    --color-cream-200: #ecdfcc;
+    --color-cream-300: #dccab0;
+    --color-cream-600: #66615b;
 
     /* LIGHT MODE VARIABLES */
 
@@ -277,18 +285,18 @@
     /* TEXT COLORS */
     --color-text-primary: var(--color-neutral-900);
     --color-text-tertiary: var(--color-neutral-600);
-    --color-text-error-primary: var(--color-red-600);
-    --color-text-warning-primary: var(--color-yellow-600);
-    --color-text-success-primary: var(--color-green-600);
+    --color-text-error-primary: var(--color-red-700);
+    --color-text-warning-primary: var(--color-yellow-800);
+    --color-text-success-primary: var(--color-green-800);
     --color-text-secondary: var(--color-neutral-700);
     --color-text-secondary_hover: var(--color-neutral-800);
     --color-text-tertiary_hover: var(--color-neutral-700);
     --color-text-brand-secondary: var(--color-brand-700);
-    --color-text-placeholder: var(--color-neutral-500);
+    --color-text-placeholder: var(--color-cream-600);
     --color-text-brand-tertiary: var(--color-brand-600);
     --color-text-editor-icon-fg: var(--color-neutral-400);
     --color-text-editor-icon-fg_active: var(--color-neutral-500);
-    --color-text-quaternary: var(--color-neutral-500);
+    --color-text-quaternary: var(--color-cream-600);
     --color-text-brand-primary: var(--color-brand-900);
     --color-text-primary_on-brand: var(--color-white);
     --color-text-secondary_on-brand: var(--color-brand-200);
@@ -299,10 +307,10 @@
     --color-text-brand-secondary_hover: var(--color-brand-800);
 
     /* BORDER COLORS */
-    --color-border-primary: var(--color-neutral-300);
-    --color-border-secondary: var(--color-neutral-200);
+    --color-border-primary: var(--color-cream-300);
+    --color-border-secondary: var(--color-cream-200);
     --color-border-secondary_alt: rgb(0 0 0 / 0.1);
-    --color-border-tertiary: var(--color-neutral-100);
+    --color-border-tertiary: var(--color-cream-100);
     --color-border-error: var(--color-red-500);
     --color-border-error_subtle: var(--color-red-300);
     --color-border-brand: var(--color-brand-500);
@@ -330,8 +338,8 @@
     --color-fg-brand-secondary_hover: var(--color-brand-600);
 
     /* BACKGROUND COLORS */
-    --color-bg-primary: var(--color-white);
-    --color-bg-tertiary: var(--color-neutral-100);
+    --color-bg-primary: var(--color-cream-25);
+    --color-bg-tertiary: var(--color-cream-100);
     --color-bg-brand-primary: var(--color-brand-50);
     --color-bg-error-secondary: var(--color-red-100);
     --color-bg-warning-primary: var(--color-yellow-50);
@@ -343,16 +351,16 @@
     --color-bg-error-solid: var(--color-red-600);
     --color-bg-warning-solid: var(--color-yellow-600);
     --color-bg-success-solid: var(--color-green-600);
-    --color-bg-secondary_hover: var(--color-neutral-100);
-    --color-bg-primary_hover: var(--color-neutral-50);
+    --color-bg-secondary_hover: var(--color-cream-100);
+    --color-bg-primary_hover: var(--color-cream-50);
     --color-bg-brand-solid_hover: var(--color-brand-700);
     --color-bg-error-primary: var(--color-red-50);
     --color-bg-brand-secondary: var(--color-brand-100);
-    --color-bg-secondary: var(--color-neutral-50);
-    --color-bg-quaternary: var(--color-neutral-200);
-    --color-bg-primary_alt: var(--color-white);
+    --color-bg-secondary: var(--color-cream-50);
+    --color-bg-quaternary: var(--color-cream-200);
+    --color-bg-primary_alt: var(--color-cream-25);
     --color-bg-brand-primary_alt: var(--color-brand-50);
-    --color-bg-secondary_alt: var(--color-neutral-50);
+    --color-bg-secondary_alt: var(--color-cream-50);
     --color-bg-overlay: var(--color-neutral-950);
     --color-bg-brand-section: var(--color-brand-800);
     --color-bg-brand-section_subtle: var(--color-brand-700);

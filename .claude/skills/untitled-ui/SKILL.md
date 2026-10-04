@@ -50,9 +50,6 @@ Existing hand-written lesson components stay until their lesson migrates.
 - Small transitions use `transition duration-100 ease-linear`.
 - Props follow the library: `size`, `color`, `isDisabled`, `isLoading`,
   `isInvalid`, `iconLeading`, `iconTrailing`.
-- `globals.css` keeps two overrides (`--text-xs--line-height`,
-  `--text-xl--line-height`) for the unmigrated pages; remove them when the
-  pages move to Untitled UI components.
 
 ## Verify
 

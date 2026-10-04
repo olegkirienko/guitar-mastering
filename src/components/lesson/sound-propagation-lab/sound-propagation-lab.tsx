@@ -10,30 +10,30 @@ export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPr
   const { predictionGroupId, predictionId, setPredictionId, predictionChecked, setPredictionChecked, predictionMade, setPredictionMade, playback, setPlayback, frame, sourceStopped, observationAnswered, setObservationAnswered, observationAttempts, setObservationAttempts, staticReviewed, staticFrameIndex, setStaticFrameIndex, displayedFrame, frontIndex, wavefrontX, activeMarkerOffsets, rarefactionX, stringOffset, eardrumOffset, status, selectedPrediction, modelObserved, play, replay, stopSource, finishStaticReview, nextStaticFrame } = useSoundPropagationLab({ content, staticMode, onComplete });
   return <div className="space-y-7">
     <fieldset className="space-y-4" aria-describedby={predictionChecked ? `${predictionGroupId}-feedback` : undefined}>
-      <legend className="text-lg font-semibold text-gray-950">{content.predictionQuestion}</legend>
+      <legend className="text-lg font-semibold text-primary">{content.predictionQuestion}</legend>
       <div className="grid gap-3 sm:grid-cols-2">
-        {content.predictionChoices.map((choice) => <label key={choice.id} className="flex cursor-pointer flex-col rounded-lg border border-gray-200 p-4 text-gray-700 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-600 has-[:focus-visible]:ring-offset-2 last:sm:col-span-2">
+        {content.predictionChoices.map((choice) => <label key={choice.id} className="flex cursor-pointer flex-col rounded-lg border border-secondary p-4 text-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-600 has-[:focus-visible]:ring-offset-2 last:sm:col-span-2">
           <span className="flex items-start gap-3"><input type="radio" name={predictionGroupId} value={choice.id} checked={predictionId === choice.id} onChange={() => { setPredictionId(choice.id); setPredictionChecked(false); }} className="mt-1 size-4 accent-brand-600" /><span>{choice.label}</span></span>
           {(choice.id === 'same-air' || choice.id === 'change') && <PredictionMiniScheme model={choice.id} />}
         </label>)}
       </div>
       <Button size="lg" isDisabled={!predictionId} onClick={() => { setPredictionChecked(true); setPredictionMade(true); }}>Зберегти прогноз</Button>
-      {predictionChecked && selectedPrediction && <div id={`${predictionGroupId}-feedback`} role="status" className="rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-700"><p><strong>Прогноз збережено.</strong> {selectedPrediction.feedback}</p></div>}
+      {predictionChecked && selectedPrediction && <div id={`${predictionGroupId}-feedback`} role="status" className="rounded-lg bg-secondary p-4 text-sm leading-6 text-secondary"><p><strong>Прогноз збережено.</strong> {selectedPrediction.feedback}</p></div>}
     </fieldset>
 
-    {predictionMade && <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-6">
+    {predictionMade && <div className="rounded-xl border border-secondary bg-secondary p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-semibold text-gray-950">Лабораторія поширення звуку</p>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600">Рух сильно сповільнено й збільшено, щоб його було видно. Стеж за смугастою ділянкою повітря та за контуром зміни.</p>
+          <p className="font-semibold text-primary">Лабораторія поширення звуку</p>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-tertiary">Рух сильно сповільнено й збільшено, щоб його було видно. Стеж за смугастою ділянкою повітря та за контуром зміни.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-800">якісна модель</span>
-          {staticMode && <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700">покадровий режим</span>}
+          {staticMode && <span className="rounded-full bg-quaternary px-3 py-1 text-xs font-semibold text-secondary">покадровий режим</span>}
         </div>
       </div>
 
-      <div className="mt-5 overflow-x-auto rounded-lg border border-brand-200 bg-white">
+      <div className="mt-5 overflow-x-auto rounded-lg border border-brand-200 bg-primary">
         <svg viewBox="0 0 360 190" className="h-auto min-w-[560px] w-full" role="img" focusable="false" aria-labelledby="propagation-title propagation-description">
           <title id="propagation-title">Струна, корпус гітари, ділянки повітря та вухо</title>
           <desc id="propagation-description">{status}</desc>
@@ -73,8 +73,8 @@ export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPr
           {displayedFrame === 6 && <text x="319" y="146" textAnchor="middle" fill="#783923" fontSize="9">вухо отримало зміну</text>}
           </g>
         </svg>
-        <div className="border-t border-gray-200 px-4 py-3 text-sm leading-6 text-gray-700" role="status" aria-live="polite" aria-atomic="true">
-          {staticMode && <span className="font-semibold text-gray-950">Кадр {staticFrameIndex + 1} із {staticFrameMap.length}. </span>}{status}
+        <div className="border-t border-secondary px-4 py-3 text-sm leading-6 text-secondary" role="status" aria-live="polite" aria-atomic="true">
+          {staticMode && <span className="font-semibold text-primary">Кадр {staticFrameIndex + 1} із {staticFrameMap.length}. </span>}{status}
         </div>
       </div>
 
@@ -88,21 +88,21 @@ export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPr
           <Button color="secondary" size="lg" iconLeading={StopCircle} isDisabled={frame < 3 || sourceStopped || playback === 'finished'} onClick={stopSource}>Зупинити струну</Button>
         </>}
       </div>
-      {sourceStopped && playback !== 'finished' && <p className="mt-3 text-sm leading-6 text-gray-600">Нові зміни більше не виникають, але вже створена зміна продовжує шлях до вуха.</p>}
+      {sourceStopped && playback !== 'finished' && <p className="mt-3 text-sm leading-6 text-tertiary">Нові зміни більше не виникають, але вже створена зміна продовжує шлях до вуха.</p>}
 
-      <details className="mt-6 rounded-lg border border-gray-200 bg-white p-4" open={staticMode}>
-        <summary className="cursor-pointer font-semibold text-gray-950">Текстова транскрипція: чотири фази моделі</summary>
-        <p className="mt-3 text-sm leading-6 text-gray-600">Цей опис передає весь причинний шлях без анімації та без аудіо.</p>
+      <details className="mt-6 rounded-lg border border-secondary bg-primary p-4" open={staticMode}>
+        <summary className="cursor-pointer font-semibold text-primary">Текстова транскрипція: чотири фази моделі</summary>
+        <p className="mt-3 text-sm leading-6 text-tertiary">Цей опис передає весь причинний шлях без анімації та без аудіо.</p>
         <ol className="mt-4 grid gap-3 sm:grid-cols-2">
-          {content.staticFrames.map((item, index) => <li key={item.title} className="rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-700"><p className="font-semibold text-gray-950">{index + 1}. {item.title}</p><p className="mt-1">{item.description}</p></li>)}
+          {content.staticFrames.map((item, index) => <li key={item.title} className="rounded-lg bg-secondary p-4 text-sm leading-6 text-secondary"><p className="font-semibold text-primary">{index + 1}. {item.title}</p><p className="mt-1">{item.description}</p></li>)}
         </ol>
         {!staticMode && <Button size="lg" className="mt-4" isDisabled={staticReviewed} onClick={finishStaticReview}>{staticReviewed ? 'Транскрипцію переглянуто' : 'Я прочитав/ла транскрипцію'}</Button>}
       </details>
     </div>}
 
-    {modelObserved && <div className="border-t border-gray-200 pt-7">
+    {modelObserved && <div className="border-t border-secondary pt-7">
       <ChoiceQuestion question={content.observationQuestion} choices={content.observationChoices} correctChoiceId="change" onCheck={(_, isCorrect) => { setObservationAttempts((current) => current + 1); if (isCorrect) setObservationAnswered(true); }} />
-      {(observationAnswered || observationAttempts >= 2) && <div className="mt-5 rounded-lg bg-brand-25 p-5 text-sm leading-6 text-gray-700"><p className="font-semibold text-gray-950">Відкриття: звукова хвиля</p><p className="mt-2">{content.reveal}</p></div>}
+      {(observationAnswered || observationAttempts >= 2) && <div className="mt-5 rounded-lg bg-brand-25 p-5 text-sm leading-6 text-secondary"><p className="font-semibold text-primary">Відкриття: звукова хвиля</p><p className="mt-2">{content.reveal}</p></div>}
     </div>}
   </div>;
 }
