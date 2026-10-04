@@ -1,5 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router';
+import { Navigate, Outlet, useLocation, useNavigation } from 'react-router';
 import { PageSkeleton } from '@/components/page-skeleton/page-skeleton';
+import { guardOutcome } from '@/components/require-auth/utils/guard-outcome';
 import { ServerUnavailable } from '@/components/server-unavailable/server-unavailable';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -7,8 +8,10 @@ import { useAuth } from '@/hooks/use-auth';
 export function RequireAuth() {
   const auth = useAuth();
   const { pathname } = useLocation();
-  if (auth.state === 'loading') return <PageSkeleton />;
-  if (auth.state === 'unavailable') return <ServerUnavailable onRetry={() => void auth.refresh()} />;
-  if (auth.state === 'guest') return <Navigate to={`/auth?next=${encodeURIComponent(pathname)}`} replace />;
+  const navigation = useNavigation();
+  const outcome = guardOutcome(auth.state, navigation.state);
+  if (outcome === 'skeleton') return <PageSkeleton />;
+  if (outcome === 'unavailable') return <ServerUnavailable onRetry={() => void auth.refresh()} />;
+  if (outcome === 'sign-in') return <Navigate to={`/auth?next=${encodeURIComponent(pathname)}`} replace />;
   return <Outlet />;
 }
