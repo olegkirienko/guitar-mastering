@@ -30,7 +30,7 @@ export function LessonProgressPanel({
                 : accountState === 'loading'
                   ? 'Прогрес зберігається на цьому пристрої. Перевіряємо акаунт…'
                   : 'Прогрес зберігається на цьому пристрої.'}
-      {accountState === 'authenticated' && sync.status === 'error' && <Button color="link-color" size="md" className="ml-2" onClick={retrySync}>Повторити синхронізацію</Button>}
+      {accountState === 'authenticated' && sync.status === 'error' && <Button color="link-color" size="md" className="ml-2 min-h-11" onClick={retrySync}>Повторити синхронізацію</Button>}
     </div>
     {importGuestProgress && <section className="mb-5 rounded-lg border border-brand-200 bg-brand-25 p-4" aria-labelledby="guest-progress-title">
       <h2 id="guest-progress-title" className="font-semibold text-gray-950">Додати прогрес гостя до акаунта?</h2>

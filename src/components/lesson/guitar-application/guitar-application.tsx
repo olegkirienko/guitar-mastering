@@ -1,5 +1,5 @@
+import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
-import { helpButton } from '@/components/lesson/guitar-application/constants';
 import { useGuitarApplication } from '@/components/lesson/guitar-application/hooks/use-guitar-application';
 import type { GuitarApplicationProps } from '@/components/lesson/guitar-application/types';
 import { SameStringPitchExperience } from '@/components/lesson/same-string-pitch-experience/same-string-pitch-experience';
@@ -20,8 +20,8 @@ export function GuitarApplication({ content, preferredPath, audio, completed, on
       <section aria-labelledby="guitar-help-title" className="rounded-lg border border-gray-200 bg-gray-50 p-4">
         <h3 id="guitar-help-title" className="text-sm font-semibold text-gray-950">{content.helpTitle}</h3>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={() => showHelp('no-difference')} className={helpButton}>{content.noDifferenceLabel}</button>
-          <button type="button" onClick={() => showHelp('buzz')} className={helpButton}>{content.buzzLabel}</button>
+          <Button color="secondary" size="lg" onClick={() => showHelp('no-difference')}>{content.noDifferenceLabel}</Button>
+          <Button color="secondary" size="lg" onClick={() => showHelp('buzz')}>{content.buzzLabel}</Button>
         </div>
         <div aria-live="polite" className="mt-3 space-y-1 text-sm text-gray-700">
           {help === 'buzz' && <p>{content.buzzHelp}</p>}

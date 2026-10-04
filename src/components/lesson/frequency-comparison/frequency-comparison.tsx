@@ -1,3 +1,4 @@
+import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { Track } from '@/components/lesson/frequency-comparison/components/track/track';
 import { useFrequencyComparison } from '@/components/lesson/frequency-comparison/hooks/use-frequency-comparison';
@@ -31,9 +32,9 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {staticMode ? <>
-          <button type="button" aria-disabled={finished} onClick={nextMoment} className={`min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${disabledLook}`}>{content.nextMomentLabel}</button>
-          <button type="button" aria-disabled={finished} onClick={showSummary} className={`min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${disabledLook}`}>{content.showSummaryLabel}</button>
-        </> : <button type="button" aria-disabled={running} onClick={run} className={`min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${disabledLook}`}>{finished ? content.rerunLabel : content.runLabel}</button>}
+          <Button size="lg" className={disabledLook} aria-disabled={finished} onClick={nextMoment}>{content.nextMomentLabel}</Button>
+          <Button color="secondary" size="lg" className={disabledLook} aria-disabled={finished} onClick={showSummary}>{content.showSummaryLabel}</Button>
+        </> : <Button size="lg" className={disabledLook} aria-disabled={running} onClick={run}>{finished ? content.rerunLabel : content.runLabel}</Button>}
       </div>
       <table className="mt-4 w-full text-left text-sm text-gray-700">
         <caption className="sr-only">{content.summaryCaption}</caption>
@@ -52,10 +53,10 @@ export function FrequencyComparison({ content, staticMode, audio, onComplete }: 
         mode="prediction"
         onCheck={() => setSoundPredicted(true)}
       />
-      {soundPredicted && <button type="button" onClick={() => setResultShown(true)} className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.showResultLabel}</button>}
+      {soundPredicted && <Button color="secondary" size="lg" onClick={() => setResultShown(true)}>{content.showResultLabel}</Button>}
       {soundPredicted && audio.enabled && <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => audio.playTone(220, toneGain[220])} className="min-h-11 rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.listenA}</button>
-        <button type="button" onClick={() => audio.playTone(440, toneGain[440])} className="min-h-11 rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.listenB}</button>
+        <Button color="secondary" size="lg" onClick={() => audio.playTone(220, toneGain[220])}>{content.listenA}</Button>
+        <Button color="secondary" size="lg" onClick={() => audio.playTone(440, toneGain[440])}>{content.listenB}</Button>
       </div>}
       <div aria-live="polite" className="text-sm text-gray-700">
         {resultShown && <p><strong className="font-semibold text-gray-950">{content.result}</strong> {content.resultFeedback}</p>}
