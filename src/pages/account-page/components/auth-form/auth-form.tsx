@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { inputClass, primaryButton } from '@/pages/account-page/constants';
+import { Button } from '@/components/base/buttons/button';
+import { Input } from '@/components/base/input/input';
 import { ErrorSummary } from '@/pages/account-page/components/error-summary/error-summary';
 import { useAuth } from '@/hooks/use-auth';
 import { ApiError } from '@/utils/api-error';
@@ -18,9 +19,9 @@ export function AuthForm({ kind }: { kind: 'login' | 'register' }) {
   };
   return <form onSubmit={submit} className="space-y-4" noValidate>
     <ErrorSummary error={error} />
-    <div><label htmlFor={`${kind}-username`} className="text-sm font-semibold text-gray-900">Ім’я користувача</label><input id={`${kind}-username`} value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" aria-describedby={error?.fields.username ? `${kind}-username-error` : undefined} className={inputClass} />{error?.fields.username && <p id={`${kind}-username-error`} className="mt-1 text-sm text-red-700">{error.fields.username}</p>}</div>
-    <div><label htmlFor={`${kind}-password`} className="text-sm font-semibold text-gray-900">Пароль</label><input id={`${kind}-password`} type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={kind === 'register' ? 'new-password' : 'current-password'} aria-describedby={`${kind}-password-help${error?.fields.password ? ` ${kind}-password-error` : ''}`} className={inputClass} /><p id={`${kind}-password-help`} className="mt-1 text-xs leading-5 text-gray-500">Від 12 до 128 символів.</p>{error?.fields.password && <p id={`${kind}-password-error`} className="mt-1 text-sm text-red-700">{error.fields.password}</p>}</div>
-    {kind === 'register' && <p className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">Автоматичного відновлення пароля поки немає. Збережи пароль у надійному менеджері.</p>}
-    <button disabled={busy} className={primaryButton}>{busy ? 'Зачекай…' : kind === 'register' ? 'Створити акаунт' : 'Увійти'}</button>
+    <Input id={`${kind}-username`} label="Ім’я користувача" value={username} onChange={setUsername} autoComplete="username" isInvalid={Boolean(error?.fields.username)} hint={error?.fields.username} />
+    <Input id={`${kind}-password`} type="password" label="Пароль" value={password} onChange={setPassword} autoComplete={kind === 'register' ? 'new-password' : 'current-password'} isInvalid={Boolean(error?.fields.password)} hint={<>{error?.fields.password && <span className="block">{error.fields.password}</span>}Від 12 до 128 символів.</>} />
+    {kind === 'register' && <p className="rounded-lg bg-warning-primary p-3 text-sm leading-6 text-warning-primary">Автоматичного відновлення пароля поки немає. Збережи пароль у надійному менеджері.</p>}
+    <Button type="submit" size="lg" isDisabled={busy}>{busy ? 'Зачекай…' : kind === 'register' ? 'Створити акаунт' : 'Увійти'}</Button>
   </form>;
 }
