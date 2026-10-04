@@ -1,4 +1,5 @@
 import { useLessonProgressPanel } from '@/components/lesson/lesson-progress-panel/hooks/use-lesson-progress-panel';
+import { Button } from '@/components/base/buttons/button';
 import type { LessonProgressPanelProps } from '@/components/lesson/lesson-progress-panel/types';
 
 // Local and account progress status shared by every lesson page: the storage
@@ -29,24 +30,24 @@ export function LessonProgressPanel({
                 : accountState === 'loading'
                   ? 'Прогрес зберігається на цьому пристрої. Перевіряємо акаунт…'
                   : 'Прогрес зберігається на цьому пристрої.'}
-      {accountState === 'authenticated' && sync.status === 'error' && <button type="button" onClick={retrySync} className="ml-2 min-h-11 rounded-md px-2 font-semibold text-brand-700 underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-brand-600">Повторити синхронізацію</button>}
+      {accountState === 'authenticated' && sync.status === 'error' && <Button color="link-color" size="md" className="ml-2" onClick={retrySync}>Повторити синхронізацію</Button>}
     </div>
     {importGuestProgress && <section className="mb-5 rounded-lg border border-brand-200 bg-brand-25 p-4" aria-labelledby="guest-progress-title">
       <h2 id="guest-progress-title" className="font-semibold text-gray-950">Додати прогрес гостя до акаунта?</h2>
       <p className="mt-1 text-sm leading-6 text-gray-700">Ми об’єднаємо пройдені кроки на цьому пристрої з прогресом акаунта. Жоден завершений крок не буде втрачено.</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" onClick={confirmGuestImport} className="min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Об’єднати прогрес</button>
-        <button type="button" onClick={keepGuestProgressSeparate} className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Залишити окремо</button>
+        <Button size="lg" onClick={confirmGuestImport}>Об’єднати прогрес</Button>
+        <Button color="secondary" size="lg" onClick={keepGuestProgressSeparate}>Залишити окремо</Button>
       </div>
     </section>}
     {accountState === 'authenticated' && <section className="mb-5 rounded-lg border border-gray-200 bg-gray-50 p-4" aria-labelledby="device-progress-title">
       <h2 id="device-progress-title" className="font-semibold text-gray-950">Прогрес на спільному пристрої</h2>
       <p className="mt-1 text-sm leading-6 text-gray-600">Можна видалити лише локальну копію прогресу цього акаунта. Прогрес на сервері, гостьовий прогрес та дані інших акаунтів залишаться.</p>
-      {!confirmCacheClear ? <button type="button" disabled={sync.status === 'pending'} onClick={() => { setCacheClearMessage(null); setConfirmCacheClear(true); }} className="mt-3 min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{sync.status === 'pending' ? 'Дочекайся синхронізації' : 'Очистити локальну копію'}</button> : <div className="mt-3" role="group" aria-labelledby="device-progress-confirmation">
+      {!confirmCacheClear ? <Button color="secondary" size="lg" className="mt-3" isDisabled={sync.status === 'pending'} onClick={() => { setCacheClearMessage(null); setConfirmCacheClear(true); }}>{sync.status === 'pending' ? 'Дочекайся синхронізації' : 'Очистити локальну копію'}</Button> : <div className="mt-3" role="group" aria-labelledby="device-progress-confirmation">
         <p id="device-progress-confirmation" className="text-sm font-semibold text-gray-950">Очистити локальну копію прогресу цього акаунта?</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <button type="button" disabled={sync.status === 'pending'} onClick={() => { const cleared = clearCurrentAccountCache(); setConfirmCacheClear(false); setCacheClearMessage(cleared ? 'Локальну копію цього акаунта видалено. Серверний прогрес залишився.' : 'Не вдалося очистити локальну копію.'); }} className="min-h-11 rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2">Підтвердити очищення</button>
-          <button type="button" onClick={() => setConfirmCacheClear(false)} className="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Скасувати</button>
+          <Button color="primary-destructive" size="lg" isDisabled={sync.status === 'pending'} onClick={() => { const cleared = clearCurrentAccountCache(); setConfirmCacheClear(false); setCacheClearMessage(cleared ? 'Локальну копію цього акаунта видалено. Серверний прогрес залишився.' : 'Не вдалося очистити локальну копію.'); }}>Підтвердити очищення</Button>
+          <Button color="tertiary" size="lg" onClick={() => setConfirmCacheClear(false)}>Скасувати</Button>
         </div>
       </div>}
       {cacheClearMessage && <p className="mt-3 text-sm text-gray-700" role="status">{cacheClearMessage}</p>}

@@ -1,4 +1,5 @@
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
+import { Button } from '@/components/base/buttons/button';
 import { PredictionMiniScheme } from '@/components/lesson/sound-propagation-lab/components/prediction-mini-scheme/prediction-mini-scheme';
 import { airMarkers, staticFrameMap } from '@/components/lesson/sound-propagation-lab/constants';
 import { useSoundPropagationLab } from '@/components/lesson/sound-propagation-lab/hooks/use-sound-propagation-lab';
@@ -16,7 +17,7 @@ export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPr
           {(choice.id === 'same-air' || choice.id === 'change') && <PredictionMiniScheme model={choice.id} />}
         </label>)}
       </div>
-      <button type="button" disabled={!predictionId} onClick={() => { setPredictionChecked(true); setPredictionMade(true); }} className="min-h-11 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Зберегти прогноз</button>
+      <Button size="lg" isDisabled={!predictionId} onClick={() => { setPredictionChecked(true); setPredictionMade(true); }}>Зберегти прогноз</Button>
       {predictionChecked && selectedPrediction && <div id={`${predictionGroupId}-feedback`} role="status" className="rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-700"><p><strong>Прогноз збережено.</strong> {selectedPrediction.feedback}</p></div>}
     </fieldset>
 
@@ -79,14 +80,12 @@ export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPr
 
       <div className="mt-5 flex flex-wrap gap-3">
         {staticMode ? <>
-          <button type="button" disabled={staticFrameIndex === 0} onClick={() => setStaticFrameIndex((current) => Math.max(0, current - 1))} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Назад</button>
-          <button type="button" disabled={staticReviewed} onClick={nextStaticFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-default disabled:bg-success-600 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{staticReviewed ? 'Кадри переглянуто' : staticFrameIndex === staticFrameMap.length - 1 ? 'Завершити перегляд' : 'Далі'}</button>
+          <Button color="secondary" size="lg" isDisabled={staticFrameIndex === 0} onClick={() => setStaticFrameIndex((current) => Math.max(0, current - 1))}>Назад</Button>
+          <Button size="lg" isDisabled={staticReviewed} onClick={nextStaticFrame}>{staticReviewed ? 'Кадри переглянуто' : staticFrameIndex === staticFrameMap.length - 1 ? 'Завершити перегляд' : 'Далі'}</Button>
         </> : <>
-          <button type="button" onClick={() => playback === 'playing' ? setPlayback('paused') : play()} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-            {playback === 'playing' ? <PauseCircle className="size-4" /> : <Play className="size-4" />}{playback === 'playing' ? 'Пауза' : playback === 'paused' ? 'Продовжити' : 'Відтворити'}
-          </button>
-          <button type="button" onClick={replay} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />Повторити</button>
-          <button type="button" disabled={frame < 3 || sourceStopped || playback === 'finished'} onClick={stopSource} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><StopCircle className="size-4" />Зупинити струну</button>
+          <Button size="lg" iconLeading={playback === 'playing' ? PauseCircle : Play} onClick={() => playback === 'playing' ? setPlayback('paused') : play()}>{playback === 'playing' ? 'Пауза' : playback === 'paused' ? 'Продовжити' : 'Відтворити'}</Button>
+          <Button color="secondary" size="lg" iconLeading={RefreshCw01} onClick={replay}>Повторити</Button>
+          <Button color="secondary" size="lg" iconLeading={StopCircle} isDisabled={frame < 3 || sourceStopped || playback === 'finished'} onClick={stopSource}>Зупинити струну</Button>
         </>}
       </div>
       {sourceStopped && playback !== 'finished' && <p className="mt-3 text-sm leading-6 text-gray-600">Нові зміни більше не виникають, але вже створена зміна продовжує шлях до вуха.</p>}
@@ -97,7 +96,7 @@ export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPr
         <ol className="mt-4 grid gap-3 sm:grid-cols-2">
           {content.staticFrames.map((item, index) => <li key={item.title} className="rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-700"><p className="font-semibold text-gray-950">{index + 1}. {item.title}</p><p className="mt-1">{item.description}</p></li>)}
         </ol>
-        {!staticMode && <button type="button" disabled={staticReviewed} onClick={finishStaticReview} className="mt-4 min-h-11 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-default disabled:bg-success-600 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{staticReviewed ? 'Транскрипцію переглянуто' : 'Я прочитав/ла транскрипцію'}</button>}
+        {!staticMode && <Button size="lg" className="mt-4" isDisabled={staticReviewed} onClick={finishStaticReview}>{staticReviewed ? 'Транскрипцію переглянуто' : 'Я прочитав/ла транскрипцію'}</Button>}
       </details>
     </div>}
 

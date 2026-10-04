@@ -1,4 +1,5 @@
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
+import { Button } from '@/components/base/buttons/button';
 import { useSoundPathCheckpoint } from '@/components/lesson/sound-path-checkpoint/hooks/use-sound-path-checkpoint';
 import type { SoundPathCheckpointProps } from '@/components/lesson/sound-path-checkpoint/types';
 import { cx } from '@/utils/cx';
@@ -38,8 +39,8 @@ export function SoundPathCheckpoint({ content, initiallyPassed, onComplete }: So
             <p className="min-w-0 flex-1 pt-1 text-sm font-medium leading-6 text-gray-800">{card.label}</p>
           </div>
           <div className="mt-3 flex flex-wrap gap-2 pl-12">
-            <button type="button" disabled={index === 0} onClick={() => moveCard(card.id, index - 1)} aria-label={`Перемістити «${card.label}» раніше`} className="min-h-11 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Раніше</button>
-            <button type="button" disabled={index === order.length - 1} onClick={() => moveCard(card.id, index + 1)} aria-label={`Перемістити «${card.label}» пізніше`} className="min-h-11 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Пізніше</button>
+            <Button color="secondary" size="md" isDisabled={index === 0} onClick={() => moveCard(card.id, index - 1)} aria-label={`Перемістити «${card.label}» раніше`}>Раніше</Button>
+            <Button color="secondary" size="md" isDisabled={index === order.length - 1} onClick={() => moveCard(card.id, index + 1)} aria-label={`Перемістити «${card.label}» пізніше`}>Пізніше</Button>
           </div>
           {hasCorrectConnection && <p className="mt-3 pl-12 text-xs font-semibold text-success-700">Наступна причинна ланка з'єднана правильно.</p>}
         </li>;
@@ -47,11 +48,11 @@ export function SoundPathCheckpoint({ content, initiallyPassed, onComplete }: So
     </ol>
     <p className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</p>
 
-    {!sequenceReady && <button type="button" onClick={checkSequence} className="min-h-11 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Перевірити порядок</button>}
+    {!sequenceReady && <Button size="lg" onClick={checkSequence}>Перевірити порядок</Button>}
 
     {result === 'incorrect' && <div id={feedbackId} role="status" className="rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-700">
       <div className="flex gap-3"><HelpCircle className="mt-0.5 size-5 shrink-0 text-brand-700" /><p><strong>Знайдено перший розрив.</strong> {hint}</p></div>
-      {attempts >= 2 && <button type="button" onClick={showSequence} className="mt-4 min-h-11 rounded-lg border border-brand-300 bg-white px-4 py-2.5 font-semibold text-brand-700 outline-none hover:bg-brand-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Показати й пояснити</button>}
+      {attempts >= 2 && <Button color="secondary" size="lg" className="mt-4" onClick={showSequence}>Показати й пояснити</Button>}
     </div>}
 
     {sequenceReady && <div id={feedbackId} className="space-y-6">

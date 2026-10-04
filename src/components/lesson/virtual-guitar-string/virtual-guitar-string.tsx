@@ -1,4 +1,5 @@
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
+import { Button } from '@/components/base/buttons/button';
 import { motionFrames } from '@/components/lesson/virtual-guitar-string/constants';
 import { useVirtualGuitarString } from '@/components/lesson/virtual-guitar-string/hooks/use-virtual-guitar-string';
 import type { VirtualGuitarStringProps } from '@/components/lesson/virtual-guitar-string/types';
@@ -50,21 +51,19 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
                 ? 'Звук увімкнено. Він почнеться лише після щипка струни.'
                 : 'Звук необов’язковий: візуальна модель і текст показують весь результат.'}
         </div>
-        <button type="button" onClick={toggleAudio} aria-pressed={audioEnabled} className="min-h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-          {audioEnabled ? 'Вимкнути звук' : audioStatus === 'blocked' ? 'Спробувати ввімкнути звук' : 'Увімкнути звук'}
-        </button>
+        <Button color="secondary" size="md" className="shrink-0" aria-pressed={audioEnabled} onClick={toggleAudio}>{audioEnabled ? 'Вимкнути звук' : audioStatus === 'blocked' ? 'Спробувати ввімкнути звук' : 'Увімкнути звук'}</Button>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">
         {staticMode ? <>
-          <button type="button" disabled={!hasPlucked} onClick={previousFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Попередній кадр</button>
-          <button type="button" onClick={nextFrame} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><Play className="size-4" />Наступний кадр</button>
+          <Button color="secondary" size="lg" isDisabled={!hasPlucked} onClick={previousFrame}>Попередній кадр</Button>
+          <Button size="lg" iconLeading={Play} onClick={nextFrame}>Наступний кадр</Button>
         </> : <>
-          <button type="button" onClick={pluck} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><Play className="size-4" />Смикнути</button>
-          <button type="button" disabled={stringState !== 'playing' && stringState !== 'paused'} onClick={togglePlayback} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{stringState === 'playing' ? <PauseCircle className="size-4" /> : <Play className="size-4" />}{stringState === 'playing' ? 'Пауза' : 'Продовжити'}</button>
+          <Button size="lg" iconLeading={Play} onClick={pluck}>Смикнути</Button>
+          <Button color="secondary" size="lg" iconLeading={stringState === 'playing' ? PauseCircle : Play} isDisabled={stringState !== 'playing' && stringState !== 'paused'} onClick={togglePlayback}>{stringState === 'playing' ? 'Пауза' : 'Продовжити'}</Button>
         </>}
-        {!staticMode && <button type="button" onClick={toggleSpeed} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><RefreshCw01 className="size-4" />{slow ? 'Швидкість: повільно' : 'Швидкість: 1×'}</button>}
-        <button type="button" disabled={!isStopAvailable} aria-describedby={!isStopAvailable ? 'stop-string-guidance' : undefined} onClick={stop} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"><StopCircle className="size-4" />Зупинити струну</button>
+        {!staticMode && <Button color="secondary" size="lg" iconLeading={RefreshCw01} onClick={toggleSpeed}>{slow ? 'Швидкість: повільно' : 'Швидкість: 1×'}</Button>}
+        <Button color="secondary" size="lg" iconLeading={StopCircle} isDisabled={!isStopAvailable} aria-describedby={!isStopAvailable ? 'stop-string-guidance' : undefined} onClick={stop}>Зупинити струну</Button>
       </div>
       {!isStopAvailable && <p id="stop-string-guidance" className="mt-2 text-sm text-gray-600">{stopGuidance}</p>}
     </div>
