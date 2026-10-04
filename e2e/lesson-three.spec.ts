@@ -77,3 +77,63 @@ test("completes intro and the length experiment with the keyboard, without audio
   await expect(page.getByRole("heading", { name: "Яка частина струни тремтить?" })).toBeVisible();
   await expect(page.getByText("довжиною частини, що коливається")).toBeVisible();
 });
+
+async function press(page: Page, name: string, role: "button" | "radio" = "button") {
+  const control = page.getByRole(role, { name, exact: true });
+  await control.focus();
+  await control.press(role === "radio" ? "Space" : "Enter");
+}
+
+test("tension and density change one factor each and name it only after the experiment", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  const account = await mockAccount(page, { [lessonOneId]: lessonOneCompleted, [lessonTwoId]: lessonTwoCompleted, [lessonThreeId]: { currentStepId: "length", completedStepIds: ["intro", "length"] } });
+  await page.goto(`${applicationOrigin}/lessons/03/length`);
+  await press(page, "Далі: наскільки туго?");
+
+  await expect(page.getByRole("heading", { name: "Наскільки туго?" })).toBeFocused();
+  await expect(page.getByRole("region", { name: "Дві однакові струни, одну тягнуть сильніше" })).toBeVisible();
+  await expect(page.getByText(/(^|[^а-яіїєґ])натяг(ом)?([^а-яіїєґ]|$)/i)).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: "Наскільки туго натягнута" })).toHaveCount(0);
+  await press(page, "Вона коротша", "radio");
+  await press(page, "Перевірити");
+  await expect(page.getByText("обидві струни однакової довжини", { exact: false })).toBeVisible();
+  await expect(page.getByText("кілки", { exact: false }).first()).toBeVisible();
+
+  await press(page, "Частішими", "radio");
+  await page.getByRole("button", { name: "Перевірити" }).nth(1).press("Enter");
+  const tight = page.getByRole("radiogroup", { name: "Наскільки туго натягнута" });
+  await expect(tight).not.toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByRole("radiogroup", { name: "Довжина частини, яка тремтить" })).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByRole("radiogroup", { name: "Скільки важить кожен сантиметр" })).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByText("натягом")).toHaveCount(0);
+  const normal = tight.getByRole("radio", { name: "звичайно" });
+  await normal.focus();
+  await normal.press("ArrowDown");
+  await expect(page.getByRole("status").filter({ hasText: "330 Гц — частіше, ніж було" })).toBeVisible();
+  await expect(page.getByText("натягом")).toBeVisible();
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "length", "tension"]);
+  await noHorizontalScroll(page);
+  await press(page, "Далі: товста чи важка?");
+
+  await expect(page.getByRole("heading", { name: "Товста чи важка?" })).toBeFocused();
+  await expect(page.getByText("лінійн", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("Чесне порівняння")).toHaveCount(0);
+  await press(page, "Так", "radio");
+  await press(page, "Перевірити");
+  await expect(page.getByText("Відрізняється більше ніж одне", { exact: false })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Чесне порівняння" })).toBeVisible();
+
+  await press(page, "Легша", "radio");
+  await page.getByRole("button", { name: "Перевірити" }).nth(1).press("Enter");
+  const weight = page.getByRole("radiogroup", { name: "Скільки важить кожен сантиметр" });
+  await expect(page.getByRole("radiogroup", { name: "Довжина частини, яка тремтить" })).toHaveAttribute("aria-disabled", "true");
+  await expect(tight).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByText("лінійною густиною")).toHaveCount(0);
+  const light = weight.getByRole("radio", { name: "легка" });
+  await light.focus();
+  await light.press("ArrowDown");
+  await expect(page.getByRole("status").filter({ hasText: "147 Гц — рідше, ніж було" })).toBeVisible();
+  await expect(page.getByText("лінійною густиною")).toBeVisible();
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "length", "tension", "density"]);
+  await noHorizontalScroll(page);
+});

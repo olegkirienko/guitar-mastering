@@ -2,7 +2,7 @@ import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { RepeatDensityTrack } from '@/components/lesson/repeat-density-track/repeat-density-track';
 import { FactorRegulator } from '@/components/lesson/string-factor-experiment/components/factor-regulator/factor-regulator';
-import { StringSchematic } from '@/components/lesson/string-factor-experiment/components/string-schematic/string-schematic';
+import { StringSchematic } from '@/components/lesson/string-schematic/string-schematic';
 import { factorOrder } from '@/components/lesson/string-factor-experiment/constants';
 import { useStringFactorExperiment } from '@/components/lesson/string-factor-experiment/hooks/use-string-factor-experiment';
 import type { StringFactorExperimentProps } from '@/components/lesson/string-factor-experiment/types';
