@@ -1,17 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 import { applicationOrigin, json, lessonOneCompleted, lessonOneId, lessonTwoId, mockAccount } from "./support/mock-account";
 
-const guestKey = "guitar-mastering:stage-01-lesson-02";
-const userKey = "guitar-mastering:user:user-1:stage-01-lesson-02";
-
 // Lesson 2 opens once Lesson 1 is completed.
 async function signIn(page: Page, lessonTwo?: Parameters<typeof mockAccount>[1][string]) {
   return mockAccount(page, { [lessonOneId]: lessonOneCompleted, ...(lessonTwo ? { [lessonTwoId]: lessonTwo } : {}) });
 }
 
-// The signed-in device copy is written synchronously on every change.
-async function storedProgress(page: Page) {
-  return page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "{}"), userKey);
+type Account = Awaited<ReturnType<typeof mockAccount>>;
+
+// The progress the mocked server holds now; saves are asynchronous, so read it through expect.poll.
+function saved(account: Account) {
+  return account.progress(lessonTwoId) ?? { currentStepId: "intro", completedStepIds: [] as string[], checkpointPassed: false, completedAt: null as string | null };
 }
 
 async function noHorizontalScroll(page: Page) {
@@ -20,7 +19,7 @@ async function noHorizontalScroll(page: Page) {
 
 test("completes screens 0–1 through the virtual string at 320 px and resumes after reload", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  await signIn(page);
+  const account = await signIn(page);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
@@ -43,11 +42,11 @@ test("completes screens 0–1 through the virtual string at 320 px and resumes a
 
   await page.getByRole("radio", { name: "Відкритий" }).check();
   await page.getByRole("button", { name: "Перевірити" }).click();
-  expect((await storedProgress(page)).completedStepIds).toEqual(["intro"]);
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro"]);
   await page.getByRole("radio", { name: "Притиснутий ближче до корпусу" }).check();
   await page.getByRole("button", { name: "Перевірити" }).click();
   await expect(page.getByText("На тій самій струні ми отримали два різні за висотою звуки", { exact: false })).toBeVisible();
-  expect(await storedProgress(page)).toMatchObject({ currentStepId: "string", completedStepIds: ["intro", "string"] });
+  await expect.poll(() => saved(account)).toMatchObject({ currentStepId: "string", completedStepIds: ["intro", "string"] });
   await noHorizontalScroll(page);
 
   await page.reload();
@@ -61,7 +60,7 @@ async function focusIsNotLost(page: Page) {
 
 test("completes the string step on the guitar path with the keyboard only", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  await signIn(page);
+  const account = await signIn(page);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   const start = page.getByRole("button", { name: "Почати з гітарою" });
@@ -81,76 +80,13 @@ test("completes the string step on the guitar path with the keyboard only", asyn
   const check = page.getByRole("button", { name: "Перевірити" });
   await check.focus();
   await check.press("Enter");
-  expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string"]);
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "string"]);
 
   await noHorizontalScroll(page);
   const back = page.getByRole("button", { name: "Назад до вступу" });
   await back.focus();
   await back.press("Enter");
   await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeFocused();
-});
-
-test("imports guest Lesson 2 progress into the account without preference fields", async ({ page }) => {
-  await page.addInitScript((key) => {
-    localStorage.setItem(key, JSON.stringify({
-      currentStepId: "string",
-      completedStepIds: ["intro", "string"],
-      checkpointPassed: false,
-      completedAt: null,
-      audioEnabled: true,
-      prefersStatic: true,
-    }));
-  }, guestKey);
-  await signIn(page);
-  const requests: unknown[] = [];
-  await page.route("**/api/v1/progress/stage-01-lesson-02", async (route) => {
-    if (route.request().method() === "GET") {
-      return json(route, 200, { item: {
-        lessonId: "stage-01-lesson-02", schemaVersion: 1, contentVersion: 1,
-        progress: { currentStepId: "intro", completedStepIds: [], checkpointPassed: false, completedAt: null },
-        revision: 2, updatedAt: "2026-09-30T00:00:00.000Z",
-      } });
-    }
-    const request = route.request().postDataJSON();
-    requests.push(request);
-    return json(route, 200, { item: {
-      lessonId: "stage-01-lesson-02", ...request, revision: 3, updatedAt: "2026-09-30T00:00:01.000Z",
-    } });
-  });
-
-  await page.goto(`${applicationOrigin}/lessons/02`);
-  await expect(page.getByRole("heading", { name: "Додати прогрес гостя до акаунта?" })).toBeVisible();
-  await page.getByRole("button", { name: "Об’єднати прогрес" }).click();
-  await expect(page.getByText("Прогрес збережено на цьому пристрої та в акаунті.")).toBeVisible();
-  // The import adds reach; the open step stays where the learner is.
-  await expect(page).toHaveURL(/\/lessons\/02\/intro$/);
-  await expect(page.getByRole("link", { name: /Одна струна — два звуки/ }).first()).toBeAttached();
-
-  expect(requests.length).toBeGreaterThan(0);
-  const last = requests[requests.length - 1] as { schemaVersion: number; baseRevision: number; progress: Record<string, unknown> };
-  expect(last).toMatchObject({ schemaVersion: 1, baseRevision: 2, progress: { currentStepId: "intro", completedStepIds: ["intro", "string"] } });
-  expect(Object.keys(last.progress).sort()).toEqual(["checkpointPassed", "completedAt", "completedStepIds", "currentStepId"]);
-});
-
-test("explains unavailable storage and still lets the lesson start", async ({ page }) => {
-  await page.addInitScript((key) => {
-    const getItem = Storage.prototype.getItem;
-    const setItem = Storage.prototype.setItem;
-    Storage.prototype.getItem = function (name: string) {
-      if (name === key || name === "guitar-mastering:lesson-preferences") throw new DOMException("blocked", "SecurityError");
-      return getItem.call(this, name);
-    };
-    Storage.prototype.setItem = function (name: string, value: string) {
-      if (name === key) throw new DOMException("blocked", "SecurityError");
-      return setItem.call(this, name, value);
-    };
-  }, guestKey);
-  await signIn(page);
-  await page.goto(`${applicationOrigin}/lessons/02`);
-
-  await expect(page.getByText("Збереження недоступне — прогрес доступний лише протягом цього сеансу.")).toBeVisible();
-  await page.getByRole("button", { name: "Немає гітари — відкрити віртуальну струну" }).click();
-  await expect(page.getByRole("heading", { name: "Одна струна — два звуки" })).toBeVisible();
 });
 
 test("links Lesson 2 from the home page while Lesson 1 still opens Lesson 1", async ({ page }) => {
@@ -165,7 +101,7 @@ test("links Lesson 2 from the home page while Lesson 1 still opens Lesson 1", as
 });
 
 async function seedStep(page: Page, currentStepId: string, completedStepIds: string[]) {
-  await signIn(page, { currentStepId, completedStepIds });
+  return signIn(page, { currentStepId, completedStepIds });
 }
 
 async function pressButton(page: Page, name: string) {
@@ -226,7 +162,7 @@ async function installFakeAudio(page: Page) {
 
 test("runs screen 2 step by step with reduced motion and the keyboard only", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await seedStep(page, "repeats", ["intro", "string"]);
+  const account = await seedStep(page, "repeats", ["intro", "string"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Передбач і перевір" })).toBeVisible();
@@ -239,7 +175,7 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
   for (let moment = 0; moment < 4; moment += 1) await pressButton(page, "Наступний момент");
   const summary = page.getByRole("table", { name: "Повні повтори за той самий час" });
   await expect(summary.getByRole("cell")).toHaveText(["1", "2"]);
-  expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string"]);
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "string"]);
 
   for (let moment = 4; moment < 16; moment += 1) await nextMoment.press("Enter");
   await expect(nextMoment).toBeFocused();
@@ -251,7 +187,7 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
   await focusIsNotLost(page);
   await expect(page.getByRole("button", { name: "Показати підсумок" })).toBeFocused();
   await expect(page.getByRole("button", { name: "Показати підсумок" })).toBeDisabled();
-  expect((await storedProgress(page)).completedStepIds).toEqual(["intro", "string", "repeats"]);
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "string", "repeats"]);
 
   await expect(page.getByRole("button", { name: "Показати результат" })).toHaveCount(0);
   await answer(page, "Як звучатиме рух, який повторюється частіше?", "Вище");
@@ -262,7 +198,7 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
 });
 
 test("finishes the animated comparison on one shared timer", async ({ page }) => {
-  await seedStep(page, "repeats", ["intro", "string"]);
+  const account = await seedStep(page, "repeats", ["intro", "string"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await answer(page, "Де повторів буде більше, поки час іде однаково?", "Однаково");
@@ -280,12 +216,12 @@ test("finishes the animated comparison on one shared timer", async ({ page }) =>
   const afterExtraPress = await page.getByRole("table", { name: "Повні повтори за той самий час" }).getByRole("cell").nth(1).textContent();
   expect(Number(afterExtraPress)).toBeGreaterThanOrEqual(Number(partway));
   await expect(page.getByText("A: 4 повтори; B: 8 повторів; час однаковий.", { exact: false })).toBeVisible({ timeout: 10_000 });
-  expect((await storedProgress(page)).completedStepIds).toContain("repeats");
+  await expect.poll(() => saved(account).completedStepIds).toContain("repeats");
 });
 
 test("reveals the names before the lab and checks a predicted change on screen 3", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  await seedStep(page, "frequency", ["intro", "string", "repeats"]);
+  const account = await seedStep(page, "frequency", ["intro", "string", "repeats"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Змінюй частоту" })).toHaveCount(0);
@@ -315,7 +251,7 @@ test("reveals the names before the lab and checks a predicted change on screen 3
   await expect(output).toHaveText("330 Гц");
   const lab = page.getByRole("region", { name: "Змінюй частоту" });
   await expect(lab.getByRole("button", { name: "Перевірити" })).toBeDisabled();
-  expect((await storedProgress(page)).completedStepIds).not.toContain("frequency");
+  await expect.poll(() => saved(account).completedStepIds).not.toContain("frequency");
   const higher = lab.getByRole("radio", { name: "вищим" });
   await higher.focus();
   await higher.press("Space");
@@ -323,7 +259,7 @@ test("reveals the names before the lab and checks a predicted change on screen 3
   await expect(lab.getByTestId("lab-feedback")).toHaveText("220 → 330: за секунду повторів стало більше, тому звук став вищим.");
   await expect(page.getByRole("slider", { name: "Частота" })).toBeFocused();
   await expect(lab.getByTestId("lab-feedback")).toHaveAttribute("role", "status");
-  expect((await storedProgress(page)).completedStepIds).toContain("frequency");
+  await expect.poll(() => saved(account).completedStepIds).toContain("frequency");
 
   const slider = page.getByRole("slider", { name: "Частота" });
   await slider.focus();
@@ -340,7 +276,7 @@ test("reveals the names before the lab and checks a predicted change on screen 3
 });
 
 test("separates loudness from pitch on screen 4 without audio", async ({ page }) => {
-  await seedStep(page, "loudness", ["intro", "string", "repeats", "frequency"]);
+  const account = await seedStep(page, "loudness", ["intro", "string", "repeats", "frequency"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByText("Перед прослуховуванням зроби гучність пристрою комфортною", { exact: false })).toBeVisible();
@@ -348,7 +284,7 @@ test("separates loudness from pitch on screen 4 without audio", async ({ page })
   await expect(page.getByRole("button", { name: "Послухати голосніше" })).toHaveCount(0);
   await answer(page, "Ми зробили той самий тон голоснішим. Чи змінилася його висота?", "Так, звук став вищим");
   await expect(page.getByText("Рівень гучності змінився; частота 330 Гц в обох; висота та сама.")).toBeVisible();
-  expect((await storedProgress(page)).completedStepIds).toContain("loudness");
+  await expect.poll(() => saved(account).completedStepIds).toContain("loudness");
 });
 
 test("explains missing and blocked audio and keeps the text path", async ({ page }) => {
@@ -435,7 +371,7 @@ async function moveCardTo(page: Page, card: string, direction: "Раніше" | 
 
 test("completes the whole lesson at 320 px with the keyboard only and no audio", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  await signIn(page);
+  const account = await signIn(page);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await pressButton(page, "Показувати покадрово");
@@ -480,7 +416,7 @@ test("completes the whole lesson at 320 px with the keyboard only and no audio",
   await expect(page.getByTestId("chain-status")).toContainText("Так: більше повних коливань за секунду → більша частота → вищий звук.");
   await answer(page, "500 герців відтворили тихіше, але число герців не змінили. Що сталося з висотою?", "Лишилася тією самою");
   await expect(page.getByText("Перевірку пройдено.")).toBeVisible();
-  expect(await storedProgress(page)).toMatchObject({ checkpointPassed: true, completedAt: null });
+  await expect.poll(() => saved(account)).toMatchObject({ checkpointPassed: true, completedAt: null });
   await pressButton(page, "Далі: підсумок");
 
   await expect(page.getByText("Крок 5 із 5")).toBeVisible();
@@ -488,9 +424,9 @@ test("completes the whole lesson at 320 px with the keyboard only and no audio",
   await expect(page.getByTestId("finish-status")).toBeFocused();
   await expect(page.getByTestId("finish-status")).toContainText("Урок завершено.");
   await expect(page.getByText("Що можна змінити в самій струні", { exact: false })).toBeVisible();
-  const finished = await storedProgress(page);
-  expect(finished.completedStepIds).toEqual(["intro", "string", "repeats", "frequency", "loudness", "guitar", "checkpoint", "complete"]);
-  expect(Number.isFinite(Date.parse(finished.completedAt))).toBe(true);
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "string", "repeats", "frequency", "loudness", "guitar", "checkpoint", "complete"]);
+  expect(Number.isFinite(Date.parse(saved(account).completedAt ?? ""))).toBe(true);
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
   await noHorizontalScroll(page);
 
   await page.reload();
@@ -499,7 +435,7 @@ test("completes the whole lesson at 320 px with the keyboard only and no audio",
 });
 
 test("offers the explanation after repeated wrong orders and still requires the counterexample", async ({ page }) => {
-  await seedStep(page, "checkpoint", ["intro", "string", "repeats", "frequency", "loudness", "guitar"]);
+  const account = await seedStep(page, "checkpoint", ["intro", "string", "repeats", "frequency", "loudness", "guitar"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await pressButton(page, "Перевірити порядок");
@@ -510,17 +446,17 @@ test("offers the explanation after repeated wrong orders and still requires the 
   await pressButton(page, "Показати й пояснити");
   await expect(page.getByTestId("chain-status")).toBeFocused();
   await expect(page.getByTestId("chain-status")).toContainText("Більшу частоту ми чуємо як вищий звук.");
-  expect((await storedProgress(page)).checkpointPassed).toBe(false);
+  await expect.poll(() => saved(account).checkpointPassed).toBe(false);
 
   await answer(page, "500 герців відтворили тихіше, але число герців не змінили. Що сталося з висотою?", "Стала нижчою");
   await expect(page.getByText("Гучність змінилася, але чи змінилося число Гц?").first()).toBeVisible();
-  expect((await storedProgress(page)).checkpointPassed).toBe(false);
+  await expect.poll(() => saved(account).checkpointPassed).toBe(false);
   await answer(page, "500 герців відтворили тихіше, але число герців не змінили. Що сталося з висотою?", "Лишилася тією самою");
-  expect((await storedProgress(page)).checkpointPassed).toBe(true);
+  await expect.poll(() => saved(account).checkpointPassed).toBe(true);
 });
 
 test("applies the discovery on screen 5 through the ready text result", async ({ page }) => {
-  await seedStep(page, "guitar", ["intro", "string", "repeats", "frequency", "loudness"]);
+  const account = await seedStep(page, "guitar", ["intro", "string", "repeats", "frequency", "loudness"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("button", { name: "Не почув/ла різниці" })).toHaveCount(0);
@@ -529,19 +465,13 @@ test("applies the discovery on screen 5 through the ready text result", async ({
   await pressButton(page, "Струна дзижчить");
   await expect(page.getByText("Готовий результат: притиснута струна звучить вище, ніж відкрита.")).toBeVisible();
   await answer(page, "Притиснута струна звучала вище. Що тепер можна сказати про кількість її коливань за секунду?", "Кількість коливань не змінилася");
-  expect((await storedProgress(page)).completedStepIds).not.toContain("guitar");
+  await expect.poll(() => saved(account).completedStepIds).not.toContain("guitar");
   await answer(page, "Притиснута струна звучала вище. Що тепер можна сказати про кількість її коливань за секунду?", "Коливання повторюються частіше — частота більша");
   await expect(page.getByText("Причину зміни дослідимо окремо.", { exact: false })).toBeVisible();
-  expect((await storedProgress(page)).completedStepIds).toContain("guitar");
+  await expect.poll(() => saved(account).completedStepIds).toContain("guitar");
 });
 
-test("falls back safely from a corrupted device copy and keeps a valid completion", async ({ page }) => {
-  await page.addInitScript((key) => localStorage.setItem(key, "{not json"), userKey);
-  await signIn(page);
-  await page.goto(`${applicationOrigin}/lessons/02`);
-  await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
-
-  const completed = await page.context().newPage();
+test("repairs corrupt server progress and keeps a valid completion", async ({ page: completed }) => {
   await signIn(completed, {
     currentStepId: "no-such-step",
     completedStepIds: ["intro", "bogus"],

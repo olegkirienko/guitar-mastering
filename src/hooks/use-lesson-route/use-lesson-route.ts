@@ -8,6 +8,8 @@ import type { LessonProgressAdapter, ProgressValue } from '@/progress/core/types
 type RouteProgress<Local> = {
   progress: Local;
   loaded: boolean;
+  loadFailed: boolean;
+  retrySync(): void;
   setProgress: Dispatch<SetStateAction<Local>>;
 };
 
@@ -16,7 +18,7 @@ type RouteProgress<Local> = {
 export function useLessonRoute<StepId extends string, Local extends ProgressValue<StepId>>(
   routeId: string,
   adapter: LessonProgressAdapter<StepId, Local>,
-  { progress, loaded, setProgress }: RouteProgress<Local>,
+  { progress, loaded, loadFailed, retrySync, setProgress }: RouteProgress<Local>,
 ) {
   const { stepId } = useParams();
   const navigate = useNavigate();
@@ -41,6 +43,7 @@ export function useLessonRoute<StepId extends string, Local extends ProgressValu
 
   let route: LessonRoute<StepId>;
   if (course.status === 'error') route = { kind: 'unavailable', retry: course.retry };
+  else if (loadFailed) route = { kind: 'unavailable', retry: retrySync };
   else if (!ready) route = { kind: 'loading' };
   else if (previous && !course.items.some((item) => item.lessonId === previous.lessonId && item.progress.completedAt !== null)) route = { kind: 'redirect', to: '/course' };
   else if (stepId === undefined) route = { kind: 'redirect', to: `/lessons/${routeId}/${progress.currentStepId}` };

@@ -13,38 +13,29 @@ import type { LessonOneStepId } from '@/data/lessons/stage-01-lesson-01/types';
 import { useLessonOnePage } from '@/pages/lesson-one-page/hooks/use-lesson-one-page';
 
 export function LessonOnePage() {
-  const { route, goTo, progress, setProgress, storageAvailable, sync, accountState, importGuestProgress, confirmGuestImport, keepGuestProgressSeparate, clearCurrentAccountCache, retrySync, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
+  const { route, goTo, progress, setProgress, sync, retrySync, preferencesSaveFailed, audioEnabled, setAudioEnabled, toggleStatic, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, prefersReducedMotion, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonOneContent} currentStop={isCheckpointStep || isCompleteStep ? 5 : isAirStep ? 4 : 1} steps={route.steps} currentStepId={route.stepId}>
-    <LessonProgressPanel
-      storageAvailable={storageAvailable}
-      sync={sync}
-      accountState={accountState}
-      importGuestProgress={importGuestProgress}
-      confirmGuestImport={confirmGuestImport}
-      keepGuestProgressSeparate={keepGuestProgressSeparate}
-      clearCurrentAccountCache={clearCurrentAccountCache}
-      retrySync={retrySync}
-    />
+    <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
       <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600">
         <p className="font-semibold text-gray-950">Рух на екрані</p>
         <p>{prefersReducedMotion ? 'Системне налаштування зменшеного руху активне: досліди показуються покадрово.' : staticMode ? 'Покадровий режим активний. Кадри змінюються лише після твоєї дії.' : 'Короткі моделі можуть рухатися автоматично після запуску.'}</p>
       </div>
-      <Button color="secondary" size="lg" isDisabled={prefersReducedMotion} aria-pressed={staticMode} onClick={() => setProgress((current) => ({ ...current, prefersStatic: !current.prefersStatic }))}>
+      <Button color="secondary" size="lg" isDisabled={prefersReducedMotion} aria-pressed={staticMode} onClick={toggleStatic}>
         {prefersReducedMotion ? 'Покадрово: системне' : staticMode ? 'Показувати рух' : 'Показувати покадрово'}
       </Button>
     </div>
     {!isStringStep && !isAirStep && !isCheckpointStep && !isCompleteStep ? <LessonStep title={lessonOneContent.intro.title} intro={lessonOneContent.intro.invitation} shouldFocus={shouldFocusIntro}>
       <div className="rounded-lg border border-brand-200 bg-brand-25 p-5"><p className="text-lg font-medium text-gray-950">{lessonOneContent.intro.question}</p><p className="mt-3 text-sm leading-6 text-gray-700">{lessonOneContent.intro.reassurance}</p></div>
-      <Button color="secondary" size="lg" className="mt-4" onClick={() => setProgress((current) => ({ ...current, audioEnabled: !current.audioEnabled }))} aria-pressed={progress.audioEnabled}>
-        {progress.audioEnabled ? 'Звук: увімкнено' : 'Звук: вимкнено'}
+      <Button color="secondary" size="lg" className="mt-4" onClick={() => setAudioEnabled(!audioEnabled)} aria-pressed={audioEnabled}>
+        {audioEnabled ? 'Звук: увімкнено' : 'Звук: вимкнено'}
       </Button>
       <Button size="lg" className="mt-6" iconTrailing={ArrowRight} onClick={begin}>{lessonOneContent.intro.startLabel}</Button>
       <p className="mt-4 text-sm text-gray-600">Аудіо не запускається автоматично й не потрібне, щоб пройти урок.</p>
     </LessonStep> : isStringStep ? <div className="space-y-5">
       <LessonStep title={lessonOneContent.string.title} intro={lessonOneContent.string.instruction} shouldFocus={shouldFocusString}>
-        <VirtualGuitarString observationChoices={lessonOneContent.string.observationChoices} predictionChoices={lessonOneContent.string.predictionChoices} audioEnabled={progress.audioEnabled} staticMode={staticMode} onAudioEnabledChange={(audioEnabled) => setProgress((current) => ({ ...current, audioEnabled }))} onExperimentComplete={() => setProgress((current) => ({ ...current, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'string'])) }))} />
+        <VirtualGuitarString observationChoices={lessonOneContent.string.observationChoices} predictionChoices={lessonOneContent.string.predictionChoices} audioEnabled={audioEnabled} staticMode={staticMode} onAudioEnabledChange={setAudioEnabled} onExperimentComplete={() => setProgress((current) => ({ ...current, completedStepIds: Array.from(new Set<LessonOneStepId>([...current.completedStepIds, 'string'])) }))} />
       </LessonStep>
       <RealWorldExperiment title={lessonOneContent.experiment.title} withGuitar={lessonOneContent.experiment.guitar} withoutGuitar={lessonOneContent.experiment.alternative} safetyNote={lessonOneContent.experiment.safety} />
       {progress.completedStepIds.includes('string') && <Button size="lg" iconTrailing={ArrowRight} onClick={openAirLab}>Дослідити рух у повітрі</Button>}

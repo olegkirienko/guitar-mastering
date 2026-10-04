@@ -37,8 +37,6 @@ export function parseLessonTwoProgress(value: unknown): LessonTwoProgress {
     completedStepIds,
     checkpointPassed: progress.checkpointPassed === true,
     completedAt,
-    audioEnabled: progress.audioEnabled === true,
-    prefersStatic: progress.prefersStatic === true,
   });
 }
 

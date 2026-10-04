@@ -30,8 +30,6 @@ export function parseLessonOneProgress(value: unknown): LessonOneProgress {
     completedStepIds,
     checkpointPassed,
     completedAt,
-    audioEnabled: progress.audioEnabled === true,
-    prefersStatic: progress.prefersStatic === true,
   });
 }
 
