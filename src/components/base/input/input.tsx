@@ -167,7 +167,7 @@ export const InputBase = ({
             {/* Password visibility toggle */}
             {type === "password" && (
                 <AriaButton
-                    aria-label="Toggle password visibility"
+                    aria-label={isPasswordVisible ? "Сховати символи" : "Показати символи"}
                     onClick={() => setIsPasswordVisible(!isPasswordVisible)}
                     className={cx(
                         "absolute flex cursor-pointer items-center justify-center text-fg-quaternary transition duration-100 ease-linear hover:text-fg-quaternary_hover focus:text-fg-quaternary_hover focus:outline-hidden",
