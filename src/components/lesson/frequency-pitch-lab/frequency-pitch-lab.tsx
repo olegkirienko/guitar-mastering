@@ -1,5 +1,5 @@
+import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
-import { stepperButton } from '@/components/lesson/frequency-pitch-lab/constants';
 import { useFrequencyPitchLab } from '@/components/lesson/frequency-pitch-lab/hooks/use-frequency-pitch-lab';
 import type { FrequencyPitchLabProps } from '@/components/lesson/frequency-pitch-lab/types';
 import { RepeatDensityTrack } from '@/components/lesson/repeat-density-track/repeat-density-track';
@@ -29,7 +29,7 @@ export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitch
         </div>
       </div>
       {allRevealed && <p className="mt-4 rounded-md bg-brand-25 p-3 text-sm font-semibold text-gray-950">{content.summary}</p>}
-      {!allRevealed && <button type="button" onClick={reveal} className="mt-4 min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.revealLabel}</button>}
+      {!allRevealed && <Button size="lg" className="mt-4" onClick={reveal}>{content.revealLabel}</Button>}
     </section>
     {allRevealed && <>
       <ChoiceQuestion question={content.countQuestion} choices={content.countChoices} correctChoiceId="vibrations" />
@@ -52,12 +52,12 @@ export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitch
             className="h-11 w-full accent-brand-600"
           />
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" aria-disabled={atLowest} onClick={() => { if (!atLowest) change(stepFrequency(frequency, -1)); }} className={stepperButton}>{content.lowerLabel}</button>
-            <button type="button" aria-disabled={atHighest} onClick={() => { if (!atHighest) change(stepFrequency(frequency, 1)); }} className={stepperButton}>{content.higherLabel}</button>
+            <Button color="secondary" size="lg" className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50" aria-disabled={atLowest} onClick={() => { if (!atLowest) change(stepFrequency(frequency, -1)); }}>{content.lowerLabel}</Button>
+            <Button color="secondary" size="lg" className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50" aria-disabled={atHighest} onClick={() => { if (!atHighest) change(stepFrequency(frequency, 1)); }}>{content.higherLabel}</Button>
           </div>
         </div>
         <div className="mt-3"><RepeatDensityTrack frequency={frequency} /></div>
-        {audio.enabled && !changed && <button type="button" onClick={() => audio.playTone(frequency, toneGain[frequency])} className="mt-3 min-h-11 rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.listenLabel}</button>}
+        {audio.enabled && !changed && <Button color="secondary" size="lg" className="mt-3" onClick={() => audio.playTone(frequency, toneGain[frequency])}>{content.listenLabel}</Button>}
         {changed ? <fieldset className="mt-4 space-y-2">
           <legend className="text-sm font-semibold text-gray-950">{content.predictionLegend}</legend>
           <div className="flex flex-wrap gap-2">
@@ -66,7 +66,7 @@ export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitch
               {choice.label}
             </label>)}
           </div>
-          <button type="button" disabled={!prediction} onClick={check} className="min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.checkLabel}</button>
+          <Button size="lg" isDisabled={!prediction} onClick={check}>{content.checkLabel}</Button>
         </fieldset> : !feedback && <p className="mt-4 text-sm text-gray-600">{content.changeFirst}</p>}
         <div role="status" data-testid="lab-feedback" className="mt-3 text-sm text-gray-700">{feedback && <p>{feedback}</p>}</div>
       </section>

@@ -1,5 +1,5 @@
+import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
-import { moveButton } from '@/components/lesson/frequency-pitch-checkpoint/constants';
 import { useFrequencyPitchCheckpoint } from '@/components/lesson/frequency-pitch-checkpoint/hooks/use-frequency-pitch-checkpoint';
 import type { FrequencyPitchCheckpointProps } from '@/components/lesson/frequency-pitch-checkpoint/types';
 import { checkpointPassed } from '@/data/lessons/stage-01-lesson-02-model/utils/chain';
@@ -25,35 +25,37 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 p-3">
             <span className="text-sm font-medium text-gray-950">{index + 1}. {content.cards[card]}</span>
             <span className="flex gap-2">
-              <button
+              <Button
+                color="secondary"
+                size="md"
+                className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                 ref={(element) => { if (element) moveButtons.current.set(`${card}-earlier`, element); }}
-                type="button"
                 aria-disabled={chainDone || index === 0}
                 aria-label={`${content.earlierLabel}: ${content.cards[card]}`}
                 onClick={() => move(index, -1)}
-                className={moveButton}
-              >{content.earlierLabel}</button>
-              <button
+              >{content.earlierLabel}</Button>
+              <Button
+                color="secondary"
+                size="md"
+                className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                 ref={(element) => { if (element) moveButtons.current.set(`${card}-later`, element); }}
-                type="button"
                 aria-disabled={chainDone || index === order.length - 1}
                 aria-label={`${content.laterLabel}: ${content.cards[card]}`}
                 onClick={() => move(index, 1)}
-                className={moveButton}
-              >{content.laterLabel}</button>
+              >{content.laterLabel}</Button>
             </span>
           </div>
           {index < order.length - 1 && outcome && outcome !== 'correct' && links[index] && <p className="pl-3 text-sm text-success-600">↓ {content.correctLink}</p>}
         </li>)}
       </ol>
       <p aria-live="polite" data-testid="chain-move-status" className="sr-only">{chainDone ? '' : moveMessage}</p>
-      {!chainDone && <button type="button" onClick={checkOrder} className="mt-4 min-h-11 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white outline-none hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.checkOrderLabel}</button>}
+      {!chainDone && <Button size="lg" className="mt-4" onClick={checkOrder}>{content.checkOrderLabel}</Button>}
       <div ref={chainStatus} tabIndex={-1} role="status" data-testid="chain-status" className="mt-3 space-y-2 text-sm text-gray-700 outline-none">
         {outcome === 'correct' && <p>{content.orderCorrect}</p>}
         {!chainDone && (outcome === 'hint' || outcome === 'offer-explanation') && <p>{content.orderHint}</p>}
         {explained && <p>{content.explanation}</p>}
       </div>
-      {!chainDone && outcome === 'offer-explanation' && <button type="button" onClick={explain} className="mt-3 min-h-11 rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{content.explainLabel}</button>}
+      {!chainDone && outcome === 'offer-explanation' && <Button color="secondary" size="lg" className="mt-3" onClick={explain}>{content.explainLabel}</Button>}
     </section>
 
     {chainDone && <ChoiceQuestion

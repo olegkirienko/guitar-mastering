@@ -1,4 +1,4 @@
-import type { FC, ReactElement, ReactNode } from "react";
+import type { FC, ReactElement, ReactNode, Ref } from "react";
 import { isValidElement } from "react";
 import type { ButtonProps as AriaButtonProps, LinkProps as AriaLinkProps } from "react-aria-components";
 import { Button as AriaButton, Link as AriaLink } from "react-aria-components";
@@ -8,7 +8,7 @@ import { isReactComponent } from "@/utils/is-react-component";
 export const styles = sortCx({
     common: {
         root: [
-            "group relative inline-flex h-max cursor-pointer items-center justify-center whitespace-nowrap outline-brand transition duration-100 ease-linear before:absolute focus-visible:outline-2 focus-visible:outline-offset-2",
+            "group relative inline-flex h-max cursor-pointer items-center justify-center text-center outline-brand transition duration-100 ease-linear before:absolute focus-visible:outline-2 focus-visible:outline-offset-2",
             // When button is used within `InputGroup`
             "in-data-input-wrapper:shadow-xs in-data-input-wrapper:focus:!z-50 in-data-input-wrapper:in-data-leading:-mr-px in-data-input-wrapper:in-data-leading:rounded-r-none in-data-input-wrapper:in-data-leading:before:rounded-r-none in-data-input-wrapper:in-data-trailing:-ml-px in-data-input-wrapper:in-data-trailing:rounded-l-none in-data-input-wrapper:in-data-trailing:before:rounded-l-none",
             // Disabled styles
@@ -156,7 +156,9 @@ export interface CommonProps {
 /**
  * Props for the button variant (non-link)
  */
-export interface ButtonProps extends CommonProps, Omit<AriaButtonProps, "children" | "className"> {}
+export interface ButtonProps extends CommonProps, Omit<AriaButtonProps, "children" | "className"> {
+    ref?: Ref<HTMLButtonElement>;
+}
 /**
  * Props for the link variant (anchor tag)
  */

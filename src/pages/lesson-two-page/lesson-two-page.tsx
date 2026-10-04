@@ -1,5 +1,6 @@
 import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { Link } from 'react-router';
+import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { FrequencyComparison } from '@/components/lesson/frequency-comparison/frequency-comparison';
 import { FrequencyPitchCheckpoint } from '@/components/lesson/frequency-pitch-checkpoint/frequency-pitch-checkpoint';
@@ -11,7 +12,7 @@ import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { PitchLoudnessComparison } from '@/components/lesson/pitch-loudness-comparison/pitch-loudness-comparison';
 import { SameStringPitchExperience } from '@/components/lesson/same-string-pitch-experience/same-string-pitch-experience';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
-import { stopByStep, primaryButton, backButton } from '@/pages/lesson-two-page/constants';
+import { stopByStep, primaryButton } from '@/pages/lesson-two-page/constants';
 import { useLessonTwoPage } from '@/pages/lesson-two-page/hooks/use-lesson-two-page';
 
 export function LessonTwoPage() {
@@ -33,18 +34,14 @@ export function LessonTwoPage() {
           <p className="font-semibold text-gray-950">{preferences.motionTitle}</p>
           <p>{prefersReducedMotion ? preferences.motionSystem : preferences.motionManual}</p>
         </div>
-        <button type="button" disabled={prefersReducedMotion} aria-pressed={staticMode} onClick={() => setProgress((current) => ({ ...current, prefersStatic: !current.prefersStatic }))} className="min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-          {prefersReducedMotion ? preferences.motionSystemLabel : staticMode ? preferences.motionStaticLabel : preferences.motionAnimatedLabel}
-        </button>
+        <Button color="secondary" size="lg" isDisabled={prefersReducedMotion} aria-pressed={staticMode} onClick={() => setProgress((current) => ({ ...current, prefersStatic: !current.prefersStatic }))}>{prefersReducedMotion ? preferences.motionSystemLabel : staticMode ? preferences.motionStaticLabel : preferences.motionAnimatedLabel}</Button>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 text-sm leading-6 text-gray-600">
           <p className="font-semibold text-gray-950">{preferences.audioTitle}</p>
           <p>{preferences.audioNote}</p>
         </div>
-        <button type="button" aria-pressed={progress.audioEnabled} onClick={toggleAudio} className="min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-          {progress.audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}
-        </button>
+        <Button color="secondary" size="lg" aria-pressed={progress.audioEnabled} onClick={toggleAudio}>{progress.audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}</Button>
       </div>
       <div aria-live="polite" className="text-sm text-gray-700 sm:col-span-2">{audioMessage && <p>{audioMessage}</p>}</div>
     </div>
@@ -61,12 +58,8 @@ export function LessonTwoPage() {
         <p className="mt-2 text-sm text-gray-600">{intro.hypothesisNote}</p>
       </div>
       <div className="mt-6 flex flex-wrap gap-3">
-        <button type="button" onClick={() => begin('guitar')} className={primaryButton}>
-          {intro.guitarLabel}<ArrowRight className="size-4" aria-hidden="true" />
-        </button>
-        <button type="button" onClick={() => begin('virtual')} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-600 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-          {intro.virtualLabel}
-        </button>
+        <Button size="lg" iconTrailing={ArrowRight} onClick={() => begin('guitar')}>{intro.guitarLabel}</Button>
+        <Button color="secondary" size="lg" onClick={() => begin('virtual')}>{intro.virtualLabel}</Button>
       </div>
       <p className="mt-4 text-sm text-gray-600">{intro.reassurance}</p>
     </LessonStep>}
@@ -84,8 +77,8 @@ export function LessonTwoPage() {
         </div>}
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => goTo('intro')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{string.backLabel}</button>
-        {isCompleted('string') && <button type="button" onClick={() => goTo('repeats')} className={primaryButton}>{string.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('intro')}>{string.backLabel}</Button>
+        {isCompleted('string') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('repeats')}>{string.nextLabel}</Button>}
       </div>
     </div>}
 
@@ -94,8 +87,8 @@ export function LessonTwoPage() {
         <FrequencyComparison content={repeats} staticMode={staticMode} audio={audio} onComplete={completeRepeats} />
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => goTo('string')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{repeats.backLabel}</button>
-        {isCompleted('repeats') && <button type="button" onClick={() => goTo('frequency')} className={primaryButton}>{repeats.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('string')}>{repeats.backLabel}</Button>
+        {isCompleted('repeats') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('frequency')}>{repeats.nextLabel}</Button>}
       </div>
     </div>}
 
@@ -104,8 +97,8 @@ export function LessonTwoPage() {
         <FrequencyPitchLab content={frequency} audio={audio} onComplete={completeFrequency} />
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => goTo('repeats')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{frequency.backLabel}</button>
-        {isCompleted('frequency') && <button type="button" onClick={() => goTo('loudness')} className={primaryButton}>{frequency.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('repeats')}>{frequency.backLabel}</Button>
+        {isCompleted('frequency') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('loudness')}>{frequency.nextLabel}</Button>}
       </div>
     </div>}
 
@@ -114,8 +107,8 @@ export function LessonTwoPage() {
         <PitchLoudnessComparison content={loudness} audio={audio} onComplete={completeLoudness} />
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => goTo('frequency')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{loudness.backLabel}</button>
-        {isCompleted('loudness') && <button type="button" onClick={() => goTo('guitar')} className={primaryButton}>{loudness.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('frequency')}>{loudness.backLabel}</Button>
+        {isCompleted('loudness') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('guitar')}>{loudness.nextLabel}</Button>}
       </div>
     </div>}
 
@@ -124,8 +117,8 @@ export function LessonTwoPage() {
         <GuitarApplication content={guitar} preferredPath={preferredPath} audio={audio} completed={isCompleted('guitar')} onComplete={completeGuitar} />
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => goTo('loudness')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{guitar.backLabel}</button>
-        {isCompleted('guitar') && <button type="button" onClick={() => goTo('checkpoint')} className={primaryButton}>{guitar.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('loudness')}>{guitar.backLabel}</Button>
+        {isCompleted('guitar') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('checkpoint')}>{guitar.nextLabel}</Button>}
       </div>
     </div>}
 
@@ -134,8 +127,8 @@ export function LessonTwoPage() {
         <FrequencyPitchCheckpoint content={checkpoint} passed={progress.checkpointPassed} onPass={passCheckpoint} />
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => goTo('guitar')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{checkpoint.backLabel}</button>
-        {progress.checkpointPassed && <button type="button" onClick={() => goTo('complete')} className={primaryButton}>{checkpoint.nextLabel}<ArrowRight className="size-4" aria-hidden="true" /></button>}
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('guitar')}>{checkpoint.backLabel}</Button>
+        {progress.checkpointPassed && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{checkpoint.nextLabel}</Button>}
       </div>
     </div>}
 
@@ -150,7 +143,7 @@ export function LessonTwoPage() {
         {progress.completedAt === null && <div className="mt-5 space-y-3">
           <label htmlFor="lesson-two-reflection" className="block text-sm text-gray-700">{complete.reflectionLabel}</label>
           <textarea id="lesson-two-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={2} className="w-full rounded-lg border border-gray-300 p-3 text-sm text-gray-950 outline-none focus-visible:ring-2 focus-visible:ring-brand-600" />
-          <button type="button" onClick={finishLesson} className={primaryButton}>{complete.finishLabel}</button>
+          <Button size="lg" onClick={finishLesson}>{complete.finishLabel}</Button>
         </div>}
         <div ref={finishStatus} tabIndex={-1} role="status" data-testid="finish-status" className="mt-5 space-y-3 outline-none empty:mt-0">
           {progress.completedAt !== null && <>
@@ -165,7 +158,7 @@ export function LessonTwoPage() {
         </section>}
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => goTo('checkpoint')} className={backButton}><ArrowLeft className="size-4" aria-hidden="true" />{complete.backLabel}</button>
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('checkpoint')}>{complete.backLabel}</Button>
         {progress.completedAt !== null && <Link to="/" className={primaryButton}>{complete.backToCourse}</Link>}
       </div>
     </div>}

@@ -1,3 +1,4 @@
+import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { usePitchLoudnessComparison } from '@/components/lesson/pitch-loudness-comparison/hooks/use-pitch-loudness-comparison';
 import type { PitchLoudnessComparisonProps } from '@/components/lesson/pitch-loudness-comparison/types';
@@ -13,7 +14,7 @@ export function PitchLoudnessComparison({ content, audio, onComplete }: PitchLou
         <h3 id={`loudness-${example.id}`} className="font-semibold text-gray-950">{example.label}</h3>
         <p className="mt-1 text-sm text-gray-600">{content.frequencyLabel}</p>
         <div className="mt-2"><RepeatDensityTrack frequency={330} /></div>
-        {audio.enabled && <button type="button" onClick={() => audio.playTone(330, example.gain)} className="mt-3 min-h-11 rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-700 outline-none hover:bg-brand-25 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{example.listen}</button>}
+        {audio.enabled && <Button color="secondary" size="lg" className="mt-3" onClick={() => audio.playTone(330, example.gain)}>{example.listen}</Button>}
       </section>)}
     </div>
     <ChoiceQuestion
