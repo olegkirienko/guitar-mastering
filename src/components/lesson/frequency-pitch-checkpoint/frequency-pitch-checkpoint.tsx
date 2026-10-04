@@ -25,8 +25,24 @@ export function FrequencyPitchCheckpoint({ content, passed, onPass }: FrequencyP
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 p-3">
             <span className="text-sm font-medium text-gray-950">{index + 1}. {content.cards[card]}</span>
             <span className="flex gap-2">
-              <Button color="secondary" size="md" className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50" ref={(element) => { if (element) moveButtons.current.set(`${card}-earlier`, element); }} aria-disabled={chainDone || index === 0} aria-label={`${content.earlierLabel}: ${content.cards[card]}`} onClick={() => move(index, -1)}>{content.earlierLabel}</Button>
-              <Button color="secondary" size="md" className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50" ref={(element) => { if (element) moveButtons.current.set(`${card}-later`, element); }} aria-disabled={chainDone || index === order.length - 1} aria-label={`${content.laterLabel}: ${content.cards[card]}`} onClick={() => move(index, 1)}>{content.laterLabel}</Button>
+              <Button
+                color="secondary"
+                size="md"
+                className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                ref={(element) => { if (element) moveButtons.current.set(`${card}-earlier`, element); }}
+                aria-disabled={chainDone || index === 0}
+                aria-label={`${content.earlierLabel}: ${content.cards[card]}`}
+                onClick={() => move(index, -1)}
+              >{content.earlierLabel}</Button>
+              <Button
+                color="secondary"
+                size="md"
+                className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                ref={(element) => { if (element) moveButtons.current.set(`${card}-later`, element); }}
+                aria-disabled={chainDone || index === order.length - 1}
+                aria-label={`${content.laterLabel}: ${content.cards[card]}`}
+                onClick={() => move(index, 1)}
+              >{content.laterLabel}</Button>
             </span>
           </div>
           {index < order.length - 1 && outcome && outcome !== 'correct' && links[index] && <p className="pl-3 text-sm text-success-600">↓ {content.correctLink}</p>}

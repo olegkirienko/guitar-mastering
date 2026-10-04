@@ -1,6 +1,6 @@
-import { Button } from '@/components/base/buttons/button';
 import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { Link } from 'react-router';
+import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { FrequencyComparison } from '@/components/lesson/frequency-comparison/frequency-comparison';
 import { FrequencyPitchCheckpoint } from '@/components/lesson/frequency-pitch-checkpoint/frequency-pitch-checkpoint';
