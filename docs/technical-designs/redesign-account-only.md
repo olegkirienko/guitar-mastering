@@ -140,7 +140,7 @@ API contract:
 ### Visual redesign
 
 - **Tokens** in `src/styles/theme.css`: a cream scale for `bg-primary`, `bg-secondary` and `border-*`. `brand-*` (terracotta) stays. Contrast stays at WCAG AA, checked on text tokens over cream.
-- **Fonts:** self-hosted WOFF2 files in `public/fonts`:
+- **Fonts:** self-hosted WOFF2 files in `src/assets/fonts`, imported from CSS so Vite fingerprints them into `dist/assets`, the path the server caches as immutable:
   - Inter, variable, Latin and Cyrillic;
   - Source Serif 4, variable, Latin and Cyrillic, SIL OFL, used for `--font-display`.
 
@@ -219,4 +219,5 @@ The order ensures guests are locked out (PR 2) before local progress is removed 
 
    Accept when all lesson e2e pass on mocked progress and `localStorage` is empty.
 4. **Visual redesign:** tokens, fonts, layout, landing, lesson-shell styling, `b5eb194`, and the `SKILL.md` note.
+   - Raw `gray-*` and `white` classes outside the Untitled UI CLI-owned folders move to semantic tokens, so the cream scale reaches the lesson internals too (owner's choice during implementation).
    - Accept when the pages render in the new style, contrast is AA, there is no horizontal scroll at 320 px, and all e2e pass.
