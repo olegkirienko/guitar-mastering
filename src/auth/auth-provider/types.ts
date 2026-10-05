@@ -1,5 +1,6 @@
 export type Profile = { firstName: string | null; lastName: string | null; avatarId: string | null };
-export type Preferences = { audioEnabled: boolean; prefersStatic: boolean };
+export type Theme = 'system' | 'light' | 'dark';
+export type Preferences = { audioEnabled: boolean; prefersStatic: boolean; theme: Theme };
 export type AccountUser = { id: string; username: string; profile: Profile; preferences: Preferences };
 export type Credentials = { username: string; password: string };
 

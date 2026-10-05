@@ -2,7 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 
 const applicationOrigin = "http://127.0.0.1:4173";
 const profile = { firstName: null, lastName: null, avatarId: null };
-const preferences = { audioEnabled: false, prefersStatic: false };
+const preferences = { audioEnabled: false, prefersStatic: false, theme: "system" as "system" | "light" | "dark" };
 const user = { id: "user-1", username: "Player.One", profile, preferences };
 
 function json(route: Route, status: number, body: unknown) {
@@ -262,7 +262,7 @@ test("shows the unavailable screen when lesson progress cannot load and retries 
 });
 
 test("saves lesson preferences on the account, and reverts and announces a failed save", async ({ page }) => {
-  await mockSession(page, { ...user, preferences: { audioEnabled: false, prefersStatic: true } });
+  await mockSession(page, { ...user, preferences: { audioEnabled: false, prefersStatic: true, theme: "system" } });
   await mockCourseList(page);
   await page.route("**/api/v1/progress/stage-01-lesson-01", (route) => json(route, 404, { error: { code: "PROGRESS_NOT_FOUND", message: "Прогрес не знайдено." } }));
   const saved: unknown[] = [];
@@ -278,7 +278,7 @@ test("saves lesson preferences on the account, and reverts and announces a faile
   await expect(motion).toHaveAttribute("aria-pressed", "true");
   await motion.click();
   await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveAttribute("aria-pressed", "false");
-  expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false }]);
+  expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false, theme: "system" }]);
 
   const notice = page.getByText("Не вдалося зберегти налаштування, тому повернули попереднє. Спробуй ще раз.");
   await expect(notice).toHaveCount(0);
@@ -286,7 +286,7 @@ test("saves lesson preferences on the account, and reverts and announces a faile
   await page.getByRole("button", { name: "Звук: вимкнено" }).click();
   await expect(notice).toBeVisible();
   await expect(page.getByRole("button", { name: "Звук: вимкнено" })).toHaveAttribute("aria-pressed", "false");
-  expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false }, { audioEnabled: true, prefersStatic: false }]);
+  expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false, theme: "system" }, { audioEnabled: true, prefersStatic: false, theme: "system" }]);
 
   // The next accepted change clears the notice.
   reject = false;

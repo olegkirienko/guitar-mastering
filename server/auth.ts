@@ -8,7 +8,8 @@ const USERNAME = /^[A-Za-z0-9._-]{3,32}$/;
 
 export const AVATAR_IDS = ["cedar", "ocean", "sunset", "forest"] as const;
 export interface ProfileView { firstName: string | null; lastName: string | null; avatarId: string | null }
-export interface PreferencesView { audioEnabled: boolean; prefersStatic: boolean }
+export type Theme = "system" | "light" | "dark";
+export interface PreferencesView { audioEnabled: boolean; prefersStatic: boolean; theme: Theme }
 export interface UserView { id: string; username: string; profile: ProfileView; preferences: PreferencesView }
 export interface SessionResult { user: UserView; token: string }
 export class AuthError extends Error {
@@ -50,8 +51,14 @@ function profileView(row: { first_name?: string | null; last_name?: string | nul
   return { firstName: row.first_name ?? null, lastName: row.last_name ?? null, avatarId: row.avatar_id ?? null };
 }
 
-function preferencesView(row: { audio_enabled?: boolean | null; prefers_static?: boolean | null }): PreferencesView {
-  return { audioEnabled: row.audio_enabled ?? false, prefersStatic: row.prefers_static ?? false };
+const themes: readonly Theme[] = ["system", "light", "dark"];
+
+function isTheme(value: unknown): value is Theme {
+  return themes.includes(value as Theme);
+}
+
+function preferencesView(row: { audio_enabled?: boolean | null; prefers_static?: boolean | null; theme?: string | null }): PreferencesView {
+  return { audioEnabled: row.audio_enabled ?? false, prefersStatic: row.prefers_static ?? false, theme: isTheme(row.theme) ? row.theme : "system" };
 }
 
 function tokenHash(token: string): Buffer { return createHash("sha256").update(token, "base64url").digest(); }
@@ -144,8 +151,8 @@ export class AuthService {
     const password = validPassword(record?.password);
     await this.rateLimit("login", normalized, network);
     return this.passwords.run(async () => {
-      const found = await this.pool.query<{ id: string; username: string; password_hash: string; first_name: string | null; last_name: string | null; avatar_id: string | null; audio_enabled: boolean | null; prefers_static: boolean | null }>(
-        `SELECT u.id, u.username, u.password_hash, p.first_name, p.last_name, p.avatar_id, up.audio_enabled, up.prefers_static
+      const found = await this.pool.query<{ id: string; username: string; password_hash: string; first_name: string | null; last_name: string | null; avatar_id: string | null; audio_enabled: boolean | null; prefers_static: boolean | null; theme: string | null }>(
+        `SELECT u.id, u.username, u.password_hash, p.first_name, p.last_name, p.avatar_id, up.audio_enabled, up.prefers_static, up.theme
          FROM users u JOIN profiles p ON p.user_id = u.id LEFT JOIN user_preferences up ON up.user_id = u.id
          WHERE u.username_normalized = $1`, [normalized],
       );
@@ -174,8 +181,8 @@ export class AuthService {
 
   async session(token?: string): Promise<UserView | null> {
     if (!token) return null;
-    const result = await this.pool.query<{ id: string; username: string; first_name: string | null; last_name: string | null; avatar_id: string | null; audio_enabled: boolean | null; prefers_static: boolean | null }>(`
-      SELECT u.id, u.username, p.first_name, p.last_name, p.avatar_id, up.audio_enabled, up.prefers_static
+    const result = await this.pool.query<{ id: string; username: string; first_name: string | null; last_name: string | null; avatar_id: string | null; audio_enabled: boolean | null; prefers_static: boolean | null; theme: string | null }>(`
+      SELECT u.id, u.username, p.first_name, p.last_name, p.avatar_id, up.audio_enabled, up.prefers_static, up.theme
       FROM sessions s JOIN users u ON u.id = s.user_id JOIN profiles p ON p.user_id = u.id
       LEFT JOIN user_preferences up ON up.user_id = u.id
       WHERE s.token_hash = $1 AND s.expires_at > now()`, [tokenHash(token)]);
@@ -188,14 +195,16 @@ export class AuthService {
     if (!user) throw new AuthError(401, "UNAUTHENTICATED", "Authentication is required.");
     const record = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : null;
     const keys = record ? Object.keys(record).sort().join(",") : "";
-    if (!record || keys !== "audioEnabled,prefersStatic" || typeof record.audioEnabled !== "boolean" || typeof record.prefersStatic !== "boolean") {
-      throw new AuthError(422, "INVALID_FIELDS", "Provide audioEnabled and prefersStatic as booleans.");
+    const validKeys = keys === "audioEnabled,prefersStatic" || (keys === "audioEnabled,prefersStatic,theme" && isTheme(record?.theme));
+    if (!record || !validKeys || typeof record.audioEnabled !== "boolean" || typeof record.prefersStatic !== "boolean") {
+      throw new AuthError(422, "INVALID_FIELDS", "Provide audioEnabled and prefersStatic as booleans, and optionally theme as system, light or dark.");
     }
-    const saved = await this.pool.query<{ audio_enabled: boolean; prefers_static: boolean }>(`
-      INSERT INTO user_preferences (user_id, audio_enabled, prefers_static) VALUES ($1, $2, $3)
-      ON CONFLICT (user_id) DO UPDATE SET audio_enabled = EXCLUDED.audio_enabled, prefers_static = EXCLUDED.prefers_static, updated_at = now()
-      RETURNING audio_enabled, prefers_static
-    `, [user.id, record.audioEnabled, record.prefersStatic]);
+    const saved = await this.pool.query<{ audio_enabled: boolean; prefers_static: boolean; theme: string }>(`
+      INSERT INTO user_preferences (user_id, audio_enabled, prefers_static, theme) VALUES ($1, $2, $3, COALESCE($4::text, 'system'))
+      ON CONFLICT (user_id) DO UPDATE SET audio_enabled = EXCLUDED.audio_enabled, prefers_static = EXCLUDED.prefers_static,
+        theme = COALESCE($4::text, user_preferences.theme), updated_at = now()
+      RETURNING audio_enabled, prefers_static, theme
+    `, [user.id, record.audioEnabled, record.prefersStatic, record.theme ?? null]);
     return preferencesView(saved.rows[0]!);
   }
 

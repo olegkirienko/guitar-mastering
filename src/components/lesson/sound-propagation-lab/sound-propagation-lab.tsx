@@ -38,7 +38,7 @@ export function SoundPropagationLab({ content, staticMode, onComplete }: SoundPr
           <title id="propagation-title">Струна, корпус гітари, ділянки повітря та вухо</title>
           <desc id="propagation-description">{status}</desc>
           <g aria-hidden="true">
-          <rect x="0" y="0" width="360" height="190" fill="#fff" />
+          <rect x="0" y="0" width="360" height="190" className="fill-bg-primary" />
           <text className="fill-fg-tertiary" x="42" y="24" textAnchor="middle" fontSize="11">струна й корпус</text>
           <text className="fill-fg-tertiary" x="178" y="24" textAnchor="middle" fontSize="11">малі ділянки повітря</text>
           <text className="fill-fg-tertiary" x="323" y="24" textAnchor="middle" fontSize="11">вухо</text>

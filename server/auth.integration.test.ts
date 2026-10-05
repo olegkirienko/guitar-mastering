@@ -108,17 +108,23 @@ describePostgres("authentication PostgreSQL acceptance", () => {
   it("defaults, validates, upserts, and cascades lesson preferences", async () => {
     const auth = new AuthService(pool, config);
     const registered = await auth.register({ username: "Player.One", password: "correct horse guitar" }, "network-a");
-    expect(registered.user.preferences).toEqual({ audioEnabled: false, prefersStatic: false });
+    expect(registered.user.preferences).toEqual({ audioEnabled: false, prefersStatic: false, theme: "system" });
     await expect(auth.updatePreferences(undefined, { audioEnabled: true, prefersStatic: false })).rejects.toMatchObject({ status: 401, code: "UNAUTHENTICATED" });
-    for (const body of [null, [], {}, { audioEnabled: true }, { audioEnabled: "yes", prefersStatic: false }, { audioEnabled: true, prefersStatic: false, extra: 1 }]) {
+    for (const body of [
+      null, [], {}, { audioEnabled: true }, { audioEnabled: "yes", prefersStatic: false }, { audioEnabled: true, prefersStatic: false, extra: 1 },
+      { audioEnabled: true, prefersStatic: false, theme: "sepia" }, { audioEnabled: true, prefersStatic: false, theme: null },
+      { audioEnabled: true, prefersStatic: false, theme: "dark", extra: 1 },
+    ]) {
       await expect(auth.updatePreferences(registered.token, body)).rejects.toMatchObject({ status: 422, code: "INVALID_FIELDS" });
     }
-    await expect(auth.updatePreferences(registered.token, { audioEnabled: true, prefersStatic: false })).resolves.toEqual({ audioEnabled: true, prefersStatic: false });
-    await expect(auth.updatePreferences(registered.token, { audioEnabled: true, prefersStatic: true })).resolves.toEqual({ audioEnabled: true, prefersStatic: true });
-    await expect(auth.session(registered.token)).resolves.toMatchObject({ preferences: { audioEnabled: true, prefersStatic: true } });
+    await expect(auth.updatePreferences(registered.token, { audioEnabled: true, prefersStatic: false })).resolves.toEqual({ audioEnabled: true, prefersStatic: false, theme: "system" });
+    await expect(auth.updatePreferences(registered.token, { audioEnabled: true, prefersStatic: true, theme: "dark" })).resolves.toEqual({ audioEnabled: true, prefersStatic: true, theme: "dark" });
+    await expect(auth.updatePreferences(registered.token, { audioEnabled: true, prefersStatic: true })).resolves.toEqual({ audioEnabled: true, prefersStatic: true, theme: "dark" });
+    await expect(auth.session(registered.token)).resolves.toMatchObject({ preferences: { audioEnabled: true, prefersStatic: true, theme: "dark" } });
     await expect(auth.login({ username: "Player.One", password: "correct horse guitar" }, "network-a")).resolves.toMatchObject({
-      user: { preferences: { audioEnabled: true, prefersStatic: true } },
+      user: { preferences: { audioEnabled: true, prefersStatic: true, theme: "dark" } },
     });
+    await expect(pool.query("UPDATE user_preferences SET theme = 'sepia'")).rejects.toMatchObject({ code: "23514" });
     await expect(pool.query("SELECT count(*)::int AS count FROM user_preferences")).resolves.toMatchObject({ rows: [{ count: 1 }] });
     await auth.deleteAccount(registered.token, { password: "correct horse guitar" });
     await expect(pool.query("SELECT count(*)::int AS count FROM user_preferences")).resolves.toMatchObject({ rows: [{ count: 0 }] });

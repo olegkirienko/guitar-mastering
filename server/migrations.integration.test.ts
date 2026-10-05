@@ -111,6 +111,7 @@ describePostgres("PostgreSQL migrations", () => {
       "sessions_token_hash_length",
       "sessions_user_id_fkey",
       "user_preferences_pkey",
+      "user_preferences_theme_check",
       "user_preferences_user_id_fkey",
       "users_pkey",
       "users_updated_after_created",
@@ -125,6 +126,7 @@ describePostgres("PostgreSQL migrations", () => {
       { table_name: "auth_rate_limits", column_name: "window_started_at", data_type: "timestamp with time zone" },
       { table_name: "user_preferences", column_name: "audio_enabled", data_type: "boolean" },
       { table_name: "user_preferences", column_name: "prefers_static", data_type: "boolean" },
+      { table_name: "user_preferences", column_name: "theme", data_type: "text" },
     ]));
   });
 
@@ -133,9 +135,9 @@ describePostgres("PostgreSQL migrations", () => {
     const third = await migrate();
     const applied = await pool.query<{ count: string }>("SELECT count(*) FROM pgmigrations");
 
-    expect(first.length + second.length).toBe(2);
+    expect(first.length + second.length).toBe(3);
     expect(third).toHaveLength(0);
-    expect(applied.rows[0]?.count).toBe("2");
+    expect(applied.rows[0]?.count).toBe("3");
   });
 
   it("rolls back the complete pending set when a migration fails", async () => {
