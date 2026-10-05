@@ -4,6 +4,7 @@ import { safeNextPath, isSafeNext } from '../src/pages/auth-page/utils/is-safe-n
 import { courseLessons } from '../src/progress/course/constants.ts';
 import type { ProgressItem, ProgressValue } from '../src/progress/core/types.ts';
 import { resolveResumePath } from '../src/progress/core/utils/resolve-resume-path.ts';
+import { lessonFourProgressAdapter } from '../src/progress/lesson-four/lesson-four.ts';
 import { lessonOneProgressAdapter } from '../src/progress/lesson-one/lesson-one.ts';
 import { lessonThreeProgressAdapter } from '../src/progress/lesson-three/lesson-three.ts';
 import { lessonTwoProgressAdapter } from '../src/progress/lesson-two/lesson-two.ts';
@@ -13,6 +14,7 @@ const origin = 'https://course.example';
 const one = 'stage-01-lesson-01';
 const two = 'stage-01-lesson-02';
 const three = 'stage-01-lesson-03';
+const four = 'stage-01-lesson-04';
 
 function item(lessonId: string, progress: Partial<ProgressValue>, updatedAt: string): ProgressItem {
   return {
@@ -48,6 +50,7 @@ describe('resolveResumePath', () => {
       item(one, { currentStepId: 'string', completedAt: '2026-10-01T10:00:00.000Z' }, '2026-10-04T12:00:00.000Z'),
       item(two, { currentStepId: 'complete', completedAt: '2026-10-02T10:00:00.000Z' }, '2026-10-03T12:00:00.000Z'),
       item(three, { currentStepId: 'complete', completedAt: '2026-10-03T10:00:00.000Z' }, '2026-10-03T10:00:00.000Z'),
+      item(four, { currentStepId: 'complete', completedAt: '2026-10-04T10:00:00.000Z' }, '2026-10-04T10:00:00.000Z'),
     ];
     expect(resolveResumePath(items, courseLessons)).toBe('/lessons/01/string');
   });
@@ -58,6 +61,11 @@ describe('resolveResumePath', () => {
       item(two, { currentStepId: 'complete', completedAt: '2026-10-02T10:00:00.000Z' }, '2026-10-02T10:00:00.000Z'),
     ];
     expect(resolveResumePath(items, courseLessons)).toBe('/lessons/03/intro');
+  });
+
+  it('opens Lesson 4 once Lesson 3 is completed', () => {
+    const items = [one, two, three].map((lessonId, index) => item(lessonId, { currentStepId: 'complete', completedAt: `2026-10-0${index + 1}T10:00:00.000Z` }, `2026-10-0${index + 1}T10:00:00.000Z`));
+    expect(resolveResumePath(items, courseLessons)).toBe('/lessons/04/intro');
   });
 
   it('ignores progress of lessons outside the course order', () => {
@@ -116,6 +124,13 @@ describe('isStepReachable', () => {
     expect(lessonThreeProgressAdapter.highestReachableStep(progress)).toBe('tension');
     expect(lessonThreeProgressAdapter.isStepReachable(progress, 'complete')).toBe(false);
   });
+
+  it('opens Lesson 4 steps linearly', () => {
+    const progress = lessonFourProgressAdapter.parse({ completedStepIds: ['intro', 'shape'] });
+    expect(lessonFourProgressAdapter.stepOrder.filter((step) => lessonFourProgressAdapter.isStepReachable(progress, step))).toEqual(['intro', 'shape', 'overtones']);
+    expect(lessonFourProgressAdapter.highestReachableStep(progress)).toBe('overtones');
+    expect(lessonFourProgressAdapter.isStepReachable(progress, 'complete')).toBe(false);
+  });
 });
 
 describe('lesson gate', () => {
@@ -126,6 +141,14 @@ describe('lesson gate', () => {
     expect(isLessonOpen('03', [lessonOneDone])).toBe(false);
     expect(isLessonOpen('03', [lessonOneDone, item(two, { currentStepId: 'checkpoint', checkpointPassed: true }, '2026-10-02T10:00:00.000Z')])).toBe(false);
     expect(isLessonOpen('03', [lessonOneDone, item(two, { currentStepId: 'complete', completedAt: '2026-10-02T10:00:00.000Z' }, '2026-10-02T10:00:00.000Z')])).toBe(true);
+  });
+
+  it('keeps /lessons/04/* closed (redirect to /course) until Lesson 3 has completedAt', () => {
+    const lessonTwoDone = item(two, { currentStepId: 'complete', completedAt: '2026-10-02T10:00:00.000Z' }, '2026-10-02T10:00:00.000Z');
+    expect(isLessonOpen('04', [])).toBe(false);
+    expect(isLessonOpen('04', [lessonOneDone, lessonTwoDone])).toBe(false);
+    expect(isLessonOpen('04', [lessonOneDone, lessonTwoDone, item(three, { currentStepId: 'checkpoint', checkpointPassed: true }, '2026-10-03T10:00:00.000Z')])).toBe(false);
+    expect(isLessonOpen('04', [lessonOneDone, lessonTwoDone, item(three, { currentStepId: 'complete', completedAt: '2026-10-03T10:00:00.000Z' }, '2026-10-03T10:00:00.000Z')])).toBe(true);
   });
 
   it('opens the first lesson without progress and each next one after its predecessor', () => {

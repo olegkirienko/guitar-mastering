@@ -1,12 +1,21 @@
-import type { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
-import type { HypothesisId } from '@/data/lessons/stage-01-lesson-03/types';
+import type { HypothesesContent } from '@/components/lesson/string-hypotheses/types';
 
-type IntroContent = typeof lessonThreeContent.intro;
-type CompleteContent = typeof lessonThreeContent.complete;
+export interface HypothesesSummaryContent<Id extends string> {
+  hypothesesTitle: string;
+  hypothesesNote: string;
+  // The guesses the experiments confirmed; the rest are shown as separate questions.
+  confirmedIds: readonly Id[];
+  confirmedLabel: string;
+  separateLabel: string;
+  yourGuessLabel: string;
+  verdicts: Readonly<Partial<Record<Id, string>>>;
+  ownLabel: string;
+  ownVerdict: string;
+}
 
-export interface StringHypothesesSummaryProps {
-  intro: IntroContent;
-  content: CompleteContent;
-  selected: readonly HypothesisId[];
+export interface StringHypothesesSummaryProps<Id extends string> {
+  intro: Pick<HypothesesContent<Id>, 'hypotheses' | 'ownId'>;
+  content: HypothesesSummaryContent<Id>;
+  selected: readonly Id[];
   own: string;
 }
