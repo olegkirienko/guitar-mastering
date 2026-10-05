@@ -8,8 +8,9 @@
   (`4d0a3739-0beb-4ea9-9a7e-7a9f3494708e`).
 - PostgreSQL service: `Postgres-DOv_`
   (`82d4b5e1-830a-4467-bb1f-f9448fd1d58d`).
-- Canonical candidate origin:
-  `https://guitar-mastering-web-production-production.up.railway.app`.
+- Canonical candidate origin: `https://guitar-mastering.up.railway.app`. The
+  domain was renamed on 2026-10-05, the old `*-production-production` host no
+  longer resolves to the service, and `PUBLIC_ORIGIN` matches the new origin.
 - One persistent Node web instance and one private PostgreSQL instance.
 - The browser reaches only the HTTPS web origin. `DATABASE_URL` references the
   PostgreSQL service's private URL; production must not have a database TCP
