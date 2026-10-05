@@ -276,7 +276,7 @@ test("opens on the course page after Lesson 2 and completes in full with the key
     await radio.press("Space");
     await group.getByRole("button", { name: "Перевірити" }).press("Enter");
   };
-  await answer("Чому струна, притиснута пальцем", "Бо, притискаючи, ми смикаємо сильніше.");
+  await answer("Чому струна, притиснута пальцем", "Притискаючи, ми смикаємо сильніше");
   await expect(page.getByText("Сила удару змінює гучність, а не висоту", { exact: false })).toBeVisible();
   await answer("Чому струна, притиснута пальцем", "Коливається лише частина від пальця");
   await answer("Що робить кілок", "Змінює натяг");
