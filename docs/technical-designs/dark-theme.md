@@ -51,20 +51,28 @@ overrides; anything kept in `localStorage` (the rule from
 
 ### Applying the theme
 
-- `src/hooks/use-theme.ts` (used by the root layout) resolves the effective
+- `src/components/root-layout/hooks/use-root-layout.ts` (only the root layout
+  uses it, so it stays in that unit per `CLAUDE.md`) resolves the effective
   theme: the signed-in user's `theme` when it is not `'system'`, otherwise
   `matchMedia('(prefers-color-scheme: dark)')`, listening for changes. It
-  toggles `.dark-mode` on `document.documentElement` and sets
-  `document.documentElement.style.colorScheme`. On logout or account deletion
-  the user is gone, so the theme falls back to the system.
+  toggles `.dark-mode` on `document.documentElement`, sets
+  `document.documentElement.style.colorScheme` and the `theme-color` meta's
+  `content`. It applies them in `useLayoutEffect`, so the class changes in the
+  same commit as the session result, before the browser paints the page that
+  replaces `PageSkeleton`. On logout or account deletion the user is gone, so
+  the theme falls back to the system.
 - `public/theme-init.js`, a blocking classic script in `<head>`
   (`<script src="/theme-init.js"></script>`, allowed by `script-src 'self'`),
-  applies the system theme before first paint, so a dark-system user sees no
-  white flash. A signed-in user whose choice differs from the system sees the
-  system theme only until the session response, while `PageSkeleton` shows.
-- `index.html`: `<meta name="color-scheme" content="light dark">` and two
-  `theme-color` metas with `media="(prefers-color-scheme: …)"` using the light
-  and dark `bg-primary` values.
+  applies the system theme (class, `colorScheme`, `theme-color`) before first
+  paint, so a dark-system user sees no white flash.
+- Known limitation: a signed-in user whose choice differs from the system sees
+  the skeleton in the system theme until the session response, then the page
+  in their theme. Removing it would need the choice in browser storage or a
+  cookie, which the non-goals exclude. The PR notes this.
+- `index.html`: `<meta name="color-scheme" content="light dark">` and one
+  `<meta name="theme-color">` whose `content` is the light or dark `bg-primary`
+  value, set by the init script and the hook, so mobile browser chrome follows
+  an explicit choice too.
 - `sound-propagation-lab.tsx:41`: `fill="#fff"` becomes `className="fill-bg-primary"`.
 
 ### Account page
@@ -109,9 +117,12 @@ approval.
 - Postgres integration (`auth.integration.test.ts`,
   `migrations.integration.test.ts`): migration applies, default is `'system'`,
   the round-trip persists `'dark'`, the `CHECK` rejects other values.
-- Unit (`use-theme`): user choice wins, `'system'` follows `matchMedia` and its
-  changes, no user means system.
-- Browser (`e2e/`): with `colorScheme: 'dark'` a guest page has `.dark-mode`;
+- Unit (`use-root-layout`): user choice wins, `'system'` follows `matchMedia`
+  and its changes, no user means system, `theme-color` follows the effective
+  theme.
+- Browser (`e2e/`): with `colorScheme: 'dark'` the document has `.dark-mode`
+  already at `domcontentloaded` (fails without `theme-init.js`); a guest page
+  has `.dark-mode` after load;
   a signed-in learner picks `Темна`, reloads and still has `.dark-mode`, picks
   `Світла` under a dark system and loses it; `localStorage` stays empty; a
   failed save reverts the radio and shows the error.
@@ -122,9 +133,10 @@ approval.
 1. **Server preference.** Migration `003`, `PreferencesView.theme`, PUT
    validation and upsert, server tests. *Accept:* old two-key PUT still works
    and keeps the theme; all server and Postgres tests pass.
-2. **Applying the theme.** `theme-init.js`, `index.html` metas, `use-theme` in
-   the root layout, client `Preferences.theme`, SVG fill fix. *Accept:* a dark
-   system gives a dark app with no white flash; `use-theme` unit tests pass.
+2. **Applying the theme.** `theme-init.js`, `index.html` metas,
+   `use-root-layout`, client `Preferences.theme`, SVG fill fix. *Accept:* a
+   dark system gives a dark app with no white flash; the `domcontentloaded`
+   e2e check and the hook unit tests pass.
 3. **Account control.** `theme-preference` section with Untitled UI radios,
    optimistic save and revert. *Accept:* the choice persists across reload and
    sign-in on another browser; e2e tests pass.
