@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { peakGainCap } from '../src/data/lessons/stage-01-lesson-02-model/constants.ts';
 import { visualCycles } from '../src/data/lessons/stage-01-lesson-02-model/utils/lab.ts';
-import { defaultStringSettings, densityLevels, lengthLevels, tensionLevels } from '../src/data/lessons/stage-01-lesson-03-model/constants.ts';
+import { checkpointTasks, defaultStringSettings, densityLevels, lengthLevels, tensionLevels } from '../src/data/lessons/stage-01-lesson-03-model/constants.ts';
+import { checkpointPassed, taskSolved } from '../src/data/lessons/stage-01-lesson-03-model/utils/checkpoint.ts';
 import { frequencyChangeText } from '../src/data/lessons/stage-01-lesson-03-model/utils/change.ts';
 import { factorLevelIndex, sameSettings, stringFrequency, withFactorLevel } from '../src/data/lessons/stage-01-lesson-03-model/utils/frequency.ts';
 import { pluckGain } from '../src/data/lessons/stage-01-lesson-03-model/utils/gain.ts';
@@ -77,5 +78,41 @@ describe('Lesson 3 string model', () => {
   it('draws 2 to 16 slowed cycles across the reachable range', () => {
     expect(visualCycles(110)).toBe(2);
     expect(visualCycles(880)).toBe(16);
+  });
+});
+
+describe('Lesson 3 checkpoint', () => {
+  const [higher, lower] = checkpointTasks;
+
+  it('starts each task at a state that is not yet solved', () => {
+    expect(stringFrequency(higher.start)).toBe(147);
+    expect(stringFrequency(lower.start)).toBe(440);
+    for (const task of checkpointTasks) expect(taskSolved(task, task.start)).toBe(false);
+  });
+
+  it('accepts both free-factor solutions and rejects the wrong direction', () => {
+    expect(taskSolved(higher, { ...higher.start, tension: 2.25 })).toBe(true);
+    expect(taskSolved(higher, { ...higher.start, density: 1 })).toBe(true);
+    expect(taskSolved(higher, { ...higher.start, density: 4 })).toBe(false);
+    expect(taskSolved(lower, { ...lower.start, length: 1 })).toBe(true);
+    expect(taskSolved(lower, { ...lower.start, density: 2.25 })).toBe(true);
+    expect(taskSolved(lower, { ...lower.start, length: 0.5 })).toBe(false);
+  });
+
+  it('rejects a solution that moves the locked factor', () => {
+    expect(taskSolved(higher, { ...higher.start, length: 0.5 })).toBe(false);
+    expect(taskSolved(lower, { ...lower.start, tension: 1 })).toBe(false);
+  });
+
+  it('passes only with both tasks solved and every question correct', () => {
+    const tasks = checkpointTasks.map((task) => task.id);
+    const questions = lessonThreeContent.checkpoint.questions.map((question) => question.id);
+    expect(checkpointPassed(tasks, questions, tasks, questions)).toBe(true);
+    expect(checkpointPassed(tasks.slice(1), questions, tasks, questions)).toBe(false);
+    expect(checkpointPassed(tasks, questions.slice(1), tasks, questions)).toBe(false);
+  });
+
+  it('has content for every task', () => {
+    expect(lessonThreeContent.checkpoint.tasks.map((task) => task.id)).toEqual(checkpointTasks.map((task) => task.id));
   });
 });

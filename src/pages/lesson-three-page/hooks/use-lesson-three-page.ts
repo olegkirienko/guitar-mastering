@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
 import type { HypothesisId, LessonThreeStepId } from '@/data/lessons/stage-01-lesson-03/types';
 import { useAuth } from '@/hooks/use-auth';
@@ -17,10 +17,19 @@ export function useLessonThreePage() {
   // Session-only: the question before each experiment opens the rest of its step.
   const [tensionAnswered, setTensionAnswered] = useState(false);
   const [densityAnswered, setDensityAnswered] = useState(false);
-  const { intro, length, tension, density, model, preferences } = lessonThreeContent;
+  const [focusFinishStatus, setFocusFinishStatus] = useState(false);
+  const finishStatus = useRef<HTMLDivElement>(null);
+  const { intro, length, tension, density, model, checkpoint, complete, preferences } = lessonThreeContent;
   const { route, goTo: openStep } = useLessonRoute('03', lessonThreeProgressAdapter, { progress, loaded, loadFailed, retrySync, setProgress });
   const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const isCompleted = (step: LessonThreeStepId) => progress.completedStepIds.includes(step);
+
+  // «Завершити урок» disappears once pressed, so focus moves to the result.
+  useEffect(() => {
+    if (!focusFinishStatus) return;
+    setFocusFinishStatus(false);
+    finishStatus.current?.focus();
+  }, [focusFinishStatus]);
 
   const setAudioEnabled = useCallback((enabled: boolean) => {
     if (lessonPreferences.audioEnabled !== enabled) void updatePreferences({ audioEnabled: enabled });
@@ -55,6 +64,19 @@ export function useLessonThreePage() {
   const completeTension = useCallback(() => completeStep('tension'), [completeStep]);
   const completeDensity = useCallback(() => completeStep('density'), [completeStep]);
   const completeModel = useCallback(() => completeStep('model'), [completeStep]);
+  const passCheckpoint = useCallback(() => setProgress((current) => ({
+    ...current,
+    checkpointPassed: true,
+    completedStepIds: Array.from(new Set<LessonThreeStepId>([...current.completedStepIds, 'checkpoint'])),
+  })), [setProgress]);
+  const finishLesson = () => {
+    setFocusFinishStatus(true);
+    setProgress((current) => ({
+      ...current,
+      completedAt: current.completedAt ?? new Date().toISOString(),
+      completedStepIds: Array.from(new Set<LessonThreeStepId>([...current.completedStepIds, 'complete'])),
+    }));
+  };
 
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
@@ -62,5 +84,5 @@ export function useLessonThreePage() {
       ? preferences.audioBlocked
       : null;
 
-  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, intro, length, tension, density, model, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, tensionOpen: tensionAnswered || isCompleted('tension'), answerTension: () => setTensionAnswered(true), densityOpen: densityAnswered || isCompleted('density'), answerDensity: () => setDensityAnswered(true), audioMessage };
+  return { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen: tensionAnswered || isCompleted('tension'), answerTension: () => setTensionAnswered(true), densityOpen: densityAnswered || isCompleted('density'), answerDensity: () => setDensityAnswered(true), audioMessage };
 }

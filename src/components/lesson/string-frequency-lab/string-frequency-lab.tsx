@@ -13,10 +13,11 @@ import { pluckGain } from '@/data/lessons/stage-01-lesson-03-model/utils/gain';
 import { cx } from '@/utils/cx';
 
 // All three factors at once: guesses about combinations first, then the lab tests them.
-export function StringFrequencyLab({ content, predictions, audio, completed, onComplete }: StringFrequencyLabProps) {
-  const { settings, frequency, lastChanged, announcement, chooseLevel, reset, answer, isAnswered, isVerified, done } = useStringFrequencyLab({ content, predictions, completed, onComplete });
+// With `task`, one factor is locked and the learner checks a goal instead of predictions.
+export function StringFrequencyLab({ content, predictions = [], task, audio, completed, onComplete }: StringFrequencyLabProps) {
+  const { titleId, settings, frequency, lastChanged, announcement, chooseLevel, reset, answer, check, checkStatus, isAnswered, isVerified, done } = useStringFrequencyLab({ content, predictions, task, completed, onComplete });
   return <div className="space-y-6">
-    <section aria-labelledby="lab-predictions-title" className="space-y-5">
+    {predictions.length > 0 && <section aria-labelledby="lab-predictions-title" className="space-y-5">
       <h3 id="lab-predictions-title" className="font-semibold text-primary">{content.predictionsTitle}</h3>
       <ol className="space-y-6">
         {predictions.map((item) => <li key={item.id} className="space-y-3">
@@ -26,12 +27,12 @@ export function StringFrequencyLab({ content, predictions, audio, completed, onC
             : isAnswered(item.id) && <p className="text-sm text-tertiary">{item.setupHint}</p>}
         </li>)}
       </ol>
-    </section>
+    </section>}
 
-    <section aria-labelledby="frequency-lab-title" className="space-y-5 rounded-lg border border-secondary bg-primary p-5">
+    <section aria-labelledby={titleId} className="space-y-5 rounded-lg border border-secondary bg-primary p-5">
       <div>
-        <h3 id="frequency-lab-title" className="font-semibold text-primary">{content.title}</h3>
-        <p className="mt-1 text-sm text-tertiary">{content.note}</p>
+        <h3 id={titleId} className="font-semibold text-primary">{task ? task.title : content.title}</h3>
+        <p className="mt-1 text-sm text-tertiary">{task ? task.goal : content.note}</p>
       </div>
       <div className="space-y-4">
         {factorOrder.map((factor) => <FactorRegulator
@@ -39,6 +40,7 @@ export function StringFrequencyLab({ content, predictions, audio, completed, onC
           label={content.factorLabels[factor]}
           levels={levelLabels[factor]}
           value={factorLevelIndex(settings, factor)}
+          lockedNote={factor === task?.model.lockedFactor ? task.lockedNote : undefined}
           onChange={(index) => chooseLevel(factor, index)}
         />)}
       </div>
@@ -50,10 +52,14 @@ export function StringFrequencyLab({ content, predictions, audio, completed, onC
         <p role="status" className="text-sm font-medium text-secondary">{announcement}</p>
         <div className="flex flex-wrap gap-3">
           {audio.enabled && <Button color="secondary" size="lg" onClick={() => audio.playPluck(frequency, pluckGain(frequency))}>{content.pluckLabel}</Button>}
-          <Button color="secondary" size="lg" iconLeading={RefreshCcw01} onClick={reset}>{content.resetLabel}</Button>
+          <Button color="secondary" size="lg" iconLeading={RefreshCcw01} onClick={reset}>{task ? task.resetLabel : content.resetLabel}</Button>
         </div>
       </div>
-      <div className="space-y-2">
+      {task && <div className="space-y-3">
+        <Button size="lg" onClick={check}>{task.checkLabel}</Button>
+        <p role="status" className="text-sm font-medium text-primary">{checkStatus}</p>
+      </div>}
+      {!task && <div className="space-y-2">
         <h4 className="font-semibold text-primary">{content.rulesTitle}</h4>
         <ul className="space-y-2">
           {factorOrder.map((factor) => <li
@@ -64,9 +70,9 @@ export function StringFrequencyLab({ content, predictions, audio, completed, onC
             {factor === lastChanged && <Badge type="pill-color" color="brand" size="sm">{content.lastChangedLabel}</Badge>}
           </li>)}
         </ul>
-      </div>
+      </div>}
     </section>
 
-    {done && <p className="rounded-lg border border-brand-200 bg-brand-25 p-5 font-medium text-primary">{content.doneText}</p>}
+    {!task && done && <p className="rounded-lg border border-brand-200 bg-brand-25 p-5 font-medium text-primary">{content.doneText}</p>}
   </div>;
 }

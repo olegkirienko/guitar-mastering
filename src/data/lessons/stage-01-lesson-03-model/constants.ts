@@ -1,4 +1,4 @@
-import type { StringFactor, StringSettings } from '@/data/lessons/stage-01-lesson-03-model/types';
+import type { CheckpointTask, StringFactor, StringSettings } from '@/data/lessons/stage-01-lesson-03-model/types';
 
 // Pure model behind the Lesson 3 labs: an ideal uniform string; components only render it.
 
@@ -22,3 +22,9 @@ export const levelLabels: { [Factor in StringFactor]: readonly string[] } = {
 
 // Lesson 2's plucked-string peak; higher plucks only get quieter.
 export const basePluckGain = 0.1;
+
+// Checkpoint start states: each has two solutions among the free factors.
+export const checkpointTasks: readonly CheckpointTask[] = [
+  { id: 'higher-same-length', start: { length: 1, tension: 1, density: 2.25 }, lockedFactor: 'length', direction: 'higher' },
+  { id: 'lower-same-tension', start: { length: 0.75, tension: 2.25, density: 1 }, lockedFactor: 'tension', direction: 'lower' },
+];

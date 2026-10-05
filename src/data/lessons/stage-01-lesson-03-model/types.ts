@@ -11,3 +11,11 @@ export interface StringSettings {
   tension: TensionLevel;
   density: DensityLevel;
 }
+
+// A checkpoint goal: move the pitch one way from `start` while `lockedFactor` stays put.
+export interface CheckpointTask {
+  id: string;
+  start: StringSettings;
+  lockedFactor: StringFactor;
+  direction: 'higher' | 'lower';
+}

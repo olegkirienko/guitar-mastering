@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight } from '@untitledui/icons';
+import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
@@ -7,16 +7,18 @@ import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
 import { SameStringDiagram } from '@/components/lesson/same-string-diagram/same-string-diagram';
+import { StringFrequencyCheckpoint } from '@/components/lesson/string-frequency-checkpoint/string-frequency-checkpoint';
 import { StringFactorExperiment } from '@/components/lesson/string-factor-experiment/string-factor-experiment';
 import { StringFrequencyLab } from '@/components/lesson/string-frequency-lab/string-frequency-lab';
 import { StringPair } from '@/components/lesson/string-pair/string-pair';
 import { StringHypotheses } from '@/components/lesson/string-hypotheses/string-hypotheses';
+import { StringHypothesesSummary } from '@/components/lesson/string-hypotheses-summary/string-hypotheses-summary';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
 import { stopByStep } from '@/pages/lesson-three-page/constants';
 import { useLessonThreePage } from '@/pages/lesson-three-page/hooks/use-lesson-three-page';
 
 export function LessonThreePage() {
-  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, intro, length, tension, density, model, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
+  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonThreeContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
@@ -115,6 +117,48 @@ export function LessonThreePage() {
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
         <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('density')}>{model.backLabel}</Button>
+        {isCompleted('model') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('checkpoint')}>{model.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'checkpoint' && <div className="space-y-5">
+      <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
+        <StringFrequencyCheckpoint content={checkpoint} lab={model.lab} audio={audio} passed={progress.checkpointPassed} onPass={passCheckpoint} />
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('model')}>{checkpoint.backLabel}</Button>
+        {progress.checkpointPassed && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{checkpoint.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'complete' && <div className="space-y-5">
+      <LessonStep title={complete.title} shouldFocus={focusedStep === 'complete'}>
+        <div className="space-y-6">
+          <section aria-labelledby="lesson-three-rules" className="space-y-3">
+            <h3 id="lesson-three-rules" className="font-semibold text-primary">{complete.rulesTitle}</h3>
+            <ul className="space-y-2 text-secondary">
+              {Object.values(model.lab.rules).map((rule) => <li key={rule} className="flex gap-2"><CheckCircle className="mt-0.5 size-5 shrink-0 text-success-600" aria-hidden="true" />{rule}</li>)}
+            </ul>
+            <p className="rounded-lg bg-secondary p-4 text-sm font-medium text-primary">{complete.fairComparison}</p>
+          </section>
+          <StringHypothesesSummary intro={intro} content={complete} selected={hypotheses} own={ownHypothesis} />
+          {progress.completedAt === null && <Button size="lg" onClick={finishLesson}>{complete.finishLabel}</Button>}
+          <div ref={finishStatus} tabIndex={-1} role="status" data-testid="finish-status" className="space-y-3 outline-none">
+            {progress.completedAt !== null && <>
+              <p className="font-semibold text-primary">{complete.finished}</p>
+              <p className="text-secondary">{complete.feedback}</p>
+            </>}
+          </div>
+          {progress.completedAt !== null && <section aria-labelledby="lesson-three-bridge" className="rounded-lg border border-brand-200 bg-brand-25 p-5">
+            <h3 id="lesson-three-bridge" className="font-semibold text-primary">{complete.bridgeTitle}</h3>
+            <p className="mt-2 text-lg font-medium text-primary">{complete.bridge}</p>
+            <p className="mt-2 text-sm text-tertiary">{complete.bridgeNote}</p>
+          </section>}
+        </div>
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('checkpoint')}>{complete.backLabel}</Button>
+        {progress.completedAt !== null && <Button size="lg" href="/">{complete.backToCourse}</Button>}
       </div>
     </div>}
   </LessonShell>;
