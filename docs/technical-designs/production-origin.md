@@ -37,8 +37,9 @@ This PR replaces both with the new origin.
   old `*-production-production` host no longer resolves to the service, and
   `PUBLIC_ORIGIN` matches the new origin.
 - Repository search after the edit:
-  `grep -rn guitar-mastering-web-production-production` over tracked files
-  except `.git` returns nothing.
+  `git grep -n guitar-mastering-web-production-production -- ':!docs/technical-designs/production-origin.md'`
+  returns nothing; this design is the only file that still names the old
+  host.
 
 ## Security and privacy
 
