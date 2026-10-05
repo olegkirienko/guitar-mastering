@@ -14,10 +14,10 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
           <p className="font-semibold text-primary">Віртуальна струна</p>
           <p className="mt-1 text-sm leading-6 text-tertiary">Потягни її пальцем на сцені або скористайся кнопкою. Аудіо для цього досліду не потрібне.</p>
         </div>
-        {staticMode && <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-800">покадровий режим</span>}
+        {staticMode && <span className="rounded-full bg-utility-brand-100 px-3 py-1 text-xs font-semibold text-utility-brand-800">покадровий режим</span>}
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-lg border border-brand-200 bg-primary">
+      <div className="mt-5 overflow-hidden rounded-lg border border-utility-brand-200 bg-primary">
         <div
           className="touch-none select-none p-4 sm:p-8"
           onPointerDown={() => { gestureStarted.current = true; }}
@@ -28,11 +28,11 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
             <title id="string-visual-title">Струна між двома опорами</title>
             <desc id="string-visual-description">{visualDescription}</desc>
             <g aria-hidden="true">
-              <rect x="20" y="66" width="16" height="28" rx="4" fill="#783923" />
-              <rect x="284" y="66" width="16" height="28" rx="4" fill="#783923" />
-              <line x1="36" y1="80" x2="284" y2="80" stroke="#98A2B3" strokeDasharray="5 5" strokeWidth="2" />
-              <path d={`M 36 80 Q 160 ${80 + offset} 284 80`} fill="none" stroke="#91472c" strokeWidth="5" strokeLinecap="round" />
-              <text x="160" y="138" textAnchor="middle" fill="#475467" fontSize="13">пунктир — звичне положення струни</text>
+              <rect className="fill-utility-brand-700" x="20" y="66" width="16" height="28" rx="4" />
+              <rect className="fill-utility-brand-700" x="284" y="66" width="16" height="28" rx="4" />
+              <line className="stroke-fg-quaternary" x1="36" y1="80" x2="284" y2="80" strokeDasharray="5 5" strokeWidth="2" />
+              <path className="stroke-fg-brand-primary" d={`M 36 80 Q 160 ${80 + offset} 284 80`} fill="none" strokeWidth="5" strokeLinecap="round" />
+              <text className="fill-fg-tertiary" x="160" y="138" textAnchor="middle" fontSize="13">пунктир — звичне положення струни</text>
             </g>
           </svg>
         </div>
@@ -69,11 +69,11 @@ export function VirtualGuitarString({ observationChoices, predictionChoices, aud
     </div>
 
     {hasPlucked && <ChoiceQuestion question="Що робить струна, поки звук ще триває?" choices={observationChoices} correctChoiceId="moving" onCheck={(_, isCorrect) => { if (!isCorrect) setObservationAttempts((current) => current + 1); }} />}
-    {observationAttempts >= 2 && <p className="rounded-lg bg-brand-25 p-4 text-sm leading-6 text-secondary">Поглянь іще раз у повільному або покадровому режимі: струна повертається через пунктирну середину в обидва боки.</p>}
+    {observationAttempts >= 2 && <p className="rounded-lg bg-brand-primary_alt p-4 text-sm leading-6 text-secondary">Поглянь іще раз у повільному або покадровому режимі: струна повертається через пунктирну середину в обидва боки.</p>}
 
     {hasPlucked && <div className="border-t border-secondary pt-7">
       <ChoiceQuestion question="Що станеться зі звуком, якщо торкнутися струни й зупинити її?" choices={predictionChoices} correctChoiceId="fade" mode="prediction" checkLabel="Зберегти прогноз" onCheck={(choiceId) => { setPredictionId(choiceId); setPredictionMade(true); }} />
-      {predictionMade && <div className="mt-5 rounded-lg bg-brand-25 p-4 text-sm leading-6 text-secondary"><p>Тепер перевір: смикни струну ще раз і натисни «Зупинити струну», поки вона рухається.</p>{stringState === 'stopped' && <div className="mt-4 space-y-4"><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-lg bg-primary p-3"><p className="font-semibold text-primary">Мій прогноз</p><p className="mt-1">{predictionLabel}</p></div><div className="rounded-lg bg-primary p-3"><p className="font-semibold text-primary">Побачив/ла</p><p className="mt-1">Струна зупинилася — звук швидко стих.</p></div></div><p><strong>{predictionId === 'fade' ? 'Твій прогноз справдився.' : 'Саме для цього й потрібен експеримент.'}</strong> Доки струна рухається туди-назад, вона передає рух гітарі й сусідньому повітрю. Коли струну зупиняємо, нові зміни в повітрі більше не виникають, а вже створені швидко проходять і згасають.</p></div>}</div>}
+      {predictionMade && <div className="mt-5 rounded-lg bg-brand-primary_alt p-4 text-sm leading-6 text-secondary"><p>Тепер перевір: смикни струну ще раз і натисни «Зупинити струну», поки вона рухається.</p>{stringState === 'stopped' && <div className="mt-4 space-y-4"><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-lg bg-primary p-3"><p className="font-semibold text-primary">Мій прогноз</p><p className="mt-1">{predictionLabel}</p></div><div className="rounded-lg bg-primary p-3"><p className="font-semibold text-primary">Побачив/ла</p><p className="mt-1">Струна зупинилася — звук швидко стих.</p></div></div><p><strong>{predictionId === 'fade' ? 'Твій прогноз справдився.' : 'Саме для цього й потрібен експеримент.'}</strong> Доки струна рухається туди-назад, вона передає рух гітарі й сусідньому повітрю. Коли струну зупиняємо, нові зміни в повітрі більше не виникають, а вже створені швидко проходять і згасають.</p></div>}</div>}
     </div>}
   </div>;
 }

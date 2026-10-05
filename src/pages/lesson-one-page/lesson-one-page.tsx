@@ -27,7 +27,7 @@ export function LessonOnePage() {
       </Button>
     </div>
     {!isStringStep && !isAirStep && !isCheckpointStep && !isCompleteStep ? <LessonStep title={lessonOneContent.intro.title} intro={lessonOneContent.intro.invitation} shouldFocus={shouldFocusIntro}>
-      <div className="rounded-lg border border-brand-200 bg-brand-25 p-5"><p className="text-lg font-medium text-primary">{lessonOneContent.intro.question}</p><p className="mt-3 text-sm leading-6 text-secondary">{lessonOneContent.intro.reassurance}</p></div>
+      <div className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5"><p className="text-lg font-medium text-primary">{lessonOneContent.intro.question}</p><p className="mt-3 text-sm leading-6 text-secondary">{lessonOneContent.intro.reassurance}</p></div>
       <Button color="secondary" size="lg" className="mt-4" onClick={() => setAudioEnabled(!audioEnabled)} aria-pressed={audioEnabled}>
         {audioEnabled ? 'Звук: увімкнено' : 'Звук: вимкнено'}
       </Button>
@@ -55,8 +55,8 @@ export function LessonOnePage() {
       <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => { setShouldFocusCheckpoint(false); setShouldFocusAir(true); goTo('air'); }}>До досліду з повітрям</Button>
     </div> : <div className="space-y-5">
       <LessonStep key={progress.completedAt ? 'completed' : 'completion'} title={progress.completedAt ? lessonOneContent.completion.completedTitle : lessonOneContent.completion.title} intro={lessonOneContent.completion.instruction} shouldFocus={shouldFocusComplete}>
-        <div className="rounded-lg border border-brand-200 bg-brand-25 p-5">
-          <p className="text-sm font-semibold text-brand-700">Повний шлях звуку</p>
+        <div className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
+          <p className="text-sm font-semibold text-brand-secondary">Повний шлях звуку</p>
           <p className="mt-2 text-base font-medium leading-7 text-primary">{lessonOneContent.completion.chain}</p>
         </div>
         <div className="mt-6">
@@ -67,7 +67,7 @@ export function LessonOnePage() {
         </div>
         {!progress.completedAt ? <div className="mt-7 border-t border-secondary pt-6">
           <label htmlFor="lesson-reflection" className="text-sm font-semibold text-primary">{lessonOneContent.completion.reflectionLabel}</label>
-          <textarea id="lesson-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} placeholder={lessonOneContent.completion.reflectionPlaceholder} rows={3} className="mt-2 block w-full rounded-lg border border-primary px-3 py-2 text-sm text-primary outline-none placeholder:text-placeholder focus:border-brand-500 focus:ring-2 focus:ring-brand-200" />
+          <textarea id="lesson-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} placeholder={lessonOneContent.completion.reflectionPlaceholder} rows={3} className="mt-2 block w-full rounded-lg border border-primary px-3 py-2 text-sm text-primary outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-utility-brand-200" />
           <p className="mt-2 text-xs leading-5 text-quaternary">Цей текст приватний і не зберігається.</p>
           <Button color="secondary" size="lg" className="mt-4" aria-pressed={explainedAloud} onClick={() => setExplainedAloud((current) => !current)}>{explainedAloud ? 'Пояснення вголос позначено' : lessonOneContent.completion.spokenLabel}</Button>
           <div><Button size="lg" className="mt-6" iconTrailing={CheckCircle} onClick={finishLesson}>{lessonOneContent.completion.finishLabel}</Button></div>
@@ -76,7 +76,7 @@ export function LessonOnePage() {
           <p className="mt-1 text-sm leading-6 text-secondary">{lessonOneContent.completion.completedMessage}</p>
         </div>}
         <div className="mt-8 border-t border-secondary pt-7">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">Питання до наступного уроку</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand-secondary">Питання до наступного уроку</p>
           <h3 className="mt-2 text-xl font-semibold tracking-tight text-primary">{lessonOneContent.completion.bridgeQuestion}</h3>
           <div className="mt-5 grid gap-3 sm:grid-cols-2" aria-hidden="true">
             <div className="flex h-20 items-center rounded-lg border border-secondary bg-secondary px-5"><span className="h-1 w-full rounded-full bg-fg-secondary" /></div>

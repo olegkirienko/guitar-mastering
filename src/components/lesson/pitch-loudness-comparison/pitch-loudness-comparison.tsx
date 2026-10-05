@@ -8,7 +8,7 @@ import { RepeatDensityTrack } from '@/components/lesson/repeat-density-track/rep
 export function PitchLoudnessComparison({ content, audio, onComplete }: PitchLoudnessComparisonProps) {
   const { answered, setAnswered, examples } = usePitchLoudnessComparison({ content });
   return <div className="space-y-5">
-    <p className="rounded-lg border border-brand-200 bg-brand-25 p-4 text-sm text-secondary">{content.comfort}</p>
+    <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-4 text-sm text-secondary">{content.comfort}</p>
     <div className="grid gap-4 sm:grid-cols-2">
       {examples.map((example) => <section key={example.id} aria-labelledby={`loudness-${example.id}`} className="rounded-lg border border-secondary bg-primary p-4">
         <h3 id={`loudness-${example.id}`} className="font-semibold text-primary">{example.label}</h3>

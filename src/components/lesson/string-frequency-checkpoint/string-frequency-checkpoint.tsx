@@ -21,6 +21,6 @@ export function StringFrequencyCheckpoint({ content, lab, audio, passed, onPass 
         onCheck={(_choiceId, isCorrect) => answerQuestion(question.id, isCorrect)}
       />)}
     </section>
-    <div aria-live="polite" className="text-sm font-semibold text-primary">{isPassed && <p className="rounded-lg border border-brand-200 bg-brand-25 p-5">{content.passed}</p>}</div>
+    <div aria-live="polite" className="text-sm font-semibold text-primary">{isPassed && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">{content.passed}</p>}</div>
   </div>;
 }

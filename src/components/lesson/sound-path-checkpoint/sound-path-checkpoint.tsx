@@ -34,7 +34,7 @@ export function SoundPathCheckpoint({ content, initiallyPassed, onComplete }: So
           className={cx('rounded-xl border bg-primary p-4', hasCorrectConnection ? 'border-success-300' : 'border-secondary')}
         >
           <div className="flex items-start gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-bold text-brand-700" aria-hidden="true">{index + 1}</span>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-brand-secondary" aria-hidden="true">{index + 1}</span>
             <span className="text-2xl" aria-hidden="true">{card.illustration}</span>
             <p className="min-w-0 flex-1 pt-1 text-sm font-medium leading-6 text-secondary">{card.label}</p>
           </div>
@@ -51,7 +51,7 @@ export function SoundPathCheckpoint({ content, initiallyPassed, onComplete }: So
     {!sequenceReady && <Button size="lg" onClick={checkSequence}>Перевірити порядок</Button>}
 
     {result === 'incorrect' && <div id={feedbackId} role="status" className="rounded-lg bg-secondary p-4 text-sm leading-6 text-secondary">
-      <div className="flex gap-3"><HelpCircle className="mt-0.5 size-5 shrink-0 text-brand-700" /><p><strong>Знайдено перший розрив.</strong> {hint}</p></div>
+      <div className="flex gap-3"><HelpCircle className="mt-0.5 size-5 shrink-0 text-brand-secondary" /><p><strong>Знайдено перший розрив.</strong> {hint}</p></div>
       {attempts >= 2 && <Button color="secondary" size="lg" className="mt-4" onClick={showSequence}>Показати й пояснити</Button>}
     </div>}
 

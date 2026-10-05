@@ -20,7 +20,7 @@ export function AppLayout() {
       <header className="sticky top-0 z-20 border-b border-secondary bg-primary/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2.5 rounded-lg outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-brand-solid text-white shadow-xs">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-brand-solid text-primary_on-brand shadow-xs">
               <MusicNote01 className="size-5" aria-hidden="true" />
             </span>
             <span className="font-display text-lg font-semibold tracking-tight max-[359px]:sr-only">Гітара з нуля</span>

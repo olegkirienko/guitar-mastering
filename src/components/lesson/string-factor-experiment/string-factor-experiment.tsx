@@ -54,7 +54,7 @@ export function StringFactorExperiment({ factor, prediction, content, audio, com
       </table>
       {needsMoreLevels && <p className="text-sm text-tertiary">{content.tryMore}</p>}
     </section>}
-    {showNaming && <section aria-label={content.naming.term} className="space-y-3 rounded-lg border border-brand-200 bg-brand-25 p-5 text-secondary">
+    {showNaming && <section aria-label={content.naming.term} className="space-y-3 rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 text-secondary">
       <p>{content.naming.before}<strong className="text-primary">{content.naming.term}</strong>{content.naming.after}</p>
       <p className="font-semibold text-primary">{content.naming.rule}</p>
       <p>{content.application}</p>
