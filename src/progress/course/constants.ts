@@ -1,7 +1,9 @@
 import { lessonOneContent } from '@/data/lessons/stage-01-lesson-01/constants';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
+import { lessonFourContent } from '@/data/lessons/stage-01-lesson-04/constants';
 import type { CourseLesson } from '@/progress/course/types';
+import { lessonFourProgressAdapter } from '@/progress/lesson-four/lesson-four';
 import { lessonOneProgressAdapter } from '@/progress/lesson-one/lesson-one';
 import { lessonThreeProgressAdapter } from '@/progress/lesson-three/lesson-three';
 import { lessonTwoProgressAdapter } from '@/progress/lesson-two/lesson-two';
@@ -63,5 +65,24 @@ export const courseLessons: readonly CourseLesson[] = [
       return lessonThreeProgressAdapter.stepOrder.filter((step) => lessonThreeProgressAdapter.isStepReachable(progress, step));
     },
     currentStep: (value) => lessonThreeProgressAdapter.parse(value).currentStepId,
+  },
+  {
+    routeId: '04',
+    lessonId: lessonFourProgressAdapter.lessonId,
+    title: lessonFourContent.title,
+    steps: [
+      { id: 'intro', title: lessonFourContent.intro.title },
+      { id: 'shape', title: lessonFourContent.shape.title },
+      { id: 'overtones', title: lessonFourContent.overtones.title },
+      { id: 'spectrum', title: lessonFourContent.spectrum.title },
+      { id: 'envelope', title: lessonFourContent.envelope.title },
+      { id: 'checkpoint', title: lessonFourContent.checkpoint.title },
+      { id: 'complete', title: lessonFourContent.complete.title },
+    ],
+    reachableSteps: (value) => {
+      const progress = lessonFourProgressAdapter.parse(value);
+      return lessonFourProgressAdapter.stepOrder.filter((step) => lessonFourProgressAdapter.isStepReachable(progress, step));
+    },
+    currentStep: (value) => lessonFourProgressAdapter.parse(value).currentStepId,
   },
 ];

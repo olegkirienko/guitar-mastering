@@ -1,7 +1,8 @@
 import { toneDurationSeconds } from '@/data/lessons/stage-01-lesson-02-model/constants';
 import { safeGain } from '@/data/lessons/stage-01-lesson-02-model/utils/lab';
 import { attackSeconds, pluckSeconds, releaseSeconds } from '@/hooks/use-lesson-two-audio/constants';
-import type { LessonAudioStatus, LessonTwoAudio } from '@/hooks/use-lesson-two-audio/types';
+import type { LessonAudioStatus, LessonTwoAudio, PartialsSound } from '@/hooks/use-lesson-two-audio/types';
+import { createPartialsBuffer } from '@/hooks/use-lesson-two-audio/utils/create-partials-buffer';
 import { createPluckedBuffer } from '@/hooks/use-lesson-two-audio/utils/create-plucked-buffer';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -122,6 +123,15 @@ export function useLessonTwoAudio(
     }, gain, pluckSeconds);
   }, [play]);
 
+  // Lesson 4: a sound given as its own partials, already normalized by the renderer.
+  const playPartials = useCallback((sound: PartialsSound, gain = 0.1) => {
+    void play((activeContext) => {
+      const buffer = activeContext.createBufferSource();
+      buffer.buffer = createPartialsBuffer(activeContext, sound);
+      return buffer;
+    }, gain, sound.durationSeconds);
+  }, [play]);
+
   useEffect(() => {
     const stopWhenHidden = () => {
       if (document.hidden) stop();
@@ -141,5 +151,5 @@ export function useLessonTwoAudio(
     if (!audioEnabled) stop();
   }, [audioEnabled, stop]);
 
-  return { enabled: audioEnabled, status, enable, playTone, playPluck, stop };
+  return { enabled: audioEnabled, status, enable, playTone, playPluck, playPartials, stop };
 }

@@ -20,6 +20,7 @@ export const router = createBrowserRouter([
               { path: '/lessons/01/:stepId?', lazy: async () => ({ Component: (await import('@/pages/lesson-one-page/lesson-one-page')).LessonOnePage }) },
               { path: '/lessons/02/:stepId?', lazy: async () => ({ Component: (await import('@/pages/lesson-two-page/lesson-two-page')).LessonTwoPage }) },
               { path: '/lessons/03/:stepId?', lazy: async () => ({ Component: (await import('@/pages/lesson-three-page/lesson-three-page')).LessonThreePage }) },
+              { path: '/lessons/04/:stepId?', lazy: async () => ({ Component: (await import('@/pages/lesson-four-page/lesson-four-page')).LessonFourPage }) },
               { path: '/lessons/*', loader: () => redirect('/course') },
               { path: '/account', lazy: async () => ({ Component: (await import('@/pages/account-page/account-page')).AccountPage }) },
             ],
