@@ -46,7 +46,7 @@ export function LessonTwoPage() {
           <span className="rounded-md bg-tertiary px-2 py-1">{link}</span>
         </li>)}
       </ol>
-      <div className="mt-5 rounded-lg border border-brand-200 bg-brand-25 p-5">
+      <div className="mt-5 rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
         <p className="text-lg font-medium text-primary">{intro.question}</p>
         <p className="mt-2 text-sm text-tertiary">{intro.hypothesisNote}</p>
       </div>
@@ -135,7 +135,7 @@ export function LessonTwoPage() {
         </ul>
         {progress.completedAt === null && <div className="mt-5 space-y-3">
           <label htmlFor="lesson-two-reflection" className="block text-sm text-secondary">{complete.reflectionLabel}</label>
-          <textarea id="lesson-two-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={2} className="w-full rounded-lg border border-primary p-3 text-sm text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-600" />
+          <textarea id="lesson-two-reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={2} className="w-full rounded-lg border border-primary p-3 text-sm text-primary outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" />
           <Button size="lg" onClick={finishLesson}>{complete.finishLabel}</Button>
         </div>}
         <div ref={finishStatus} tabIndex={-1} role="status" data-testid="finish-status" className="mt-5 space-y-3 outline-none empty:mt-0">
@@ -144,7 +144,7 @@ export function LessonTwoPage() {
             <p className="text-secondary">{complete.feedback}</p>
           </>}
         </div>
-        {progress.completedAt !== null && <section aria-labelledby="lesson-two-bridge" className="mt-6 rounded-lg border border-brand-200 bg-brand-25 p-5">
+        {progress.completedAt !== null && <section aria-labelledby="lesson-two-bridge" className="mt-6 rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
           <h3 id="lesson-two-bridge" className="font-semibold text-primary">{complete.bridgeTitle}</h3>
           <p className="mt-2 text-lg font-medium text-primary">{complete.bridge}</p>
           <p className="mt-2 text-sm text-tertiary">{complete.bridgeNote}</p>

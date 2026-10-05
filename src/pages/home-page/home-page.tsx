@@ -13,7 +13,7 @@ export function HomePage() {
   const { courseHref } = useHomePage();
   return (
     <main>
-      <section className="border-b border-secondary bg-gradient-to-b from-brand-25 to-bg-primary">
+      <section className="border-b border-secondary bg-gradient-to-b from-bg-brand-primary_alt to-bg-primary">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold text-brand-secondary">Інтерактивний курс класичної гітари</p>
@@ -98,8 +98,8 @@ export function HomePage() {
 
       <section className="px-4 pb-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl rounded-3xl bg-brand-section px-6 py-14 text-center sm:px-12">
-          <h2 className="font-display text-3xl font-semibold text-balance text-white sm:text-4xl">Почни з першого звуку</h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg leading-8 text-white/80">Перший урок займає кілька хвилин і не потребує жодної підготовки.</p>
+          <h2 className="font-display text-3xl font-semibold text-balance text-primary_on-brand sm:text-4xl">Почни з першого звуку</h2>
+          <p className="mx-auto mt-4 max-w-xl text-lg leading-8 text-secondary_on-brand">Перший урок займає кілька хвилин і не потребує жодної підготовки.</p>
           <Button href={courseHref} size="xl" color="secondary" className="mt-8" iconTrailing={ArrowRight}>
             Перейти до курсу
           </Button>

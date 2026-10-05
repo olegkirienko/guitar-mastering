@@ -34,7 +34,7 @@ export function LessonThreePage() {
     </div>
 
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.reminder} shouldFocus={focusedStep === 'intro'}>
-      <div className="rounded-lg border border-brand-200 bg-brand-25 p-5">
+      <div className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
         <p className="text-lg font-medium text-primary">{intro.question}</p>
       </div>
       <div className="mt-6">
@@ -88,7 +88,7 @@ export function LessonThreePage() {
               <ul className="list-disc space-y-1 pl-5">{density.differences.items.map((item) => <li key={item}>{item}</li>)}</ul>
               <p className="font-medium text-primary">{density.differences.conclusion}</p>
             </section>
-            <section aria-label={density.fairComparison.term} className="space-y-2 rounded-lg border border-brand-200 bg-brand-25 p-5 text-secondary">
+            <section aria-label={density.fairComparison.term} className="space-y-2 rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 text-secondary">
               <p><strong className="text-primary">{density.fairComparison.term}</strong>{density.fairComparison.text}</p>
               <p>{density.fairComparison.synonym}</p>
             </section>
@@ -149,7 +149,7 @@ export function LessonThreePage() {
               <p className="text-secondary">{complete.feedback}</p>
             </>}
           </div>
-          {progress.completedAt !== null && <section aria-labelledby="lesson-three-bridge" className="rounded-lg border border-brand-200 bg-brand-25 p-5">
+          {progress.completedAt !== null && <section aria-labelledby="lesson-three-bridge" className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
             <h3 id="lesson-three-bridge" className="font-semibold text-primary">{complete.bridgeTitle}</h3>
             <p className="mt-2 text-lg font-medium text-primary">{complete.bridge}</p>
             <p className="mt-2 text-sm text-tertiary">{complete.bridgeNote}</p>

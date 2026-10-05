@@ -9,6 +9,6 @@ export function RepeatDensityTrack({ frequency }: { frequency: number }) {
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
   return <svg viewBox="0 0 320 48" className="h-auto w-full max-w-md" aria-hidden="true">
-    <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-600" />
+    <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-tertiary" />
   </svg>;
 }

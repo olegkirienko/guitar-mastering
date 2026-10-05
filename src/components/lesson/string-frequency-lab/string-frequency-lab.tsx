@@ -23,7 +23,7 @@ export function StringFrequencyLab({ content, predictions = [], task, audio, com
         {predictions.map((item) => <li key={item.id} className="space-y-3">
           <ChoiceQuestion question={item.question} choices={item.choices} correctChoiceId={item.correctChoiceId} mode="prediction" onCheck={() => answer(item.id)} />
           {isVerified(item.id)
-            ? <p className="rounded-lg border border-brand-200 bg-brand-25 p-4 text-sm font-medium text-primary">{item.checked}</p>
+            ? <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-4 text-sm font-medium text-primary">{item.checked}</p>
             : isAnswered(item.id) && <p className="text-sm text-tertiary">{item.setupHint}</p>}
         </li>)}
       </ol>
@@ -64,7 +64,7 @@ export function StringFrequencyLab({ content, predictions = [], task, audio, com
         <ul className="space-y-2">
           {factorOrder.map((factor) => <li
             key={factor}
-            className={cx('flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm', factor === lastChanged ? 'border-brand-200 bg-brand-25 font-semibold text-primary' : 'border-secondary text-secondary')}
+            className={cx('flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm', factor === lastChanged ? 'border-utility-brand-200 bg-brand-primary_alt font-semibold text-primary' : 'border-secondary text-secondary')}
           >
             <span>{content.rules[factor]}</span>
             {factor === lastChanged && <Badge type="pill-color" color="brand" size="sm">{content.lastChangedLabel}</Badge>}
@@ -73,6 +73,6 @@ export function StringFrequencyLab({ content, predictions = [], task, audio, com
       </div>}
     </section>
 
-    {!task && done && <p className="rounded-lg border border-brand-200 bg-brand-25 p-5 font-medium text-primary">{content.doneText}</p>}
+    {!task && done && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{content.doneText}</p>}
   </div>;
 }

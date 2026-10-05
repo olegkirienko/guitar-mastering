@@ -11,7 +11,7 @@ import { ArrowRight } from '@untitledui/icons';
 export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitchLabProps) {
   const { frequency, prediction, setPrediction, feedback, card, slider, sliderId, predictionName, allRevealed, changed, atLowest, atHighest, reveal, change, check, itemsIn } = useFrequencyPitchLab({ content, onComplete });
   return <div className="space-y-6">
-    <section ref={card} tabIndex={-1} aria-labelledby="discovery-card-title" className="rounded-lg border border-secondary bg-primary p-5 outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+    <section ref={card} tabIndex={-1} aria-labelledby="discovery-card-title" className="rounded-lg border border-secondary bg-primary p-5 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
       <h3 id="discovery-card-title" className="sr-only">{content.cardTitle}</h3>
       <div className="grid gap-3 text-sm sm:grid-cols-[1fr_auto_1fr]">
         <div>
@@ -28,7 +28,7 @@ export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitch
           </ul>}
         </div>
       </div>
-      {allRevealed && <p className="mt-4 rounded-md bg-brand-25 p-3 text-sm font-semibold text-primary">{content.summary}</p>}
+      {allRevealed && <p className="mt-4 rounded-md bg-brand-primary_alt p-3 text-sm font-semibold text-primary">{content.summary}</p>}
       {!allRevealed && <Button size="lg" className="mt-4" onClick={reveal}>{content.revealLabel}</Button>}
     </section>
     {allRevealed && <>
@@ -49,7 +49,7 @@ export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitch
             value={labFrequencies.indexOf(frequency)}
             aria-valuetext={`${frequency} Гц`}
             onChange={(event) => change(labFrequencies[Number(event.target.value)])}
-            className="h-11 w-full accent-brand-600"
+            className="h-11 w-full accent-fg-brand-primary"
           />
           <div className="grid grid-cols-2 gap-2">
             <Button color="secondary" size="lg" className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50" aria-disabled={atLowest} onClick={() => { if (!atLowest) change(stepFrequency(frequency, -1)); }}>{content.lowerLabel}</Button>
@@ -61,8 +61,8 @@ export function FrequencyPitchLab({ content, audio, onComplete }: FrequencyPitch
         {changed ? <fieldset className="mt-4 space-y-2">
           <legend className="text-sm font-semibold text-primary">{content.predictionLegend}</legend>
           <div className="flex flex-wrap gap-2">
-            {content.predictionChoices.map((choice) => <label key={choice.id} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-secondary px-3 text-sm text-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-600 has-[:focus-visible]:ring-offset-2">
-              <input type="radio" name={predictionName} value={choice.id} checked={prediction === choice.id} onChange={() => setPrediction(choice.id)} className="size-4 accent-brand-600" />
+            {content.predictionChoices.map((choice) => <label key={choice.id} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-secondary px-3 text-sm text-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-solid has-[:focus-visible]:ring-offset-2">
+              <input type="radio" name={predictionName} value={choice.id} checked={prediction === choice.id} onChange={() => setPrediction(choice.id)} className="size-4 accent-fg-brand-primary" />
               {choice.label}
             </label>)}
           </div>

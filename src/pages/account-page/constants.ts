@@ -1,6 +1,6 @@
 export const avatars = [
-  { id: 'cedar', label: 'Кедр', symbol: '🌲', colors: 'bg-amber-100 text-amber-900' },
-  { id: 'ocean', label: 'Океан', symbol: '🌊', colors: 'bg-blue-100 text-blue-900' },
-  { id: 'sunset', label: 'Захід сонця', symbol: '🌅', colors: 'bg-rose-100 text-rose-900' },
-  { id: 'forest', label: 'Ліс', symbol: '🍃', colors: 'bg-emerald-100 text-emerald-900' },
+  { id: 'cedar', label: 'Кедр', symbol: '🌲', colors: 'bg-utility-orange-100 text-utility-orange-700' },
+  { id: 'ocean', label: 'Океан', symbol: '🌊', colors: 'bg-utility-blue-100 text-utility-blue-700' },
+  { id: 'sunset', label: 'Захід сонця', symbol: '🌅', colors: 'bg-utility-pink-100 text-utility-pink-700' },
+  { id: 'forest', label: 'Ліс', symbol: '🍃', colors: 'bg-utility-green-100 text-utility-green-700' },
 ] as const;
