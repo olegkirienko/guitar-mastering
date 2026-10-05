@@ -1,4 +1,8 @@
 import { useCallback, useState } from 'react';
+import { labModes } from '@/components/lesson/timbre-lab/constants';
+import { overtoneMultiples, timbrePresets } from '@/data/lessons/stage-01-lesson-04-model/constants';
+import type { OvertoneMultiple, TimbreSound } from '@/data/lessons/stage-01-lesson-04-model/types';
+import { matchesOvertones } from '@/data/lessons/stage-01-lesson-04-model/utils/checkpoint';
 import { lessonFourContent } from '@/data/lessons/stage-01-lesson-04/constants';
 import type { DescriptionId, LessonFourStepId } from '@/data/lessons/stage-01-lesson-04/types';
 import { useAuth } from '@/hooks/use-auth';
@@ -6,6 +10,10 @@ import { useLessonRoute } from '@/hooks/use-lesson-route/use-lesson-route';
 import { useLessonTwoAudio } from '@/hooks/use-lesson-two-audio/use-lesson-two-audio';
 import { lessonFourProgressAdapter } from '@/progress/lesson-four/lesson-four';
 import { useLessonFourProgress } from '@/progress/use-lesson-four-progress';
+
+// `overtones` is done once both faster waves have been heard at least once, so the
+// lab's own list of waves decides the condition instead of a second copy of it.
+const overtonesRequired = labModes.overtones.multiples;
 
 export function useLessonFourPage() {
   const { progress, setProgress, loaded, loadFailed, sync, retrySync } = useLessonFourProgress();
@@ -17,7 +25,16 @@ export function useLessonFourPage() {
   // Session-only: each answer opens the rest of its step.
   const [introAnswered, setIntroAnswered] = useState(false);
   const [shapePredicted, setShapePredicted] = useState(false);
-  const { intro, shape, preferences, waveWords } = lessonFourContent;
+  const [overtonesPredicted, setOvertonesPredicted] = useState(false);
+  // Session-only lab states; each screen owns its own sound.
+  const [overtonesSound, setOvertonesSound] = useState<TimbreSound>(timbrePresets.pure);
+  const [switchedOn, setSwitchedOn] = useState<readonly OvertoneMultiple[]>([]);
+  const [spectrumSound, setSpectrumSound] = useState<TimbreSound>(timbrePresets.pluck);
+  const [spectrumTouched, setSpectrumTouched] = useState(false);
+  // A prediction counts as tested only when its state is reached after the guess.
+  const [spectrumAnswered, setSpectrumAnswered] = useState<readonly string[]>([]);
+  const [spectrumVerified, setSpectrumVerified] = useState<readonly string[]>([]);
+  const { intro, shape, overtones, spectrum, preferences, waveWords } = lessonFourContent;
   const { route, goTo: openStep } = useLessonRoute('04', lessonFourProgressAdapter, { progress, loaded, loadFailed, retrySync, setProgress });
   const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const isCompleted = (step: LessonFourStepId) => progress.completedStepIds.includes(step);
@@ -48,11 +65,41 @@ export function useLessonFourPage() {
   }, [completeStep]);
   const answerShapeCount = useCallback(() => completeStep('shape'), [completeStep]);
 
+  const changeOvertonesSound = (next: TimbreSound) => {
+    setOvertonesSound(next);
+    const sounding = overtoneMultiples.filter((multiple) => next.overtones[multiple] !== 'off');
+    const nextSwitchedOn = Array.from(new Set([...switchedOn, ...sounding]));
+    if (nextSwitchedOn.length === switchedOn.length) return;
+    setSwitchedOn(nextSwitchedOn);
+    if (overtonesRequired.every((multiple) => nextSwitchedOn.includes(multiple))) completeStep('overtones');
+  };
+
+  const verifySpectrum = (sound: TimbreSound, answered: readonly string[]) => {
+    const reached = spectrum.predictions.filter((item) => answered.includes(item.id) && matchesOvertones(sound, item.target)).map((item) => item.id);
+    const nextVerified = Array.from(new Set([...spectrumVerified, ...reached]));
+    if (nextVerified.length === spectrumVerified.length) return;
+    setSpectrumVerified(nextVerified);
+    if (spectrum.predictions.every((item) => nextVerified.includes(item.id))) completeStep('spectrum');
+  };
+
+  const changeSpectrumSound = (next: TimbreSound) => {
+    setSpectrumSound(next);
+    setSpectrumTouched(true);
+    verifySpectrum(next, spectrumAnswered);
+  };
+
+  const answerSpectrum = (id: string) => {
+    if (spectrumAnswered.includes(id)) return;
+    const nextAnswered = [...spectrumAnswered, id];
+    setSpectrumAnswered(nextAnswered);
+    verifySpectrum(spectrumSound, nextAnswered);
+  };
+
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
     : audio.status === 'blocked'
       ? preferences.audioBlocked
       : null;
 
-  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, preferences, waveWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), audioMessage };
+  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, preferences, waveWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), overtonesOpen: overtonesPredicted || isCompleted('overtones'), answerOvertonesPrediction: () => setOvertonesPredicted(true), overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed: spectrumTouched || isCompleted('spectrum'), answerSpectrum, isSpectrumAnswered: (id: string) => spectrumAnswered.includes(id), isSpectrumVerified: (id: string) => spectrumVerified.includes(id), audioMessage };
 }

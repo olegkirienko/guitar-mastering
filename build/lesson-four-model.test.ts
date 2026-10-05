@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
+import { labModes } from '../src/components/lesson/timbre-lab/constants.ts';
 import { peakGainCap } from '../src/data/lessons/stage-01-lesson-02-model/constants.ts';
 import { safeGain } from '../src/data/lessons/stage-01-lesson-02-model/utils/lab.ts';
 import { attackSeconds, decayDurationSeconds, playbackGain, timbrePresets } from '../src/data/lessons/stage-01-lesson-04-model/constants.ts';
 import type { TimbreSound } from '../src/data/lessons/stage-01-lesson-04-model/types.ts';
+import { matchesOvertones } from '../src/data/lessons/stage-01-lesson-04-model/utils/checkpoint.ts';
 import { envelopePoints, envelopeValue, soundDuration } from '../src/data/lessons/stage-01-lesson-04-model/utils/envelope.ts';
 import { partialStrengths, toPartialsSound } from '../src/data/lessons/stage-01-lesson-04-model/utils/partials.ts';
+import { partialLabel, withOvertone } from '../src/data/lessons/stage-01-lesson-04-model/utils/sound.ts';
 import { visualRepeats, waveCurves, waveDescription, waveValue } from '../src/data/lessons/stage-01-lesson-04-model/utils/wave.ts';
 import { lessonFourContent } from '../src/data/lessons/stage-01-lesson-04/constants.ts';
 import { renderPartials } from '../src/hooks/use-lesson-two-audio/utils/render-partials.ts';
 
 const presets = Object.values(timbrePresets);
 const words = lessonFourContent.waveWords;
+const labs = { overtones: lessonFourContent.overtones.lab, spectrum: lessonFourContent.spectrum.lab };
 
 function peakOf(samples: Float32Array): number {
   let peak = 0;
@@ -101,5 +105,58 @@ describe('Lesson 4 sound model', () => {
     const descriptions = sounds.map((item) => waveDescription(item.sound, words));
     expect(new Set(descriptions).size).toBe(sounds.length);
     for (const description of descriptions) expect(description.startsWith('Повторів: 3;')).toBe(true);
+  });
+});
+
+describe('Lesson 4 overtones and spectrum screens', () => {
+  it('names a partial by its multiple and frequency, never by an ordinal', () => {
+    expect(partialLabel(220, 1)).toBe('×1 · 220 Гц');
+    expect(partialLabel(220, 3)).toBe('×3 · 660 Гц');
+    expect(partialLabel(440, 5)).toBe('×5 · 2200 Гц');
+  });
+
+  it('changes one overtone and leaves the rest of the sound untouched', () => {
+    const next = withOvertone(timbrePresets.pure, 3, 'weak');
+    expect(next.overtones).toEqual({ 2: 'off', 3: 'weak', 4: 'off', 5: 'off' });
+    expect(next.fundamental).toBe(timbrePresets.pure.fundamental);
+    expect(timbrePresets.pure.overtones[3]).toBe('off');
+  });
+
+  it('tests a prediction only on the overtones it names', () => {
+    expect(matchesOvertones(timbrePresets.bright, { 4: 'strong', 5: 'strong' })).toBe(true);
+    expect(matchesOvertones(timbrePresets.pluck, { 4: 'strong', 5: 'strong' })).toBe(false);
+    expect(matchesOvertones(timbrePresets.pure, {})).toBe(true);
+  });
+
+  it('never offers the fundamental as a switch and has a word for every level it offers', () => {
+    for (const [mode, lab] of Object.entries(labs)) {
+      const config = labModes[mode as keyof typeof labs];
+      expect(config.multiples).not.toContain(1);
+      expect(lab.mixer.fundamentalNote).toContain('завжди');
+      for (const level of config.levels) expect(lab.levels[level]).toBeTruthy();
+    }
+  });
+
+  it('keeps the words of a later screen off the screen that has not earned them', () => {
+    // `overtones` draws the waves it adds; the spectrum and the ready-made sounds wait for their own screen.
+    expect(Object.keys(labs.overtones)).not.toContain('spectrum');
+    expect(Object.keys(labs.overtones)).not.toContain('presets');
+    expect(labModes.overtones.showPartials).toBe(true);
+    expect(labs.overtones.status.overtone).not.toContain('бертон');
+    expect(labs.spectrum.status.overtone).toContain('бертон');
+  });
+
+  it('starts the spectrum lab where neither prediction is already true', () => {
+    for (const prediction of lessonFourContent.spectrum.predictions) {
+      expect(matchesOvertones(timbrePresets.pluck, prediction.target)).toBe(false);
+      // Every level a prediction asks for is one the spectrum lab actually offers.
+      for (const level of Object.values(prediction.target)) expect(labModes.spectrum.levels).toContain(level);
+    }
+  });
+
+  it('labels the three ways the string swings with the frequencies they stand for', () => {
+    const rows = lessonFourContent.overtones.modes.rows;
+    expect(rows.map((row) => row.parts)).toEqual([1, 2, 3]);
+    for (const row of rows) expect(row.label.startsWith(partialLabel(220, row.parts))).toBe(true);
   });
 });
