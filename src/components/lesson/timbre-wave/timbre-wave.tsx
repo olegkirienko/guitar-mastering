@@ -9,7 +9,7 @@ function toPath(points: readonly CurvePoint[]): string {
 
 // The sum over a few repeats of the fundamental, with the repeat boundaries marked:
 // the shape changes with the overtones while the number of repeats stays put.
-export function TimbreWave({ sound, label, words, showPartials = false }: TimbreWaveProps) {
+export function TimbreWave({ sound, label, words, shapeNote, showPartials = false }: TimbreWaveProps) {
   const { sum, partials } = waveCurves(sound);
   const repeats = visualRepeats(sound.fundamental);
   const boundaries = Array.from({ length: Math.ceil(repeats) - 1 }, (_, index) => index + 1);
@@ -38,6 +38,6 @@ export function TimbreWave({ sound, label, words, showPartials = false }: Timbre
       />)}
       <path d={toPath(sum)} fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-tertiary" />
     </svg>
-    <p className="text-sm text-secondary">{waveDescription(sound, words)}</p>
+    <p className="text-sm text-secondary">{waveDescription(sound, words, shapeNote)}</p>
   </figure>;
 }

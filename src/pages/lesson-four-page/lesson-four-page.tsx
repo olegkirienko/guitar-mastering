@@ -57,7 +57,7 @@ export function LessonFourPage() {
                 <h3 id="shape-waves-title" className="font-semibold text-primary">{shape.wavesTitle}</h3>
                 <p className="mt-1 text-sm text-tertiary">{shape.wavesNote}</p>
               </div>
-              {intro.comparison.sounds.map((item) => <TimbreWave key={item.id} sound={item.sound} label={item.label} words={waveWords} />)}
+              {intro.comparison.sounds.map((item) => <TimbreWave key={item.id} sound={item.sound} label={item.label} words={waveWords} shapeNote={item.shapeNote} />)}
             </section>
             <ChoiceQuestion question={shape.count.question} choices={shape.count.choices} correctChoiceId={shape.count.correctChoiceId} onCheck={answerShapeCount} />
           </>}

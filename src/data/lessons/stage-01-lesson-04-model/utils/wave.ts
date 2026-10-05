@@ -33,8 +33,11 @@ function repeatsText(fundamental: Fundamental): string {
   return String(visualRepeats(fundamental)).replace('.', ',');
 }
 
-export function waveDescription(sound: TimbreSound, words: WaveWords): string {
+// Before the `overtones` step the multiples mean nothing yet, so a screen that has not
+// earned them passes `shapeNote` and gets the same picture described in plain words.
+export function waveDescription(sound: TimbreSound, words: WaveWords, shapeNote?: string): string {
   const repeats = `${words.repeats}: ${repeatsText(sound.fundamental)}`;
+  if (shapeNote) return `${repeats}; ${words.shape}: ${shapeNote}`;
   const sounding = overtoneMultiples
     .map((multiple) => ({ multiple, level: sound.overtones[multiple] }))
     .filter((overtone): overtone is { multiple: OvertoneMultiple; level: SoundingLevel } => overtone.level !== 'off');

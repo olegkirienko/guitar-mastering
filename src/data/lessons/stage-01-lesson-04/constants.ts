@@ -35,12 +35,13 @@ export const lessonFourContent = {
   estimatedTime: '10–14 хв',
   // The step list and the progress stops are visible from the first screen, so they
   // stay in the plain words of the lesson: no term before the screen that earns it.
-  progressStops: ['Описи', 'Малюнок', 'Хвилі в хвилі', 'Склад звуку', 'Початок і кінець', 'Перевірка'],
+  progressStops: ['Описи', 'Малюнок', 'Хвилі всередині хвилі', 'Склад звуку', 'Початок і кінець', 'Перевірка'],
   // The audio switch and its messages are the same as in Lesson 2.
   preferences: lessonTwoContent.preferences,
   // Text alternative of every drawn wave; the model fills in the numbers.
   waveWords: {
     repeats: 'Повторів',
+    shape: 'форма повтору',
     overtones: 'обертони',
     noOvertones: 'обертонів немає',
     levels: { weak: 'слабкий', strong: 'сильний' },
@@ -59,10 +60,13 @@ export const lessonFourContent = {
       caption: 'Три звуки, складені комп’ютером',
       frequencyLabel: 'Кожен звучить на 220 Гц.',
       listenLabel: 'Послухати',
+      // `shapeNote` describes the drawn repeat for the `shape` screen, where the
+      // multiples are not yet named: whoever cannot see the picture still gets the
+      // difference the screen is about.
       sounds: [
-        { id: 'pure', label: 'А · чистий тон', description: 'Рівний, порожній звук — такий самий чистий тон, як в уроці 2.', sound: timbrePresets.pure },
-        { id: 'pluck', label: 'Б · щипок', description: 'Різкий початок і поступове затихання, як у смикнутої струни.', sound: timbrePresets.pluck },
-        { id: 'bright', label: 'В · дзвінкий тривалий', description: 'Яскравий, дзвінкий звук, який тримається довго.', sound: timbrePresets.bright },
+        { id: 'pure', label: 'А · чистий тон', description: 'Рівний, порожній звук — такий самий чистий тон, як в уроці 2.', shapeNote: 'один плавний підйом і спад, без дрібних горбків', sound: timbrePresets.pure },
+        { id: 'pluck', label: 'Б · щипок', description: 'Різкий початок і поступове затихання, як у смикнутої струни.', shapeNote: 'високий підйом, а поряд із ним — помітно менші горбки', sound: timbrePresets.pluck },
+        { id: 'bright', label: 'В · дзвінкий тривалий', description: 'Яскравий, дзвінкий звук, який тримається довго.', shapeNote: 'високий підйом і багато дрібних горбків різної висоти', sound: timbrePresets.bright },
       ],
     },
     guitar: {

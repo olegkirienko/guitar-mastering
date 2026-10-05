@@ -32,8 +32,10 @@ export type TimbreCurves = {
 };
 
 // Wording for the text alternative of a drawn wave; the numbers come from the model.
+// `shape` opens the plain description used before the overtones are named.
 export type WaveWords = {
   repeats: string;
+  shape: string;
   overtones: string;
   noOvertones: string;
   levels: Record<SoundingLevel, string>;

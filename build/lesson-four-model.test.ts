@@ -60,6 +60,8 @@ describe('Lesson 4 sound model', () => {
   });
 
   it('describes a wave in words for a reader who cannot see it', () => {
+    // A screen that has not named the overtones yet gets the shape in plain words.
+    expect(waveDescription(timbrePresets.pluck, words, 'високий підйом')).toBe('Повторів: 3; форма повтору: високий підйом');
     expect(waveDescription(timbrePresets.pure, words)).toBe('Повторів: 3; обертонів немає');
     expect(waveDescription(timbrePresets.pluck, words)).toBe('Повторів: 3; обертони: ×2 сильний, ×3 слабкий, ×4 слабкий, ×5 слабкий');
     expect(waveDescription({ ...timbrePresets.bright, fundamental: 330 }, words)).toBe('Повторів: 4,5; обертони: ×2 сильний, ×3 сильний, ×4 сильний, ×5 сильний');
@@ -206,6 +208,16 @@ describe('Lesson 4 envelope screen', () => {
   it('keeps every step title in plain words, because the step list is visible from the first screen', () => {
     const titles = [lessonFourContent.intro, lessonFourContent.shape, lessonFourContent.overtones, lessonFourContent.spectrum, envelope, lessonFourContent.checkpoint, lessonFourContent.complete].map((step) => step.title);
     for (const text of [...titles, ...lessonFourContent.progressStops]) expect(text).not.toMatch(/тембр|обертон|спектр|атак|згасан/i);
+    // The stop and the title of the same step say the same thing.
+    expect(lessonFourContent.progressStops[2]).toBe(lessonFourContent.overtones.title);
+  });
+
+  it('describes the shape of every drawn wave without the multiples the `shape` screen has not earned', () => {
+    for (const item of lessonFourContent.intro.comparison.sounds) {
+      expect(item.shapeNote).toBeTruthy();
+      expect(item.shapeNote).not.toMatch(/тембр|обертон|×/i);
+      expect(waveDescription(item.sound, words, item.shapeNote)).not.toMatch(/обертон|×/i);
+    }
   });
 
   it('keeps «атака» and «згасання» out of everything shown before the experiment', () => {

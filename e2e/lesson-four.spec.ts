@@ -69,8 +69,12 @@ test("hears the difference, describes it and counts the repeats with the keyboar
   await repeats.focus();
   await repeats.press("Space");
   await page.getByRole("button", { name: "Перевірити" }).press("Enter");
-  await expect(page.getByText("Повторів: 3; обертонів немає")).toBeVisible();
-  await expect(page.getByText("Повторів: 3; обертони: ×2 сильний, ×3 слабкий, ×4 слабкий, ×5 слабкий")).toBeVisible();
+  await expect(page.getByText("Повторів: 3; форма повтору: один плавний підйом і спад, без дрібних горбків")).toBeVisible();
+  await expect(page.getByText("Повторів: 3; форма повтору: високий підйом і багато дрібних горбків різної висоти")).toBeVisible();
+  // The pictures describe themselves in plain words: the multiples are named a step later.
+  for (const term of ["тембр", "обертон", "×", "спектр", "атака", "згасання"]) {
+    await expect(page.getByText(new RegExp(term, "i"))).toHaveCount(0);
+  }
 
   const three = page.getByRole("radio", { name: "По три" });
   await three.focus();
