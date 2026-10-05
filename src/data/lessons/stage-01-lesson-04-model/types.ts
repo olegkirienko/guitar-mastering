@@ -21,6 +21,13 @@ export type TimbreSound = {
 
 export type TimbrePresetId = 'pure' | 'pluck' | 'bright';
 
+// The two sounds of the checkpoint task; the learner builds both.
+export type PairSoundId = 'a' | 'b';
+
+// What «Перевірити» found: the goal is one pitch and two different timbres, so the
+// pair fails either because the pitches differ or because the timbres do not.
+export type PairResult = 'solved' | 'differentPitch' | 'sameTimbre';
+
 // One component of the drawn sum; the fundamental is multiple 1 at full strength.
 export type PartialStrength = { multiple: number; strength: number };
 

@@ -238,3 +238,59 @@ test("offers listening only once audio is on and plays one sound at a time", asy
   await expect(page.getByRole("button", { name: "Послухати" })).toHaveCount(0);
   await expect.poll(() => account.preferences().audioEnabled).toBe(false);
 });
+
+test("builds two sounds of one pitch, explains them and finishes the lesson with the keyboard, without audio, at 320 px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  const reached = ["intro", "shape", "overtones", "spectrum", "envelope"];
+  const account = await mockAccount(page, { ...opened, [lessonFourId]: { currentStepId: "checkpoint", completedStepIds: reached } });
+  await page.goto(`${applicationOrigin}/lessons/04/checkpoint`);
+
+  await expect(page.getByRole("heading", { name: "Зроби сам і поясни" })).toBeVisible();
+  // Both pitches stay visible, so the half of the task that is about keeping them
+  // equal never hides behind the other tab.
+  await expect(page.getByText("Зараз: А — 220 Гц, Б — 330 Гц.")).toBeVisible();
+  await noHorizontalScroll(page);
+
+  // Nothing is solved at the start: the sounds differ in pitch, not in timbre.
+  await page.getByRole("button", { name: "Перевірити задачу" }).press("Enter");
+  await expect(page.getByText("Основні частоти різні, тож і висота різна: А — 220 Гц, Б — 330 Гц.")).toBeVisible();
+
+  await page.getByRole("tab", { name: "Звук Б" }).press("Enter");
+  await choose(page.getByRole("radiogroup", { name: "Основна частота" }).getByRole("radio", { name: "220 Гц" }));
+  await expect(page.getByText("Основна частота: 220 Гц.")).toBeVisible();
+  await expect(page.getByText("Зараз: А — 220 Гц, Б — 220 Гц.")).toBeVisible();
+
+  // One pitch is not enough: two copies of the same sound are one timbre.
+  await page.getByRole("button", { name: "Перевірити задачу" }).press("Enter");
+  await expect(page.getByText("тембр теж однаковий", { exact: false })).toBeVisible();
+
+  await choose(page.getByRole("radiogroup", { name: "×2 · 440 Гц" }).getByRole("radio", { name: "сильний" }));
+  await page.getByRole("button", { name: "Перевірити задачу" }).press("Enter");
+  await expect(page.getByText("Задача виконана", { exact: false })).toBeVisible();
+
+  // The task alone does not pass the checkpoint; every question has to be answered.
+  await expect(page.getByText("Перевірку пройдено", { exact: false })).toHaveCount(0);
+  const answers = ["Висота та сама, звук стане чистим тоном", "Однакова основна частота; різні обертони, атака й згасання", "Верхні обертони сильніші, а основна частота та сама"];
+  for (const [index, answer] of answers.entries()) {
+    await choose(page.getByRole("radio", { name: answer }));
+    await page.getByRole("button", { name: "Перевірити", exact: true }).nth(index).press("Enter");
+  }
+  await expect(page.getByText("Перевірку пройдено", { exact: false })).toBeVisible();
+  await expect.poll(() => saved(account)).toMatchObject({ checkpointPassed: true });
+  await noHorizontalScroll(page);
+
+  await page.getByRole("button", { name: "Підсумок уроку" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "Що ми з’ясували" })).toBeVisible();
+  await expect(page.getByText("Висоту задає основна частота", { exact: false })).toBeVisible();
+  // The lesson ends only when the learner says so.
+  await expect(page.getByText("Урок завершено.")).toHaveCount(0);
+  expect(saved(account).completedAt).toBeNull();
+
+  await page.getByRole("button", { name: "Завершити урок" }).press("Enter");
+  await expect(page.getByText("Урок завершено.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Наступне питання" })).toBeVisible();
+  await expect(page.getByText("подвоєння частоти", { exact: false })).toBeVisible();
+  await expect.poll(() => saved(account).completedAt).not.toBeNull();
+  await expect.poll(() => saved(account).completedStepIds).toEqual([...reached, "checkpoint", "complete"]);
+  await noHorizontalScroll(page);
+});
