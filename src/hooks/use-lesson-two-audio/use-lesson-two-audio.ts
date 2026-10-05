@@ -114,12 +114,12 @@ export function useLessonTwoAudio(
     }, gain, toneDurationSeconds);
   }, [play]);
 
-  const playPluck = useCallback((frequency: number) => {
+  const playPluck = useCallback((frequency: number, gain = 0.1) => {
     void play((activeContext) => {
       const buffer = activeContext.createBufferSource();
       buffer.buffer = createPluckedBuffer(activeContext, frequency);
       return buffer;
-    }, 0.1, pluckSeconds);
+    }, gain, pluckSeconds);
   }, [play]);
 
   useEffect(() => {

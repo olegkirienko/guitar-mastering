@@ -20,7 +20,7 @@ export function labFeedback(from: LabFrequency, to: LabFrequency): string {
 }
 
 // Visual density only: cycles drawn across the schematic track.
-export function visualCycles(frequency: LabFrequency): number {
+export function visualCycles(frequency: number): number {
   return frequency / 55;
 }
 
