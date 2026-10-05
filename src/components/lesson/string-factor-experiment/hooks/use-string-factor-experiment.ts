@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import type { FactorExperimentContent, StringFactorExperimentProps } from '@/components/lesson/string-factor-experiment/types';
+import type { StringFactorExperimentProps } from '@/components/lesson/string-factor-experiment/types';
 import { levelsToComplete } from '@/components/lesson/string-factor-experiment/constants';
-import { pitchChange } from '@/data/lessons/stage-01-lesson-02-model/utils/lab';
 import { defaultStringSettings } from '@/data/lessons/stage-01-lesson-03-model/constants';
+import { frequencyChangeText } from '@/data/lessons/stage-01-lesson-03-model/utils/change';
 import { factorLevelIndex, factorLevels, stringFrequency, withFactorLevel } from '@/data/lessons/stage-01-lesson-03-model/utils/frequency';
-
-function changeText(content: FactorExperimentContent, from: number, to: number): string {
-  const change = pitchChange(from, to);
-  return `${to} Гц — ${change === 'higher' ? content.more : change === 'lower' ? content.less : content.same}`;
-}
 
 export function useStringFactorExperiment({ factor, content, completed, onComplete }: Pick<StringFactorExperimentProps, 'factor' | 'content' | 'completed' | 'onComplete'>) {
   const [predicted, setPredicted] = useState(false);
@@ -25,7 +20,7 @@ export function useStringFactorExperiment({ factor, content, completed, onComple
     const nextTried = tried.includes(index) ? tried : [...tried, index];
     setSettings(next);
     setTried(nextTried);
-    setAnnouncement(changeText(content, frequency, stringFrequency(next)));
+    setAnnouncement(frequencyChangeText(frequency, stringFrequency(next), content));
     if (predicted && nextTried.length >= levelsToComplete) onComplete();
   };
 

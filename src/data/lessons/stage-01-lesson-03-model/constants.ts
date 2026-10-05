@@ -4,6 +4,8 @@ import type { StringFactor, StringSettings } from '@/data/lessons/stage-01-lesso
 
 export const baseFrequency = 220;
 
+export const factorOrder: readonly StringFactor[] = ['length', 'tension', 'density'];
+
 // Each level is a multiplier of the base string: length shortens, tension and density grow.
 export const lengthLevels = [1, 0.75, 0.5] as const;
 export const tensionLevels = [1, 2.25, 4] as const;

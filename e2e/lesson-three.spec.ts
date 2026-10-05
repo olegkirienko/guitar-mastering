@@ -137,3 +137,46 @@ test("tension and density change one factor each and name it only after the expe
   await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "length", "tension", "density"]);
   await noHorizontalScroll(page);
 });
+
+test("model lab tests two combined predictions, highlights the last rule, and keeps the formula optional", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  const account = await mockAccount(page, { [lessonOneId]: lessonOneCompleted, [lessonTwoId]: lessonTwoCompleted, [lessonThreeId]: { currentStepId: "density", completedStepIds: ["intro", "length", "tension", "density"] } });
+  await page.goto(`${applicationOrigin}/lessons/03/density`);
+  await press(page, "Далі: три ручки разом");
+
+  await expect(page.getByRole("heading", { name: "Три ручки однієї струни" })).toBeFocused();
+  await expect(page.getByText("f = (1 / 2L) × √(T / μ)")).toBeHidden();
+  const [first, second] = [page.getByRole("listitem").filter({ hasText: "Почни з початкової струни" }), page.getByRole("listitem").filter({ hasText: "Знову від початкової струни" })];
+  const choose = async (item: typeof first, answer: string) => {
+    const radio = item.getByRole("radio", { name: answer, exact: true });
+    await radio.focus();
+    await radio.press("Space");
+    await item.getByRole("button", { name: "Перевірити" }).press("Enter");
+  };
+  const step = async (group: string, from: string, times: number) => {
+    const radio = page.getByRole("radiogroup", { name: group }).getByRole("radio", { name: from, exact: true });
+    await radio.focus();
+    for (let index = 0; index < times; index += 1) await page.keyboard.press("ArrowDown");
+  };
+
+  await choose(first, "Вищим");
+  await expect(first.getByText("Встанови в лабораторії", { exact: false })).toBeVisible();
+  await step("Довжина частини, що коливається", "повна довжина", 2);
+  await step("Натяг", "звичайно", 2);
+  await expect(page.getByRole("status").filter({ hasText: "880 Гц — частіше, ніж було" })).toBeVisible();
+  await expect(first.getByText("Перевірено: 880 Гц", { exact: false })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "щойно змінено" })).toContainText("Більший натяг");
+  expect(saved(account).completedStepIds).not.toContain("model");
+
+  await choose(second, "Не зміниться");
+  await press(page, "Скинути");
+  await expect(page.getByRole("status").filter({ hasText: "220 Гц — початкова струна" })).toBeVisible();
+  await step("Натяг", "звичайно", 2);
+  await step("Лінійна густина (вага сантиметра)", "легка", 2);
+  await expect(page.getByRole("status").filter({ hasText: "220 Гц — рідше, ніж було" })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "щойно змінено" })).toContainText("Більша лінійна густина");
+  await expect(second.getByText("Перевірено: знову 220 Гц", { exact: false })).toBeVisible();
+  await expect.poll(() => saved(account).completedStepIds).toEqual(["intro", "length", "tension", "density", "model"]);
+  await expect(page.getByText("f = (1 / 2L) × √(T / μ)")).toBeHidden();
+  await noHorizontalScroll(page);
+});

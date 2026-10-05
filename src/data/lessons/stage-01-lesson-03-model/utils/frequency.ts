@@ -19,6 +19,10 @@ export function withFactorLevel(settings: StringSettings, factor: StringFactor, 
   return { ...settings, density: densityLevels[index] ?? settings.density };
 }
 
+export function sameSettings(first: StringSettings, second: StringSettings): boolean {
+  return first.length === second.length && first.tension === second.tension && first.density === second.density;
+}
+
 export function factorLevelIndex(settings: StringSettings, factor: StringFactor): number {
   return factorLevels(factor).indexOf(settings[factor]);
 }

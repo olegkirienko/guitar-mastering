@@ -17,7 +17,7 @@ export function useLessonThreePage() {
   // Session-only: the question before each experiment opens the rest of its step.
   const [tensionAnswered, setTensionAnswered] = useState(false);
   const [densityAnswered, setDensityAnswered] = useState(false);
-  const { intro, length, tension, density, preferences } = lessonThreeContent;
+  const { intro, length, tension, density, model, preferences } = lessonThreeContent;
   const { route, goTo: openStep } = useLessonRoute('03', lessonThreeProgressAdapter, { progress, loaded, loadFailed, retrySync, setProgress });
   const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const isCompleted = (step: LessonThreeStepId) => progress.completedStepIds.includes(step);
@@ -54,6 +54,7 @@ export function useLessonThreePage() {
   const completeLength = useCallback(() => completeStep('length'), [completeStep]);
   const completeTension = useCallback(() => completeStep('tension'), [completeStep]);
   const completeDensity = useCallback(() => completeStep('density'), [completeStep]);
+  const completeModel = useCallback(() => completeStep('model'), [completeStep]);
 
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
@@ -61,5 +62,5 @@ export function useLessonThreePage() {
       ? preferences.audioBlocked
       : null;
 
-  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, intro, length, tension, density, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, tensionOpen: tensionAnswered || isCompleted('tension'), answerTension: () => setTensionAnswered(true), densityOpen: densityAnswered || isCompleted('density'), answerDensity: () => setDensityAnswered(true), audioMessage };
+  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, intro, length, tension, density, model, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, tensionOpen: tensionAnswered || isCompleted('tension'), answerTension: () => setTensionAnswered(true), densityOpen: densityAnswered || isCompleted('density'), answerDensity: () => setDensityAnswered(true), audioMessage };
 }

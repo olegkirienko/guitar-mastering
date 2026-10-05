@@ -8,6 +8,7 @@ import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
 import { SameStringDiagram } from '@/components/lesson/same-string-diagram/same-string-diagram';
 import { StringFactorExperiment } from '@/components/lesson/string-factor-experiment/string-factor-experiment';
+import { StringFrequencyLab } from '@/components/lesson/string-frequency-lab/string-frequency-lab';
 import { StringPair } from '@/components/lesson/string-pair/string-pair';
 import { StringHypotheses } from '@/components/lesson/string-hypotheses/string-hypotheses';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
@@ -15,7 +16,7 @@ import { stopByStep } from '@/pages/lesson-three-page/constants';
 import { useLessonThreePage } from '@/pages/lesson-three-page/hooks/use-lesson-three-page';
 
 export function LessonThreePage() {
-  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, intro, length, tension, density, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
+  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, intro, length, tension, density, model, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonThreeContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
@@ -95,6 +96,25 @@ export function LessonThreePage() {
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
         <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('tension')}>{density.backLabel}</Button>
+        {isCompleted('density') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('model')}>{density.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'model' && <div className="space-y-5">
+      <LessonStep title={model.title} intro={model.instruction} shouldFocus={focusedStep === 'model'}>
+        <div className="space-y-6">
+          <StringFrequencyLab content={model.lab} predictions={model.predictions} audio={audio} completed={isCompleted('model')} onComplete={completeModel} />
+          <details className="rounded-lg border border-secondary bg-primary p-4 text-secondary">
+            <summary className="min-h-11 cursor-pointer content-center font-semibold text-primary">{model.deeper.summary}</summary>
+            <p className="mt-3 text-lg font-semibold text-primary">{model.deeper.formula}</p>
+            <ul className="mt-2 space-y-1 text-sm">{model.deeper.legend.map((item) => <li key={item}>{item}</li>)}</ul>
+            <p className="mt-4 text-sm font-medium text-primary">{model.deeper.consequencesTitle}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{model.deeper.consequences.map((item) => <li key={item}>{item}</li>)}</ul>
+          </details>
+        </div>
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('density')}>{model.backLabel}</Button>
       </div>
     </div>}
   </LessonShell>;

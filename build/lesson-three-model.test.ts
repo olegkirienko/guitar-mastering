@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { peakGainCap } from '../src/data/lessons/stage-01-lesson-02-model/constants.ts';
 import { visualCycles } from '../src/data/lessons/stage-01-lesson-02-model/utils/lab.ts';
 import { defaultStringSettings, densityLevels, lengthLevels, tensionLevels } from '../src/data/lessons/stage-01-lesson-03-model/constants.ts';
-import { factorLevelIndex, stringFrequency, withFactorLevel } from '../src/data/lessons/stage-01-lesson-03-model/utils/frequency.ts';
+import { frequencyChangeText } from '../src/data/lessons/stage-01-lesson-03-model/utils/change.ts';
+import { factorLevelIndex, sameSettings, stringFrequency, withFactorLevel } from '../src/data/lessons/stage-01-lesson-03-model/utils/frequency.ts';
 import { pluckGain } from '../src/data/lessons/stage-01-lesson-03-model/utils/gain.ts';
+import { lessonThreeContent } from '../src/data/lessons/stage-01-lesson-03/constants.ts';
 
 // expected[length][tension][density], computed independently of the model.
 const expected = [
@@ -36,6 +38,23 @@ describe('Lesson 3 string model', () => {
 
   it('lets factors cancel each other', () => {
     expect(stringFrequency({ length: 1, tension: 4, density: 4 })).toBe(220);
+  });
+
+  it('tests both model-lab predictions with combinations whose answers match the expected hertz', () => {
+    const [shorterTighter, tighterHeavier] = lessonThreeContent.model.predictions;
+    expect(stringFrequency(shorterTighter.target)).toBe(880);
+    expect(shorterTighter.correctChoiceId).toBe('higher');
+    expect(stringFrequency(tighterHeavier.target)).toBe(220);
+    expect(tighterHeavier.correctChoiceId).toBe('same');
+    expect(sameSettings(tighterHeavier.target, { length: 1, tension: 4, density: 4 })).toBe(true);
+    expect(sameSettings(tighterHeavier.target, defaultStringSettings)).toBe(false);
+  });
+
+  it('announces the new frequency with its direction', () => {
+    const words = { more: 'частіше', less: 'рідше', same: 'так само' };
+    expect(frequencyChangeText(220, 880, words)).toBe('880 Гц — частіше');
+    expect(frequencyChangeText(440, 220, words)).toBe('220 Гц — рідше');
+    expect(frequencyChangeText(220, 220, words)).toBe('220 Гц — так само');
   });
 
   it('keeps every reachable pluck at or below Lesson 2 levels and never louder as frequency rises', () => {

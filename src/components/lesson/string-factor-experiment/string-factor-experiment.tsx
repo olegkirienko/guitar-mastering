@@ -1,12 +1,11 @@
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
+import { FactorRegulator } from '@/components/lesson/factor-regulator/factor-regulator';
 import { RepeatDensityTrack } from '@/components/lesson/repeat-density-track/repeat-density-track';
-import { FactorRegulator } from '@/components/lesson/string-factor-experiment/components/factor-regulator/factor-regulator';
 import { StringSchematic } from '@/components/lesson/string-schematic/string-schematic';
-import { factorOrder } from '@/components/lesson/string-factor-experiment/constants';
 import { useStringFactorExperiment } from '@/components/lesson/string-factor-experiment/hooks/use-string-factor-experiment';
 import type { StringFactorExperimentProps } from '@/components/lesson/string-factor-experiment/types';
-import { levelLabels } from '@/data/lessons/stage-01-lesson-03-model/constants';
+import { factorOrder, levelLabels } from '@/data/lessons/stage-01-lesson-03-model/constants';
 import { factorLevelIndex } from '@/data/lessons/stage-01-lesson-03-model/utils/frequency';
 import { pluckGain } from '@/data/lessons/stage-01-lesson-03-model/utils/gain';
 
