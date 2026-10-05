@@ -21,7 +21,14 @@ export function useTimbreCheckpoint({ content, passed, onPass }: Pick<TimbreChec
     onPass();
   };
 
-  const changeSound = (id: PairSoundId, next: TimbreSound) => setSounds((current) => ({ ...current, [id]: next }));
+  // The result belongs to the pair that was checked. Editing a sound takes it back, so
+  // the checkpoint can never be passed on a pair the learner has since taken apart, and
+  // the line under the button never describes sounds that are no longer there.
+  const changeSound = (id: PairSoundId, next: TimbreSound) => {
+    setSounds((current) => ({ ...current, [id]: next }));
+    setSolved(false);
+    setCheckStatus('');
+  };
 
   const check = () => {
     const result = checkPair(sounds.a, sounds.b);
