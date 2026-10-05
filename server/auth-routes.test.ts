@@ -35,7 +35,7 @@ function fakeAuth(overrides: Partial<Record<keyof AuthService, unknown>> = {}): 
     login: vi.fn(async () => ({ user: { id: "u1", username: "Player.One", profile: { firstName: null, lastName: null, avatarId: null } }, token: "new-token" })),
     logout: vi.fn(async () => undefined), session: vi.fn(async () => null), deleteAccount: vi.fn(async () => undefined),
     updateProfile: vi.fn(async () => ({ firstName: "Леся", lastName: null, avatarId: "forest" })),
-    updatePreferences: vi.fn(async () => ({ audioEnabled: true, prefersStatic: false })),
+    updatePreferences: vi.fn(async () => ({ audioEnabled: true, prefersStatic: false, theme: "dark" as const })),
     ...overrides,
   } as unknown as AuthService;
 }
@@ -125,16 +125,16 @@ describe("authentication HTTP boundary", () => {
   });
 
   it("updates authenticated preferences only through PUT with origin and JSON checks", async () => {
-    const updatePreferences = vi.fn(async () => ({ audioEnabled: true, prefersStatic: false }));
+    const updatePreferences = vi.fn(async () => ({ audioEnabled: true, prefersStatic: false, theme: "dark" as const }));
     const origin = await start(fakeAuth({ updatePreferences }));
     const headers = { origin: "https://guitar.example", "content-type": "application/json", cookie: "__Host-gm_session=session-token" };
-    const body = JSON.stringify({ audioEnabled: true, prefersStatic: false });
+    const body = JSON.stringify({ audioEnabled: true, prefersStatic: false, theme: "dark" });
 
     const response = await fetch(`${origin}/api/v1/preferences`, { method: "PUT", headers, body });
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(updatePreferences).toHaveBeenCalledWith("session-token", { audioEnabled: true, prefersStatic: false });
-    await expect(response.json()).resolves.toEqual({ preferences: { audioEnabled: true, prefersStatic: false } });
+    expect(updatePreferences).toHaveBeenCalledWith("session-token", { audioEnabled: true, prefersStatic: false, theme: "dark" });
+    await expect(response.json()).resolves.toEqual({ preferences: { audioEnabled: true, prefersStatic: false, theme: "dark" } });
 
     const wrongMethod = await fetch(`${origin}/api/v1/preferences`, { method: "POST", headers, body });
     expect(wrongMethod.status).toBe(405);

@@ -4,7 +4,7 @@ export const applicationOrigin = "http://127.0.0.1:4173";
 export const user = {
   id: "user-1", username: "Player.One",
   profile: { firstName: null, lastName: null, avatarId: null },
-  preferences: { audioEnabled: false, prefersStatic: false },
+  preferences: { audioEnabled: false, prefersStatic: false, theme: "system" as "system" | "light" | "dark" },
 };
 export const lessonOneId = "stage-01-lesson-01";
 export const lessonTwoId = "stage-01-lesson-02";

@@ -1,4 +1,5 @@
 import { Button } from '@/components/base/buttons/button';
+import { preferencesSaveFailedMessage } from '@/constants/preferences';
 import type { LessonProgressPanelProps } from '@/components/lesson/lesson-progress-panel/types';
 
 // Account status shared by every lesson page: one progress line with a retry when a save fails,
@@ -14,7 +15,7 @@ export function LessonProgressPanel({ sync, retrySync, preferencesSaveFailed }: 
     {sync.status === 'error' && <Button color="link-color" size="md" className="ml-2 min-h-11" onClick={retrySync}>Спробувати зберегти ще раз</Button>}
   </div>
   <div className="mb-4 text-sm text-error-primary" aria-live="polite">
-    {preferencesSaveFailed && 'Не вдалося зберегти налаштування, тому повернули попереднє. Спробуй ще раз.'}
+    {preferencesSaveFailed && preferencesSaveFailedMessage}
   </div>
   </>;
 }
