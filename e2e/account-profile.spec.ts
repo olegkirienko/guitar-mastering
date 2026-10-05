@@ -124,7 +124,7 @@ test("shows the account entry on the application origin", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Увійти" })).toBeVisible();
 });
 
-test("removes legacy local copies and opens the lesson from server progress only", async ({ page }) => {
+test("ignores legacy local copies and opens the lesson from server progress only", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   // Copies left by older releases: a guest copy at a later step, an account cache, and preferences.
   await page.addInitScript(() => {
@@ -155,7 +155,6 @@ test("removes legacy local copies and opens the lesson from server progress only
   await expect(page.getByText("Прогрес зберігається в акаунті.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByRole("button", { name: "Дослідити рух у повітрі" })).toHaveCount(0);
-  expect(await page.evaluate(() => localStorage.length)).toBe(0);
   expect(writes).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
