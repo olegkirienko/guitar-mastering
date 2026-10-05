@@ -13,6 +13,21 @@ const presetOptions = [
   { id: 'bright', label: 'дзвінкий' },
 ] as const;
 
+// The three numbers of every partial, in the same words wherever the spectrum is shown.
+const spectrumTable = {
+  multipleColumn: 'Кратність',
+  frequencyColumn: 'Частота',
+  strengthColumn: 'Сила',
+  fundamentalStrength: 'звучить завжди',
+  levels: levelWords,
+} as const;
+
+// The counterexample of `envelope`: one spectrum, two ways of starting and ending.
+const envelopeSounds = {
+  plucked: timbrePresets.pluck,
+  swelling: { ...timbrePresets.pluck, attack: 'slow', decay: 'held' },
+} as const;
+
 export const lessonFourContent = {
   id: 'stage-01-lesson-04',
   stageLabel: 'Етап I · Звук',
@@ -29,6 +44,12 @@ export const lessonFourContent = {
     overtones: 'обертони',
     noOvertones: 'обертонів немає',
     levels: { weak: 'слабкий', strong: 'сильний' },
+  },
+  // Text alternative of every drawn envelope. Whole phrases, because this one has to
+  // read as a sentence; the regulators get their own short words.
+  envelopeWords: {
+    attack: { instant: 'Початок миттєвий', fast: 'Початок швидкий', slow: 'Початок повільний' },
+    decay: { short: 'затихає швидко', long: 'затихає поступово', held: 'звук тримається' },
   },
   intro: {
     title: 'Однакова висота — різні звуки',
@@ -127,7 +148,7 @@ export const lessonFourContent = {
       waveLabel: 'Тонкі лінії — окремі хвилі, товста — їхня сума',
       listenLabel: 'Послухати',
       levels: levelWords,
-      status: { overtone: 'Хвиля', preset: 'Звук:', reset: 'Лишилася сама основна хвиля.', samePitch: 'Висота та сама —' },
+      status: { overtone: 'Хвиля', samePitch: 'Висота та сама —' },
     },
     observationTitle: 'Що сталося',
     observations: [
@@ -170,17 +191,14 @@ export const lessonFourContent = {
       waveLabel: 'Форма повтору',
       listenLabel: 'Послухати',
       levels: levelWords,
-      status: { overtone: 'Обертон', preset: 'Звук:', reset: 'Повернули початковий звук.', samePitch: 'Висота та сама —' },
-      spectrum: {
-        title: 'Склад звуку',
-        note: 'Які частоти є у звуку й наскільки кожна сильна.',
-        multipleColumn: 'Кратність',
-        frequencyColumn: 'Частота',
-        strengthColumn: 'Сила',
-        fundamentalStrength: 'звучить завжди',
-        levels: levelWords,
+      status: { overtone: 'Обертон', samePitch: 'Висота та сама —' },
+      spectrum: { title: 'Склад звуку', note: 'Які частоти є у звуку й наскільки кожна сильна.', ...spectrumTable },
+      presets: {
+        label: 'Готові звуки',
+        options: presetOptions,
+        resetLabel: 'Скинути',
+        status: { preset: 'Звук:', reset: 'Повернули початковий звук.' },
       },
-      presets: { label: 'Готові звуки', options: presetOptions, resetLabel: 'Скинути' },
     },
     termTitle: 'Спектр',
     term: 'Малюнок, який показує, які частоти є у звуку й наскільки вони сильні, називають спектром.',
@@ -232,8 +250,76 @@ export const lessonFourContent = {
       ],
     },
     backLabel: 'Назад до обертонів',
+    nextLabel: 'Далі — початок і кінець',
   },
-  envelope: { title: 'Початок і кінець звуку' },
+  envelope: {
+    // The step list is visible from the first screen, so this title stays in plain
+    // words; the framing of the screen lives in the line under it.
+    title: 'Початок і кінець звуку',
+    instruction: 'Спектр той самий — а звуки різні. Два звуки, складені з тих самих частот, і все одно їх не сплутаєш.',
+    spectrumTitle: 'Склад обох звуків — однаковий',
+    spectrum: { title: 'Склад звуку', note: 'Той самий в обох: ×2 сильний, ×3, ×4 і ×5 слабкі.', ...spectrumTable },
+    curveLabel: 'Гучність у часі',
+    comparison: {
+      caption: 'Два звуки 220 Гц',
+      frequencyLabel: 'Однакова висота, однаковий склад.',
+      listenLabel: 'Послухати',
+      sounds: [
+        { id: 'plucked', label: 'А · щипок', description: 'Умить набирає повну силу й далі поступово затихає.', sound: envelopeSounds.plucked },
+        { id: 'swelling', label: 'Б · наростання', description: 'Повільно набирає силу й далі тримається рівно.', sound: envelopeSounds.swelling },
+      ],
+    },
+    question: {
+      question: 'Спектр однаковий. Що ж відрізняється?',
+      choices: [
+        { id: 'edges', label: 'Початок і кінець звуку', feedback: 'Подивись на малюнки гучності: один звук стрибає вгору відразу, другий наростає поволі.' },
+        { id: 'pitch', label: 'Висота', feedback: 'Основна частота в обох — 220 Гц, тож висота однакова. Різниця десь іще.' },
+        { id: 'overtones', label: 'Обертони', feedback: 'Обертони в них однакові — це той самий склад звуку в таблиці вище. Різниця десь іще.' },
+      ],
+      correctChoiceId: 'edges',
+    },
+    prediction: {
+      question: 'Якщо щипку дати повільний початок, він лишиться схожим на щипок?',
+      choices: [
+        { id: 'yes', label: 'Так, спектр же той самий', feedback: 'Перевіримо в досліді нижче.' },
+        { id: 'no', label: 'Ні, це вже не схоже на щипок', feedback: 'Перевіримо в досліді нижче.' },
+      ],
+      correctChoiceId: 'no',
+    },
+    lab: {
+      title: 'Дослід: початок і кінець',
+      note: 'Спектр тут заблокований — міняй лише початок і затихання. Висота теж не змінюється.',
+      mixer: {
+        title: 'Обертони',
+        note: 'У цьому досліді їх не змінюємо: хай спектр лишається тим самим.',
+        fundamentalNote: 'основна частота, звучить завжди',
+      },
+      listenLabel: 'Послухати',
+      levels: levelWords,
+      status: { overtone: 'Обертон', samePitch: 'Висота та сама —' },
+      spectrum: { title: 'Склад звуку', note: 'Він не змінюється, хоч би що ти робив нижче.', ...spectrumTable },
+      envelope: {
+        title: 'Початок і затихання',
+        note: 'Два регулятори: як швидко звук набирає силу і як швидко стихає.',
+        curveLabel: 'Гучність у часі',
+        attackLabel: 'Початок',
+        decayLabel: 'Затихання',
+        attacks: { instant: 'миттєвий', fast: 'швидкий', slow: 'повільний' },
+        decays: { short: 'коротке', long: 'довге', held: 'тримається' },
+      },
+    },
+    termTitle: 'Атака й згасання',
+    term: 'Те, як швидко звук набирає силу, називають атакою. Те, як він затихає, — згасанням. Спектр, атака й згасання разом і дають тембр.',
+    guitarTitle: 'Атака й згасання на гітарі',
+    guitarText: 'Щипок завжди дає миттєву атаку — струну відпускають, і вона відразу звучить на повну. А далі звук згасає сам: це теж частина гітарного тембру. Згасання можна скоротити — поклади долоню на струну, як в уроці 1.',
+    guitar: {
+      title: 'Дати відзвучати й приглушити',
+      withGuitar: 'Смикни першу струну й дай їй відзвучати до кінця. Потім смикни ще раз і через секунду поклади на струну долоню. Початок звуку однаковий, а кінець — різний.',
+      withoutGuitar: 'У досліді вище постав затихання спершу на «довге», потім на «коротке» — долоня на струні робить саме це.',
+      safety: 'Долоню клади м’яко, усією подушечкою. Струну не смикай нігтем згори.',
+    },
+    backLabel: 'Назад до складу звуку',
+  },
   checkpoint: { title: 'Зроби сам і поясни' },
   complete: { title: 'Що ми з’ясували' },
 } as const;

@@ -7,12 +7,20 @@ export const overtoneMultiples: readonly OvertoneMultiple[] = [2, 3, 4, 5];
 // Strength of one overtone against the fundamental, which always sounds at 1.
 export const overtoneStrengths: Record<OvertoneLevel, number> = { off: 0, weak: 0.3, strong: 0.8 };
 
+export const attackLevels: readonly AttackLevel[] = ['instant', 'fast', 'slow'];
+
+export const decayLevels: readonly DecayLevel[] = ['short', 'long', 'held'];
+
 export const attackSeconds: Record<AttackLevel, number> = { instant: 0.005, fast: 0.06, slow: 0.5 };
 
 // Time constant of the fall; `held` keeps the sound at full strength instead.
 export const decaySeconds: Record<DecayLevel, number | null> = { short: 0.2, long: 0.7, held: null };
 
 export const decayDurationSeconds: Record<DecayLevel, number> = { short: 1, long: 2, held: 1.6 };
+
+// The longest any sound of this lesson runs. Every envelope is drawn against it, so
+// a short sound ends sooner on the picture instead of being stretched to the same width.
+export const maxSoundDuration = 2;
 
 const silentOvertones = { 2: 'off', 3: 'off', 4: 'off', 5: 'off' } as const;
 

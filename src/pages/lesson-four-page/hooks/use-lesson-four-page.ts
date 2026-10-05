@@ -15,6 +15,9 @@ import { useLessonFourProgress } from '@/progress/use-lesson-four-progress';
 // lab's own list of waves decides the condition instead of a second copy of it.
 const overtonesRequired = labModes.overtones.multiples;
 
+// The «А» sound of the counterexample: the experiment begins where the screen left off.
+const envelopeStart = lessonFourContent.envelope.comparison.sounds[0].sound;
+
 export function useLessonFourPage() {
   const { progress, setProgress, loaded, loadFailed, sync, retrySync } = useLessonFourProgress();
   const { preferences: lessonPreferences, preferencesSaveFailed, updatePreferences } = useAuth();
@@ -34,7 +37,14 @@ export function useLessonFourPage() {
   // A prediction counts as tested only when its state is reached after the guess.
   const [spectrumAnswered, setSpectrumAnswered] = useState<readonly string[]>([]);
   const [spectrumVerified, setSpectrumVerified] = useState<readonly string[]>([]);
-  const { intro, shape, overtones, spectrum, preferences, waveWords } = lessonFourContent;
+  // `envelope` starts from the plucked sound of its counterexample, so giving it a
+  // slow start is a real change; both ends have to be tried before the step is done.
+  const [envelopeSound, setEnvelopeSound] = useState<TimbreSound>(envelopeStart);
+  const [envelopeAnswered, setEnvelopeAnswered] = useState(false);
+  const [envelopePredicted, setEnvelopePredicted] = useState(false);
+  const [attackChanged, setAttackChanged] = useState(false);
+  const [decayChanged, setDecayChanged] = useState(false);
+  const { intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords } = lessonFourContent;
   const { route, goTo: openStep } = useLessonRoute('04', lessonFourProgressAdapter, { progress, loaded, loadFailed, retrySync, setProgress });
   const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const isCompleted = (step: LessonFourStepId) => progress.completedStepIds.includes(step);
@@ -95,11 +105,30 @@ export function useLessonFourPage() {
     verifySpectrum(spectrumSound, nextAnswered);
   };
 
+  // Any answer to the question counts, but both ends of the sound have to be tried.
+  const finishEnvelope = (answered: boolean, attack: boolean, decay: boolean) => {
+    if (answered && attack && decay) completeStep('envelope');
+  };
+
+  const answerEnvelope = () => {
+    setEnvelopeAnswered(true);
+    finishEnvelope(true, attackChanged, decayChanged);
+  };
+
+  const changeEnvelopeSound = (next: TimbreSound) => {
+    const attack = attackChanged || next.attack !== envelopeSound.attack;
+    const decay = decayChanged || next.decay !== envelopeSound.decay;
+    setEnvelopeSound(next);
+    setAttackChanged(attack);
+    setDecayChanged(decay);
+    finishEnvelope(envelopeAnswered, attack, decay);
+  };
+
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
     : audio.status === 'blocked'
       ? preferences.audioBlocked
       : null;
 
-  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, preferences, waveWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), overtonesOpen: overtonesPredicted || isCompleted('overtones'), answerOvertonesPrediction: () => setOvertonesPredicted(true), overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed: spectrumTouched || isCompleted('spectrum'), answerSpectrum, isSpectrumAnswered: (id: string) => spectrumAnswered.includes(id), isSpectrumVerified: (id: string) => spectrumVerified.includes(id), audioMessage };
+  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), overtonesOpen: overtonesPredicted || isCompleted('overtones'), answerOvertonesPrediction: () => setOvertonesPredicted(true), overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed: spectrumTouched || isCompleted('spectrum'), answerSpectrum, isSpectrumAnswered: (id: string) => spectrumAnswered.includes(id), isSpectrumVerified: (id: string) => spectrumVerified.includes(id), envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen: envelopeAnswered || isCompleted('envelope'), envelopeLabOpen: envelopePredicted || isCompleted('envelope'), answerEnvelopePrediction: () => setEnvelopePredicted(true), envelopeStart, audioMessage };
 }

@@ -6,6 +6,7 @@ import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/l
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
+import { SpectrumBars } from '@/components/lesson/spectrum-bars/spectrum-bars';
 import { StringHypotheses } from '@/components/lesson/string-hypotheses/string-hypotheses';
 import { StringModesDiagram } from '@/components/lesson/string-modes-diagram/string-modes-diagram';
 import { TimbreLab } from '@/components/lesson/timbre-lab/timbre-lab';
@@ -17,7 +18,7 @@ import { stopByStep } from '@/pages/lesson-four-page/constants';
 import { useLessonFourPage } from '@/pages/lesson-four-page/hooks/use-lesson-four-page';
 
 export function LessonFourPage() {
-  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, preferences, waveWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen, shapeOpen, answerShapePrediction, overtonesOpen, answerOvertonesPrediction, overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed, answerSpectrum, isSpectrumAnswered, isSpectrumVerified, audioMessage } = useLessonFourPage();
+  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen, shapeOpen, answerShapePrediction, overtonesOpen, answerOvertonesPrediction, overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed, answerSpectrum, isSpectrumAnswered, isSpectrumVerified, envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen, envelopeLabOpen, answerEnvelopePrediction, envelopeStart, audioMessage } = useLessonFourPage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonFourContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
@@ -80,7 +81,7 @@ export function LessonFourPage() {
       <LessonStep title={overtones.title} intro={overtones.instruction} shouldFocus={focusedStep === 'overtones'}>
         <div className="space-y-6">
           <ChoiceQuestion question={overtones.prediction.question} choices={overtones.prediction.choices} correctChoiceId={overtones.prediction.correctChoiceId} mode="prediction" onCheck={answerOvertonesPrediction} />
-          {overtonesOpen && <TimbreLab mode="overtones" content={overtones.lab} words={waveWords} sound={overtonesSound} start={timbrePresets.pure} onChange={changeOvertonesSound} audio={audio} />}
+          {overtonesOpen && <TimbreLab mode="overtones" content={overtones.lab} words={waveWords} envelopeWords={envelopeWords} sound={overtonesSound} start={timbrePresets.pure} onChange={changeOvertonesSound} audio={audio} />}
           {isCompleted('overtones') && <div className="space-y-6">
             <section aria-labelledby="overtones-observation-title" className="space-y-3 rounded-lg border border-secondary bg-secondary p-5 text-secondary">
               <h3 id="overtones-observation-title" className="font-semibold text-primary">{overtones.observationTitle}</h3>
@@ -105,7 +106,7 @@ export function LessonFourPage() {
     {visibleStep === 'spectrum' && <div className="space-y-5">
       <LessonStep title={spectrum.title} intro={spectrum.instruction} shouldFocus={focusedStep === 'spectrum'}>
         <div className="space-y-6">
-          <TimbreLab mode="spectrum" content={spectrum.lab} words={waveWords} sound={spectrumSound} start={timbrePresets.pluck} onChange={changeSpectrumSound} audio={audio} />
+          <TimbreLab mode="spectrum" content={spectrum.lab} words={waveWords} envelopeWords={envelopeWords} sound={spectrumSound} start={timbrePresets.pluck} onChange={changeSpectrumSound} audio={audio} />
           {spectrumNamed && <>
             <section aria-labelledby="spectrum-term-title" className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
               <h3 id="spectrum-term-title" className="font-semibold text-primary">{spectrum.termTitle}</h3>
@@ -139,6 +140,36 @@ export function LessonFourPage() {
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
         <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('overtones')}>{spectrum.backLabel}</Button>
+        {isCompleted('spectrum') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('envelope')}>{spectrum.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'envelope' && <div className="space-y-5">
+      <LessonStep title={envelope.title} intro={envelope.instruction} shouldFocus={focusedStep === 'envelope'}>
+        <div className="space-y-6">
+          <section aria-labelledby="envelope-spectrum-title" className="space-y-4 rounded-lg border border-secondary bg-primary p-5">
+            <h3 id="envelope-spectrum-title" className="font-semibold text-primary">{envelope.spectrumTitle}</h3>
+            <SpectrumBars content={envelope.spectrum} sound={envelopeStart} />
+          </section>
+          <TimbreSoundComparison content={envelope.comparison} audio={audio} curve={{ label: envelope.curveLabel, words: envelopeWords }} />
+          <ChoiceQuestion question={envelope.question.question} choices={envelope.question.choices} correctChoiceId={envelope.question.correctChoiceId} mode="prediction" onCheck={answerEnvelope} />
+          {envelopeOpen && <ChoiceQuestion question={envelope.prediction.question} choices={envelope.prediction.choices} correctChoiceId={envelope.prediction.correctChoiceId} mode="prediction" onCheck={answerEnvelopePrediction} />}
+          {envelopeLabOpen && <TimbreLab mode="envelope" content={envelope.lab} words={waveWords} envelopeWords={envelopeWords} sound={envelopeSound} start={envelopeStart} onChange={changeEnvelopeSound} audio={audio} />}
+          {isCompleted('envelope') && <div className="space-y-6">
+            <section aria-labelledby="envelope-term-title" className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
+              <h3 id="envelope-term-title" className="font-semibold text-primary">{envelope.termTitle}</h3>
+              <p className="mt-2 text-secondary">{envelope.term}</p>
+            </section>
+            <section aria-labelledby="envelope-guitar-title" className="space-y-4">
+              <h3 id="envelope-guitar-title" className="font-semibold text-primary">{envelope.guitarTitle}</h3>
+              <p className="leading-6 text-secondary">{envelope.guitarText}</p>
+              <RealWorldExperiment title={envelope.guitar.title} withGuitar={envelope.guitar.withGuitar} withoutGuitar={envelope.guitar.withoutGuitar} safetyNote={envelope.guitar.safety} />
+            </section>
+          </div>}
+        </div>
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('spectrum')}>{envelope.backLabel}</Button>
       </div>
     </div>}
   </LessonShell>;

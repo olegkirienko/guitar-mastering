@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { labModes } from '../src/components/lesson/timbre-lab/constants.ts';
 import { peakGainCap } from '../src/data/lessons/stage-01-lesson-02-model/constants.ts';
 import { safeGain } from '../src/data/lessons/stage-01-lesson-02-model/utils/lab.ts';
-import { attackSeconds, decayDurationSeconds, playbackGain, timbrePresets } from '../src/data/lessons/stage-01-lesson-04-model/constants.ts';
+import { attackLevels, attackSeconds, decayDurationSeconds, decayLevels, maxSoundDuration, playbackGain, timbrePresets } from '../src/data/lessons/stage-01-lesson-04-model/constants.ts';
 import type { TimbreSound } from '../src/data/lessons/stage-01-lesson-04-model/types.ts';
 import { matchesOvertones } from '../src/data/lessons/stage-01-lesson-04-model/utils/checkpoint.ts';
-import { envelopePoints, envelopeValue, soundDuration } from '../src/data/lessons/stage-01-lesson-04-model/utils/envelope.ts';
+import { envelopeDescription, envelopePoints, envelopeValue, soundDuration } from '../src/data/lessons/stage-01-lesson-04-model/utils/envelope.ts';
 import { partialStrengths, toPartialsSound } from '../src/data/lessons/stage-01-lesson-04-model/utils/partials.ts';
 import { partialLabel, withOvertone } from '../src/data/lessons/stage-01-lesson-04-model/utils/sound.ts';
 import { visualRepeats, waveCurves, waveDescription, waveValue } from '../src/data/lessons/stage-01-lesson-04-model/utils/wave.ts';
@@ -158,5 +158,74 @@ describe('Lesson 4 overtones and spectrum screens', () => {
     const rows = lessonFourContent.overtones.modes.rows;
     expect(rows.map((row) => row.parts)).toEqual([1, 2, 3]);
     for (const row of rows) expect(row.label.startsWith(partialLabel(220, row.parts))).toBe(true);
+  });
+});
+
+describe('Lesson 4 envelope screen', () => {
+  const envelope = lessonFourContent.envelope;
+  const envelopeWords = lessonFourContent.envelopeWords;
+  const [plucked, swelling] = envelope.comparison.sounds;
+
+  it('gives the counterexample one spectrum and two ways of starting and ending', () => {
+    expect(swelling.sound.fundamental).toBe(plucked.sound.fundamental);
+    expect(swelling.sound.overtones).toEqual(plucked.sound.overtones);
+    expect(swelling.sound.attack).not.toBe(plucked.sound.attack);
+    expect(swelling.sound.decay).not.toBe(plucked.sound.decay);
+    // The two spectra are the same drawing, so the screen shows one of them for both.
+    expect(partialStrengths(swelling.sound)).toEqual(partialStrengths(plucked.sound));
+  });
+
+  it('describes an envelope in words for a reader who cannot see it', () => {
+    expect(envelopeDescription(plucked.sound, envelopeWords)).toBe('Початок миттєвий (0,005 с); затихає поступово');
+    expect(envelopeDescription(swelling.sound, envelopeWords)).toBe('Початок повільний (0,5 с); звук тримається');
+  });
+
+  it('draws every envelope on one time axis that no sound outruns', () => {
+    for (const seconds of Object.values(decayDurationSeconds)) expect(seconds).toBeLessThanOrEqual(maxSoundDuration);
+    expect(Math.max(...Object.values(decayDurationSeconds))).toBe(maxSoundDuration);
+    // A shorter sound ends sooner on the picture instead of being stretched to fill it.
+    expect(soundDuration(plucked.sound)).toBeGreaterThan(soundDuration(swelling.sound));
+  });
+
+  it('locks the spectrum of the experiment and opens only the two ends of the sound', () => {
+    expect(labModes.envelope.lockedOvertones).toBe(true);
+    expect(labModes.spectrum.lockedOvertones).toBe(false);
+    // The drawing this experiment is about is the envelope, so it offers no other.
+    expect(Object.keys(envelope.lab)).not.toContain('waveLabel');
+    expect(Object.keys(envelope.lab)).not.toContain('presets');
+    expect(envelope.lab.spectrum.levels).toEqual(lessonFourContent.spectrum.lab.spectrum.levels);
+  });
+
+  it('has a short word for every attack and decay the regulators offer', () => {
+    for (const level of attackLevels) expect(envelope.lab.envelope.attacks[level]).toBeTruthy();
+    for (const level of decayLevels) expect(envelope.lab.envelope.decays[level]).toBeTruthy();
+    // The regulators get short chips; the curve's sentence spells the same levels out.
+    for (const level of attackLevels) expect(envelopeWords.attack[level].length).toBeGreaterThan(envelope.lab.envelope.attacks[level].length);
+  });
+
+  it('keeps every step title in plain words, because the step list is visible from the first screen', () => {
+    const titles = [lessonFourContent.intro, lessonFourContent.shape, lessonFourContent.overtones, lessonFourContent.spectrum, envelope, lessonFourContent.checkpoint, lessonFourContent.complete].map((step) => step.title);
+    for (const text of [...titles, ...lessonFourContent.progressStops]) expect(text).not.toMatch(/тембр|обертон|спектр|атак|згасан/i);
+  });
+
+  it('keeps «атака» and «згасання» out of everything shown before the experiment', () => {
+    const beforeTheName = [
+      envelope.title,
+      envelope.instruction,
+      envelope.spectrumTitle,
+      envelope.curveLabel,
+      envelope.lab.note,
+      envelope.lab.mixer.note,
+      envelope.lab.envelope.title,
+      ...envelope.comparison.sounds.map((item) => item.description),
+      ...envelope.question.choices.map((choice) => `${choice.label} ${choice.feedback}`),
+      ...Object.values(envelopeWords.attack),
+      ...Object.values(envelopeWords.decay),
+      ...Object.values(envelope.lab.envelope.attacks),
+      ...Object.values(envelope.lab.envelope.decays),
+    ];
+    for (const text of beforeTheName) expect(text).not.toMatch(/атак|згасан/i);
+    expect(envelope.term).toMatch(/атакою/);
+    expect(envelope.term).toMatch(/згасанням/);
   });
 });

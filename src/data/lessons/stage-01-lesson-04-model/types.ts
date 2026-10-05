@@ -38,3 +38,10 @@ export type WaveWords = {
   noOvertones: string;
   levels: Record<SoundingLevel, string>;
 };
+
+// Wording for the text alternative of a drawn envelope. Whole phrases, not the short
+// words of the controls: «Початок повільний (0,5 с); звук тримається».
+export type EnvelopeWords = {
+  attack: Readonly<Record<AttackLevel, string>>;
+  decay: Readonly<Record<DecayLevel, string>>;
+};

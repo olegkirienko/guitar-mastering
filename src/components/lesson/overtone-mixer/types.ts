@@ -13,5 +13,7 @@ export interface OvertoneMixerProps {
   multiples: readonly OvertoneMultiple[];
   levels: readonly LevelOption<OvertoneLevel>[];
   sound: TimbreSound;
-  onChange: (multiple: OvertoneMultiple, level: OvertoneLevel) => void;
+  // Left out by an experiment that is not about the mix: every overtone then reads
+  // like the fundamental's row — its level in words, with no control to change it.
+  onChange?: (multiple: OvertoneMultiple, level: OvertoneLevel) => void;
 }

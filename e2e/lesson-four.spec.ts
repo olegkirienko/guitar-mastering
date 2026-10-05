@@ -177,6 +177,55 @@ test("names the spectrum after the first change and finishes both predictions, a
   await noHorizontalScroll(page);
 });
 
+test("hears past the spectrum to the two ends of the sound, with the keyboard, without audio, at 320 px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  const account = await mockAccount(page, { ...opened, [lessonFourId]: { currentStepId: "envelope", completedStepIds: ["intro", "shape", "overtones", "spectrum"] } });
+  await page.goto(`${applicationOrigin}/lessons/04/envelope`);
+
+  await expect(page.getByRole("heading", { name: "Початок і кінець звуку" })).toBeVisible();
+  await expect(page.getByText("Спектр той самий — а звуки різні", { exact: false })).toBeVisible();
+  // One spectrum stands for both sounds, and each sound draws its own loudness in time.
+  await expect(page.getByRole("heading", { name: "Склад обох звуків — однаковий" })).toBeVisible();
+  await expect(page.getByText("Початок миттєвий (0,005 с); затихає поступово")).toBeVisible();
+  await expect(page.getByText("Початок повільний (0,5 с); звук тримається")).toBeVisible();
+  // The experiment waits for the question, and both names wait for the experiment.
+  await expect(page.getByRole("heading", { name: "Дослід: початок і кінець" })).toHaveCount(0);
+  for (const stem of ["атак", "згасан"]) {
+    await expect(page.getByText(new RegExp(stem, "i"))).toHaveCount(0);
+  }
+  await noHorizontalScroll(page);
+
+  await choose(page.getByRole("radio", { name: "Початок і кінець звуку" }));
+  await page.getByRole("button", { name: "Перевірити" }).first().press("Enter");
+  await choose(page.getByRole("radio", { name: "Ні, це вже не схоже на щипок" }));
+  await page.getByRole("button", { name: "Перевірити" }).last().press("Enter");
+  await expect(page.getByRole("heading", { name: "Дослід: початок і кінець" })).toBeVisible();
+
+  // The spectrum is visible but out of reach: this experiment is about something else.
+  await expect(page.getByRole("radiogroup", { name: "×4 · 880 Гц" })).toHaveCount(0);
+  await expect(page.getByText("У цьому досліді їх не змінюємо", { exact: false })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "×4" })).toHaveCount(2);
+
+  const attack = page.getByRole("radiogroup", { name: "Початок" });
+  const decay = page.getByRole("radiogroup", { name: "Затихання" });
+  // Three levels on one row at 320 px, as everywhere else in the lesson.
+  const tops = await attack.getByRole("radio").evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().top)));
+  expect(new Set(tops).size).toBe(1);
+
+  await choose(attack.getByRole("radio", { name: "повільний" }));
+  await expect(page.getByText("Початок: повільний. Висота та сама — 220 Гц.")).toBeVisible();
+  // One end is not the whole experiment: the names are still out of reach.
+  await expect(page.getByRole("heading", { name: "Атака й згасання", exact: true })).toHaveCount(0);
+
+  await choose(decay.getByRole("radio", { name: "коротке" }));
+  await expect(page.getByText("Затихання: коротке. Висота та сама — 220 Гц.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Атака й згасання", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Атака й згасання на гітарі" })).toBeVisible();
+  await expect(page.getByText("поклади долоню на струну", { exact: false })).toBeVisible();
+  await expect.poll(() => saved(account)).toMatchObject({ completedStepIds: ["intro", "shape", "overtones", "spectrum", "envelope"] });
+  await noHorizontalScroll(page);
+});
+
 test("offers listening only once audio is on and plays one sound at a time", async ({ page }) => {
   const account = await mockAccount(page, opened, { audioEnabled: true });
   await page.goto(`${applicationOrigin}/lessons/04/intro`);

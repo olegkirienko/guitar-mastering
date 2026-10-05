@@ -1,5 +1,5 @@
 import { attackSeconds, decayDurationSeconds, decaySeconds, envelopeResolution } from '@/data/lessons/stage-01-lesson-04-model/constants';
-import type { CurvePoint, TimbreSound } from '@/data/lessons/stage-01-lesson-04-model/types';
+import type { CurvePoint, EnvelopeWords, TimbreSound } from '@/data/lessons/stage-01-lesson-04-model/types';
 
 export function soundDuration(sound: TimbreSound): number {
   return decayDurationSeconds[sound.decay];
@@ -21,4 +21,13 @@ export function envelopePoints(sound: TimbreSound, count = envelopeResolution): 
     const x = index / (count - 1);
     return { x, y: envelopeValue(sound, x * duration) };
   });
+}
+
+// Seconds the way the lesson writes every other number: a comma, and no trailing zeros.
+function secondsText(seconds: number): string {
+  return String(seconds).replace('.', ',');
+}
+
+export function envelopeDescription(sound: TimbreSound, words: EnvelopeWords): string {
+  return `${words.attack[sound.attack]} (${secondsText(attackSeconds[sound.attack])} с); ${words.decay[sound.decay]}`;
 }
