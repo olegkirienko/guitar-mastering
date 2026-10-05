@@ -7,7 +7,7 @@
       "Bash(corepack pnpm build)",
       "Bash(corepack pnpm lint)",
       "Bash(corepack pnpm evidence:delivery --sha *)",
-      "Bash(corepack pnpm smoke:production https://guitar-mastering-web-production-production.up.railway.app)",
+      "Bash(corepack pnpm smoke:production https://guitar-mastering.up.railway.app)",
       "Bash(gh pr view *)",
       "Bash(gh pr checks *)",
       "Bash(gh pr diff *)",
