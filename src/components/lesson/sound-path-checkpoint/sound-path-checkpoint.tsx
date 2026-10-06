@@ -10,7 +10,7 @@ export function SoundPathCheckpoint({ content, initiallyPassed, onComplete }: So
   if (passed) return <div className="rounded-lg border border-success-200 bg-success-50 p-5" role="status">
     <div className="flex gap-3">
       <CheckCircle className="mt-0.5 size-5 shrink-0 text-success-600" />
-      <div><p className="font-semibold text-primary">Ти пояснив/ла шлях звуку.</p><p className="mt-1 text-sm leading-6 text-secondary">{content.summary}</p></div>
+      <div><p className="font-semibold text-primary">{content.passed}</p><p className="mt-1 text-sm leading-6 text-secondary">{content.summary}</p></div>
     </div>
   </div>;
 
@@ -60,7 +60,7 @@ export function SoundPathCheckpoint({ content, initiallyPassed, onComplete }: So
         <p className="font-semibold text-primary">{result === 'correct' ? 'Причинний порядок відновлено.' : 'Ось причинний порядок.'}</p>
         <p className="mt-1">{content.summary}</p>
       </div>
-      <ChoiceQuestion question={content.controlQuestion} choices={content.controlChoices} correctChoiceId="wave" onCheck={(_, isCorrect) => {
+      <ChoiceQuestion question={content.controlQuestion} choices={content.controlChoices} correctChoiceId={content.correctChoiceId} onCheck={(_, isCorrect) => {
         if (isCorrect) {
           setPassed(true);
           onComplete();

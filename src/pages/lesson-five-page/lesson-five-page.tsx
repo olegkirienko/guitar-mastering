@@ -6,13 +6,15 @@ import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/l
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
+import { SoundPathCheckpoint } from '@/components/lesson/sound-path-checkpoint/sound-path-checkpoint';
 import { StringFrequencyLab } from '@/components/lesson/string-frequency-lab/string-frequency-lab';
+import { TimbreSoundComparison } from '@/components/lesson/timbre-sound-comparison/timbre-sound-comparison';
 import { lessonFiveContent } from '@/data/lessons/stage-01-lesson-05/constants';
 import { stopByStep } from '@/pages/lesson-five-page/constants';
 import { useLessonFivePage } from '@/pages/lesson-five-page/hooks/use-lesson-five-page';
 
 export function LessonFivePage() {
-  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, audioMessage } = useLessonFivePage();
+  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonFiveContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
@@ -69,6 +71,44 @@ export function LessonFivePage() {
       <div className="flex flex-wrap items-center gap-3">
         <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('higher')}>{lower.backLabel}</Button>
         {isCompleted('lower') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('timbre')}>{lower.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'timbre' && <div className="space-y-5">
+      <LessonStep title={timbre.title} intro={timbre.instruction} shouldFocus={focusedStep === 'timbre'}>
+        <div className="space-y-6">
+          <RealWorldExperiment title={timbre.guitar.title} withGuitar={timbre.guitar.withGuitar} withoutGuitar={timbre.guitar.withoutGuitar} safetyNote={timbre.guitar.safety} />
+          <div className="space-y-3">
+            <TimbreSoundComparison content={timbre.comparison} audio={audio} />
+            <p className="text-sm text-tertiary">{timbre.comparisonNote}</p>
+          </div>
+          <section aria-labelledby="timbre-questions-title" className="space-y-6">
+            <h3 id="timbre-questions-title" className="font-semibold text-primary">{timbre.questionsTitle}</h3>
+            {timbre.questions.map((item) => <ChoiceQuestion key={item.id} question={item.question} choices={item.choices} correctChoiceId={item.correctChoiceId} onCheck={(_, isCorrect) => answerTimbre(item.id, isCorrect)} />)}
+          </section>
+          {isCompleted('timbre') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{timbre.summary}</p>}
+        </div>
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('lower')}>{timbre.backLabel}</Button>
+        {isCompleted('timbre') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('path')}>{timbre.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'path' && <div className="space-y-5">
+      <LessonStep title={path.title} intro={path.instruction} shouldFocus={focusedStep === 'path'}>
+        <div className="space-y-6">
+          <SoundPathCheckpoint content={path.checkpoint} initiallyPassed={isCompleted('path')} onComplete={completePathChain} />
+          {pathQuestionsOpen && <section aria-labelledby="path-questions-title" className="space-y-6">
+            <h3 id="path-questions-title" className="font-semibold text-primary">{path.questionsTitle}</h3>
+            {path.questions.map((item) => <ChoiceQuestion key={item.id} question={item.question} choices={item.choices} correctChoiceId={item.correctChoiceId} onCheck={(_, isCorrect) => answerPath(item.id, isCorrect)} />)}
+          </section>}
+          {isCompleted('path') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{path.conclusion}</p>}
+        </div>
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('timbre')}>{path.backLabel}</Button>
+        {isCompleted('path') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{path.nextLabel}</Button>}
       </div>
     </div>}
   </LessonShell>;

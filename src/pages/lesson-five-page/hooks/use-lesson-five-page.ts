@@ -16,7 +16,11 @@ export function useLessonFivePage() {
   // Session-only: the prediction of each task opens its lab, and is never saved.
   const [higherPredicted, setHigherPredicted] = useState(false);
   const [lowerPredicted, setLowerPredicted] = useState(false);
-  const { intro, higher, lower, lab, preferences } = lessonFiveContent;
+  // Session-only answers: the lesson saves which steps are done, never how they were answered.
+  const [timbreCorrect, setTimbreCorrect] = useState<readonly string[]>([]);
+  const [pathChainDone, setPathChainDone] = useState(false);
+  const [pathCorrect, setPathCorrect] = useState<readonly string[]>([]);
+  const { intro, higher, lower, timbre, path, lab, preferences } = lessonFiveContent;
   const { route, goTo: openStep } = useLessonRoute('05', lessonFiveProgressAdapter, { progress, loaded, loadFailed, retrySync, setProgress });
   const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const isCompleted = (step: LessonFiveStepId) => progress.completedStepIds.includes(step);
@@ -45,11 +49,36 @@ export function useLessonFivePage() {
   // The pluck of Lesson 1 for whoever has no guitar at hand: the base string, 220 Гц.
   const playIntroPluck = () => audio.playPluck(baseFrequency, pluckGain(baseFrequency));
 
+  // `timbre` is done once both questions are right; wrong answers only explain themselves.
+  const answerTimbre = (id: string, isCorrect: boolean) => {
+    if (!isCorrect) return;
+    const next = Array.from(new Set([...timbreCorrect, id]));
+    setTimbreCorrect(next);
+    if (timbre.questions.every((question) => next.includes(question.id))) completeStep('timbre');
+  };
+
+  // `path` needs all three: the chain with its control question, and both stage questions.
+  const finishPath = (chainDone: boolean, correct: readonly string[]) => {
+    if (chainDone && path.questions.every((question) => correct.includes(question.id))) completeStep('path');
+  };
+
+  const completePathChain = () => {
+    setPathChainDone(true);
+    finishPath(true, pathCorrect);
+  };
+
+  const answerPath = (id: string, isCorrect: boolean) => {
+    if (!isCorrect) return;
+    const next = Array.from(new Set([...pathCorrect, id]));
+    setPathCorrect(next);
+    finishPath(pathChainDone, next);
+  };
+
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
     : audio.status === 'blocked'
       ? preferences.audioBlocked
       : null;
 
-  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, intro, higher, lower, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, higherOpen: higherPredicted || isCompleted('higher'), answerHigherPrediction: () => setHigherPredicted(true), solveHigher: () => completeStep('higher'), lowerOpen: lowerPredicted || isCompleted('lower'), answerLowerPrediction: () => setLowerPredicted(true), solveLower: () => completeStep('lower'), audioMessage };
+  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, intro, higher, lower, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, higherOpen: higherPredicted || isCompleted('higher'), answerHigherPrediction: () => setHigherPredicted(true), solveHigher: () => completeStep('higher'), lowerOpen: lowerPredicted || isCompleted('lower'), answerLowerPrediction: () => setLowerPredicted(true), solveLower: () => completeStep('lower'), timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen: pathChainDone || isCompleted('path'), audioMessage };
 }
