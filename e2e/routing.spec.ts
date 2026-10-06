@@ -73,7 +73,11 @@ test("opens a reached step from the course, disables an unreached one, keeps the
   await page.setViewportSize({ width: 1280, height: 800 });
   const api = await mockAccount(page, { [lessonOneId]: { currentStepId: "air", completedStepIds: ["intro", "string"] } });
   await page.goto(`${applicationOrigin}/course`);
-  const lessonOne = page.getByRole("list", { name: "Кроки уроку 01" });
+  // The lesson cards sit under their stage, which counts the completed lessons.
+  const stage = page.getByRole("region", { name: "Етап I · Звук" });
+  await expect(stage.getByRole("heading", { name: "Етап I · Звук" })).toBeVisible();
+  await expect(stage.getByText("0 з 5 уроків")).toBeVisible();
+  const lessonOne = stage.getByRole("list", { name: "Кроки уроку 01" });
   await expect(lessonOne.getByRole("link", { name: /Як рух доходить до вуха\?/ })).toHaveAttribute("aria-current", "step");
   const locked = lessonOne.getByRole("link", { name: /Збери шлях звуку/ });
   await expect(locked).toHaveAttribute("aria-disabled", "true");

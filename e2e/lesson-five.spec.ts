@@ -40,11 +40,7 @@ function lab(page: Page, title: string) {
   return page.getByRole("region", { name: title });
 }
 
-async function moveLater(page: Page, label: string, times: number) {
-  for (let index = 0; index < times; index += 1) {
-    await press(page.getByRole("button", { name: `Перемістити «${label}» пізніше` }));
-  }
-}
+const pathLinks = ["Струна коливається", "Коливання штовхають сусіднє повітря", "Зміна у повітрі біжить як звукова хвиля", "Хвиля розхитує барабанну перетинку", "Мозок чує звук"];
 
 async function noHorizontalScroll(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -124,14 +120,16 @@ test("solves the final lab with the keyboard, without audio, with reduced motion
   await expect.poll(() => saved(account).completedStepIds).toContain("timbre");
   await press(page.getByRole("button", { name: "Далі: шлях звуку" }));
 
-  // Task 4: the chain is rebuilt with the move buttons, then the three questions.
+  // Task 4: the chain is built forward one link at a time, then the three questions.
   await expect(page.getByRole("heading", { name: "Поясни шлях" })).toBeVisible();
-  await press(page.getByRole("button", { name: "Перевірити порядок" }));
-  await expect(page.getByText("Знайдено перший розрив.")).toBeVisible();
-  await moveLater(page, "Зміна у повітрі біжить як звукова хвиля", 2);
-  await moveLater(page, "Мозок чує звук", 4);
-  await moveLater(page, "Зміна у повітрі біжить як звукова хвиля", 1);
-  await press(page.getByRole("button", { name: "Перевірити порядок" }));
+  const chain = page.getByRole("list", { name: "Зібраний ланцюг" }).getByRole("listitem");
+  await expect(chain).toHaveCount(1);
+  await expect(chain.first()).toContainText(pathLinks[0]);
+  await press(page.getByRole("button", { name: pathLinks[4] }));
+  await expect(page.getByRole("status").filter({ hasText: "Ще не ця ланка." })).toBeVisible();
+  await expect(chain).toHaveCount(1);
+  for (const label of pathLinks.slice(1)) await press(page.getByRole("button", { name: label }));
+  await expect(chain).toHaveText(pathLinks.map((label) => new RegExp(label)));
   await expect(page.getByText("Причинний порядок відновлено.")).toBeVisible();
   await expect(question(page, "У якій ланці вирішується висота?")).toHaveCount(0);
   await answer(page, "Що саме долітає до вуха?", "Зміна у повітрі — звукова хвиля.");

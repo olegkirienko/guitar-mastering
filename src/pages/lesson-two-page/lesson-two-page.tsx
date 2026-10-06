@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
+import { ArrowRight, CheckCircle } from '@untitledui/icons';
 import { Link } from 'react-router';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
@@ -9,17 +9,18 @@ import { GuitarApplication } from '@/components/lesson/guitar-application/guitar
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
 import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
+import { LessonStepNav } from '@/components/lesson/lesson-step-nav/lesson-step-nav';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { PitchLoudnessComparison } from '@/components/lesson/pitch-loudness-comparison/pitch-loudness-comparison';
 import { SameStringPitchExperience } from '@/components/lesson/same-string-pitch-experience/same-string-pitch-experience';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
-import { stopByStep, primaryButton } from '@/pages/lesson-two-page/constants';
+import { primaryButton } from '@/pages/lesson-two-page/constants';
 import { useLessonTwoPage } from '@/pages/lesson-two-page/hooks/use-lesson-two-page';
 
 export function LessonTwoPage() {
   const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, toggleStatic, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonTwoContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonTwoContent} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3 sm:grid-cols-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -50,8 +51,8 @@ export function LessonTwoPage() {
         <p className="text-lg font-medium text-primary">{intro.question}</p>
         <p className="mt-2 text-sm text-tertiary">{intro.hypothesisNote}</p>
       </div>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Button size="lg" iconTrailing={ArrowRight} onClick={() => begin('guitar')}>{intro.guitarLabel}</Button>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <LessonStepNav next={{ label: intro.guitarLabel, onClick: () => begin('guitar') }} />
         <Button color="secondary" size="lg" onClick={() => begin('virtual')}>{intro.virtualLabel}</Button>
       </div>
       <p className="mt-4 text-sm text-tertiary">{intro.reassurance}</p>
@@ -69,60 +70,42 @@ export function LessonTwoPage() {
           />
         </div>}
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('intro')}>{string.backLabel}</Button>
-        {isCompleted('string') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('repeats')}>{string.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: string.backLabel, onClick: () => goTo('intro') }} next={isCompleted('string') ? { label: string.nextLabel, onClick: () => goTo('repeats') } : undefined} />
     </div>}
 
     {visibleStep === 'repeats' && <div className="space-y-5">
       <LessonStep title={repeats.title} intro={repeats.instruction} shouldFocus={focusedStep === 'repeats'}>
         <FrequencyComparison content={repeats} staticMode={staticMode} audio={audio} onComplete={completeRepeats} />
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('string')}>{repeats.backLabel}</Button>
-        {isCompleted('repeats') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('frequency')}>{repeats.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: repeats.backLabel, onClick: () => goTo('string') }} next={isCompleted('repeats') ? { label: repeats.nextLabel, onClick: () => goTo('frequency') } : undefined} />
     </div>}
 
     {visibleStep === 'frequency' && <div className="space-y-5">
       <LessonStep title={frequency.title} intro={frequency.instruction} shouldFocus={focusedStep === 'frequency'}>
         <FrequencyPitchLab content={frequency} audio={audio} onComplete={completeFrequency} />
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('repeats')}>{frequency.backLabel}</Button>
-        {isCompleted('frequency') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('loudness')}>{frequency.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: frequency.backLabel, onClick: () => goTo('repeats') }} next={isCompleted('frequency') ? { label: frequency.nextLabel, onClick: () => goTo('loudness') } : undefined} />
     </div>}
 
     {visibleStep === 'loudness' && <div className="space-y-5">
       <LessonStep title={loudness.title} intro={loudness.instruction} shouldFocus={focusedStep === 'loudness'}>
         <PitchLoudnessComparison content={loudness} audio={audio} onComplete={completeLoudness} />
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('frequency')}>{loudness.backLabel}</Button>
-        {isCompleted('loudness') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('guitar')}>{loudness.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: loudness.backLabel, onClick: () => goTo('frequency') }} next={isCompleted('loudness') ? { label: loudness.nextLabel, onClick: () => goTo('guitar') } : undefined} />
     </div>}
 
     {visibleStep === 'guitar' && <div className="space-y-5">
       <LessonStep title={guitar.title} intro={guitar.instruction} shouldFocus={focusedStep === 'guitar'}>
         <GuitarApplication content={guitar} preferredPath={preferredPath} audio={audio} completed={isCompleted('guitar')} onComplete={completeGuitar} />
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('loudness')}>{guitar.backLabel}</Button>
-        {isCompleted('guitar') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('checkpoint')}>{guitar.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: guitar.backLabel, onClick: () => goTo('loudness') }} next={isCompleted('guitar') ? { label: guitar.nextLabel, onClick: () => goTo('checkpoint') } : undefined} />
     </div>}
 
     {visibleStep === 'checkpoint' && <div className="space-y-5">
       <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
         <FrequencyPitchCheckpoint content={checkpoint} passed={progress.checkpointPassed} onPass={passCheckpoint} />
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('guitar')}>{checkpoint.backLabel}</Button>
-        {progress.checkpointPassed && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{checkpoint.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: checkpoint.backLabel, onClick: () => goTo('guitar') }} next={progress.checkpointPassed ? { label: checkpoint.nextLabel, onClick: () => goTo('complete') } : undefined} />
     </div>}
 
     {visibleStep === 'complete' && <div className="space-y-5">
@@ -151,7 +134,7 @@ export function LessonTwoPage() {
         </section>}
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('checkpoint')}>{complete.backLabel}</Button>
+        <LessonStepNav back={{ label: complete.backLabel, onClick: () => goTo('checkpoint') }} />
         {progress.completedAt !== null && <Link to="/" className={primaryButton}>{complete.backToCourse}</Link>}
       </div>
     </div>}

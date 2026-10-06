@@ -1,9 +1,10 @@
-import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
+import { CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
 import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
+import { LessonStepNav } from '@/components/lesson/lesson-step-nav/lesson-step-nav';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
 import { SameStringDiagram } from '@/components/lesson/same-string-diagram/same-string-diagram';
@@ -14,13 +15,12 @@ import { StringPair } from '@/components/lesson/string-pair/string-pair';
 import { StringHypotheses } from '@/components/lesson/string-hypotheses/string-hypotheses';
 import { StringHypothesesSummary } from '@/components/lesson/string-hypotheses-summary/string-hypotheses-summary';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
-import { stopByStep } from '@/pages/lesson-three-page/constants';
 import { useLessonThreePage } from '@/pages/lesson-three-page/hooks/use-lesson-three-page';
 
 export function LessonThreePage() {
   const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonThreeContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonThreeContent} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -41,7 +41,7 @@ export function LessonThreePage() {
         <StringHypotheses content={intro} selected={hypotheses} onToggle={toggleHypothesis} own={ownHypothesis} onOwnChange={setOwnHypothesis} />
       </div>
       <div className="mt-6">
-        <Button size="lg" iconTrailing={ArrowRight} onClick={begin}>{intro.startLabel}</Button>
+        <LessonStepNav next={{ label: intro.startLabel, onClick: begin }} />
       </div>
     </LessonStep>}
 
@@ -53,10 +53,7 @@ export function LessonThreePage() {
           <StringFactorExperiment factor="length" prediction={length.prediction} content={length.experiment} audio={audio} completed={isCompleted('length')} onComplete={completeLength} />
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('intro')}>{length.backLabel}</Button>
-        {isCompleted('length') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('tension')}>{length.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: length.backLabel, onClick: () => goTo('intro') }} next={isCompleted('length') ? { label: length.nextLabel, onClick: () => goTo('tension') } : undefined} />
     </div>}
 
     {visibleStep === 'tension' && <div className="space-y-5">
@@ -70,10 +67,7 @@ export function LessonThreePage() {
           </>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('length')}>{tension.backLabel}</Button>
-        {isCompleted('tension') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('density')}>{tension.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: tension.backLabel, onClick: () => goTo('length') }} next={isCompleted('tension') ? { label: tension.nextLabel, onClick: () => goTo('density') } : undefined} />
     </div>}
 
     {visibleStep === 'density' && <div className="space-y-5">
@@ -96,10 +90,7 @@ export function LessonThreePage() {
           </>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('tension')}>{density.backLabel}</Button>
-        {isCompleted('density') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('model')}>{density.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: density.backLabel, onClick: () => goTo('tension') }} next={isCompleted('density') ? { label: density.nextLabel, onClick: () => goTo('model') } : undefined} />
     </div>}
 
     {visibleStep === 'model' && <div className="space-y-5">
@@ -115,20 +106,14 @@ export function LessonThreePage() {
           </details>
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('density')}>{model.backLabel}</Button>
-        {isCompleted('model') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('checkpoint')}>{model.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: model.backLabel, onClick: () => goTo('density') }} next={isCompleted('model') ? { label: model.nextLabel, onClick: () => goTo('checkpoint') } : undefined} />
     </div>}
 
     {visibleStep === 'checkpoint' && <div className="space-y-5">
       <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
         <StringFrequencyCheckpoint content={checkpoint} lab={model.lab} audio={audio} passed={progress.checkpointPassed} onPass={passCheckpoint} />
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('model')}>{checkpoint.backLabel}</Button>
-        {progress.checkpointPassed && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{checkpoint.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: checkpoint.backLabel, onClick: () => goTo('model') }} next={progress.checkpointPassed ? { label: checkpoint.nextLabel, onClick: () => goTo('complete') } : undefined} />
     </div>}
 
     {visibleStep === 'complete' && <div className="space-y-5">
@@ -157,7 +142,7 @@ export function LessonThreePage() {
         </div>
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('checkpoint')}>{complete.backLabel}</Button>
+        <LessonStepNav back={{ label: complete.backLabel, onClick: () => goTo('checkpoint') }} />
         {progress.completedAt !== null && <Button size="lg" href="/">{complete.backToCourse}</Button>}
       </div>
     </div>}

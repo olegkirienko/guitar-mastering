@@ -28,7 +28,7 @@ export const lessonTwoContent = {
   stageLabel: 'Етап I · Звук',
   title: 'Чому звуки бувають високими й низькими?',
   estimatedTime: '8–12 хв',
-  progressStops: ['Струна', 'Повтори', 'Частота', 'Гітара', 'Перевірка'],
+  stepLabels: { intro: 'Питання', string: 'Струна', repeats: 'Повтори', frequency: 'Частота', loudness: 'Гучність', guitar: 'Гітара', checkpoint: 'Перевірка', complete: 'Підсумок' },
   intro: {
     title: 'Повернімося до відкритого питання',
     chain: ['Струна коливається', 'Виникає звукова хвиля', 'Ми чуємо звук'],

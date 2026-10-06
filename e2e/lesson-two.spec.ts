@@ -23,7 +23,7 @@ test("completes screens 0–1 through the virtual string at 320 px and resumes a
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Повернімося до відкритого питання" })).toBeVisible();
-  await expect(page.getByText("Крок 1 із 5")).toBeVisible();
+  await expect(page.getByText("Крок 1 із 8")).toBeVisible();
   await page.getByRole("button", { name: "Немає гітари — відкрити віртуальну струну" }).click();
 
   await expect(page.getByRole("heading", { name: "Одна струна — два звуки" })).toBeFocused();
@@ -166,7 +166,7 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
   await page.goto(`${applicationOrigin}/lessons/02`);
 
   await expect(page.getByRole("heading", { name: "Передбач і перевір" })).toBeVisible();
-  await expect(page.getByText("Крок 2 із 5")).toBeVisible();
+  await expect(page.getByText("Крок 3 із 8")).toBeVisible();
   await expect(page.getByRole("button", { name: "Покадрово: системне" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Запустити обидві доріжки" })).toHaveCount(0);
 
@@ -396,7 +396,7 @@ test("completes the whole lesson at 320 px with the keyboard only and no audio",
 
   await answer(page, "Ми зробили той самий тон голоснішим. Чи змінилася його висота?", "Ні, висота та сама");
   await pressButton(page, "Далі: повернемося до струни");
-  await expect(page.getByText("Крок 4 із 5")).toBeVisible();
+  await expect(page.getByText("Крок 6 із 8")).toBeVisible();
 
   await answer(page, "У якому стані коливання мають повторюватися частіше?", "У притиснутому ближче до корпусу");
   await pressButton(page, "Я послухав/ла обидва стани");
@@ -419,7 +419,7 @@ test("completes the whole lesson at 320 px with the keyboard only and no audio",
   await expect.poll(() => saved(account)).toMatchObject({ checkpointPassed: true, completedAt: null });
   await pressButton(page, "Далі: підсумок");
 
-  await expect(page.getByText("Крок 5 із 5")).toBeVisible();
+  await expect(page.getByText("Крок 8 із 8")).toBeVisible();
   await pressButton(page, "Завершити урок");
   await expect(page.getByTestId("finish-status")).toBeFocused();
   await expect(page.getByTestId("finish-status")).toContainText("Урок завершено.");

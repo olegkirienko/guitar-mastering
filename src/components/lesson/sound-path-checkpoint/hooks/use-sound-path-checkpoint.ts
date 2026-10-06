@@ -1,54 +1,54 @@
-import type { SequenceResult, SoundPathCheckpointProps } from '@/components/lesson/sound-path-checkpoint/types';
-import { type DragEvent, useId, useState } from 'react';
+import type { SoundPathCheckpointProps } from '@/components/lesson/sound-path-checkpoint/types';
+import { expectedNextCard, hintForNextLink, isCorrectPick, offeredCards } from '@/components/lesson/sound-path-checkpoint/utils/chain';
+import { useEffect, useId, useRef, useState } from 'react';
 
 export function useSoundPathCheckpoint({ content, initiallyPassed }: Pick<SoundPathCheckpointProps, 'content' | 'initiallyPassed'>) {
-  const [order, setOrder] = useState<string[]>(initiallyPassed ? content.cards.map((card) => card.id) : [...content.initialOrder]);
+  const expectedOrder = content.cards.map((card) => card.id);
+  // The first link is placed for the learner; a returning learner gets the whole chain.
+  const [chain, setChain] = useState<string[]>(initiallyPassed ? expectedOrder : expectedOrder.slice(0, 1));
   const [attempts, setAttempts] = useState(0);
-  const [result, setResult] = useState<SequenceResult>(initiallyPassed ? 'correct' : 'idle');
+  const [explained, setExplained] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [passed, setPassed] = useState(initiallyPassed);
   const feedbackId = useId();
-  const expectedOrder = content.cards.map((card) => card.id);
-  const sequenceReady = result === 'correct' || result === 'explained';
+  const questionId = useId();
+  const questionRef = useRef<HTMLHeadingElement>(null);
+  const summaryRef = useRef<HTMLParagraphElement>(null);
+  const attachedRef = useRef(false);
 
-  const moveCard = (cardId: string, targetIndex: number) => {
-    const currentIndex = order.indexOf(cardId);
-    const boundedIndex = Math.max(0, Math.min(targetIndex, order.length - 1));
-    if (currentIndex === boundedIndex) return;
-    const nextOrder = [...order];
-    nextOrder.splice(currentIndex, 1);
-    nextOrder.splice(boundedIndex, 0, cardId);
-    setOrder(nextOrder);
-    setResult('idle');
-    const card = content.cards.find((item) => item.id === cardId);
-    setAnnouncement(`${card?.label ?? 'Картку'} переміщено на позицію ${boundedIndex + 1} із ${order.length}.`);
+  const isComplete = chain.length === expectedOrder.length;
+  const expectedNext = expectedNextCard(expectedOrder, chain);
+  const offered = offeredCards(content.initialOrder, chain);
+  const hint = hintForNextLink(content.breakHints, chain);
+  const labelOf = (cardId: string) => content.cards.find((card) => card.id === cardId)?.label ?? cardId;
+
+  // Focus follows the chain: the next question after an attach, the summary after the last link.
+  useEffect(() => {
+    if (!attachedRef.current) return;
+    attachedRef.current = false;
+    (isComplete ? summaryRef.current : questionRef.current)?.focus();
+  }, [chain, isComplete]);
+
+  const attach = (cardId: string, wasExplained: boolean) => {
+    const position = chain.length + 1;
+    attachedRef.current = true;
+    setChain((current) => [...current, cardId]);
+    setAttempts(0);
+    if (wasExplained) setExplained(true);
+    setAnnouncement(position === expectedOrder.length
+      ? `${labelOf(cardId)} — ланка ${position} із ${expectedOrder.length}. Ланцюг зібрано.`
+      : `${labelOf(cardId)} — ланка ${position} із ${expectedOrder.length}.`);
   };
 
-  const handleDragStart = (event: DragEvent<HTMLLIElement>, cardId: string) => {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', cardId);
-  };
-
-  const handleDrop = (event: DragEvent<HTMLLIElement>, targetIndex: number) => {
-    event.preventDefault();
-    const cardId = event.dataTransfer.getData('text/plain');
-    if (order.includes(cardId)) moveCard(cardId, targetIndex);
-  };
-
-  const checkSequence = () => {
-    const isCorrect = order.every((cardId, index) => cardId === expectedOrder[index]);
+  const pick = (cardId: string) => {
+    if (isCorrectPick(expectedOrder, chain, cardId)) return attach(cardId, false);
     setAttempts((current) => current + 1);
-    setResult(isCorrect ? 'correct' : 'incorrect');
+    setAnnouncement(`${labelOf(cardId)} — не наступна ланка. ${hint}`);
   };
 
-  const showSequence = () => {
-    setOrder(expectedOrder);
-    setResult('explained');
-    setAnnouncement('Правильний причинний порядок показано й пояснено.');
+  const revealNext = () => {
+    if (expectedNext) attach(expectedNext, true);
   };
 
-  const firstBreakIndex = expectedOrder.findIndex((cardId, index) => order[index] !== cardId);
-  const hint = content.breakHints[Math.max(firstBreakIndex, 0)];
-
-  return { order, attempts, result, announcement, passed, setPassed, feedbackId, expectedOrder, sequenceReady, moveCard, handleDragStart, handleDrop, checkSequence, showSequence, hint };
+  return { chain, attempts, explained, announcement, passed, setPassed, feedbackId, questionId, questionRef, summaryRef, expectedOrder, isComplete, offered, hint, pick, revealNext, labelOf };
 }

@@ -7,7 +7,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  esbuild: { jsx: "automatic" },
   test: {
-    include: ["build/**/*.test.ts", "server/**/*.test.ts"],
+    include: ["build/**/*.test.ts?(x)", "server/**/*.test.ts"],
   },
 });

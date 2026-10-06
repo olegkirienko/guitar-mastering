@@ -3,7 +3,7 @@ export const lessonOneContent = {
   stageLabel: 'Етап I · Звук',
   title: 'Що таке звук?',
   estimatedTime: '8–12 хв',
-  progressStops: ['Струна', 'Зупинка', 'Рух', 'Повітря', 'Шлях звуку'],
+  stepLabels: { intro: 'Питання', string: 'Струна', air: 'Повітря', checkpoint: 'Шлях звуку', complete: 'Підсумок' },
   intro: {
     title: 'Почнімо з досліду',
     invitation: 'Смикнемо струну й простежимо, що станеться аж до вуха.',
@@ -68,15 +68,15 @@ export const lessonOneContent = {
     question: 'Віднови шлях від щипка до сприйняття звуку',
     cards: [
       { id: 'string', illustration: '〰️', label: 'Струну смикнули — вона коливається' },
-      { id: 'guitar-air', illustration: '🎸', label: 'Гітара рухає сусіднє повітря' },
-      { id: 'wave', illustration: '↝', label: 'Зміна поширюється як звукова хвиля' },
+      { id: 'air', illustration: '💨', label: 'Коливання штовхають сусіднє повітря' },
+      { id: 'wave', illustration: '↝', label: 'Зміна у повітрі біжить як звукова хвиля' },
       { id: 'ear', illustration: '👂', label: 'Хвиля досягає вуха' },
       { id: 'perception', illustration: '●', label: 'Ми сприймаємо звук' },
     ],
-    initialOrder: ['ear', 'string', 'perception', 'guitar-air', 'wave'],
+    initialOrder: ['ear', 'string', 'perception', 'air', 'wave'],
     breakHints: [
       'Що має почати рухатися раніше: струна чи повітря біля неї?',
-      'Що передає рух сусідньому повітрю після коливання струни?',
+      'Що саме штовхає струна одразу після того, як почала коливатися?',
       'Що має поширитися крізь повітря, перш ніж досягти вуха?',
       'Що має досягти вуха перед тим, як ми сприймемо звук?',
       'Сприйняття звуку є результатом у кінці цього шляху.',

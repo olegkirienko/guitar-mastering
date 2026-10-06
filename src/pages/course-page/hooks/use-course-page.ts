@@ -1,5 +1,6 @@
 import { useCourseProgress } from '@/hooks/use-course-progress/use-course-progress';
 import type { CourseLessonView } from '@/pages/course-page/types';
+import { groupByStage } from '@/pages/course-page/utils/group-by-stage';
 import { courseLessons } from '@/progress/course/constants';
 import { resolveResumePath } from '@/progress/core/utils/resolve-resume-path';
 
@@ -14,6 +15,7 @@ export function useCoursePage() {
     return {
       routeId: lesson.routeId,
       title: lesson.title,
+      stageLabel: lesson.stageLabel,
       status: locked ? 'locked' : !item ? 'not-started' : item.progress.completedAt ? 'completed' : 'in-progress',
       currentStepId: item && !locked ? lesson.currentStep(item.progress) : undefined,
       steps: lesson.steps.map((step) => ({
@@ -23,5 +25,5 @@ export function useCoursePage() {
       })),
     };
   });
-  return { course, lessons, resumePath: resolveResumePath(course.items, courseLessons) };
+  return { course, lessons, stages: groupByStage(lessons), resumePath: resolveResumePath(course.items, courseLessons) };
 }

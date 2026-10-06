@@ -1,4 +1,4 @@
-import { LogOut01, MusicNote01, User01 } from '@untitledui/icons';
+import { ChevronDown, LogOut01, MusicNote01, User01 } from '@untitledui/icons';
 import { Button as AriaButton } from 'react-aria-components';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { Avatar } from '@/components/base/avatar/avatar';
@@ -41,11 +41,13 @@ export function AppLayout() {
                 <AriaButton
                   aria-label={`Меню акаунта @${user.username}`}
                   className={({ isPressed, isFocusVisible }) => cx(
-                    'relative inline-flex cursor-pointer rounded-full outline-offset-2 outline-focus-ring',
+                    'group relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-secondary bg-primary p-1 pr-2.5 outline-offset-2 outline-focus-ring transition duration-100 ease-linear hover:bg-primary_hover',
                     (isPressed || isFocusVisible) && 'outline-2',
                   )}
                 >
                   <Avatar size="sm" initials={initials} alt="" />
+                  <span className="hidden max-w-32 truncate text-sm font-semibold text-secondary sm:inline">{name || `@${user.username}`}</span>
+                  <ChevronDown className="size-4 shrink-0 text-fg-quaternary transition duration-100 ease-linear group-aria-expanded:rotate-180" aria-hidden="true" />
                 </AriaButton>
                 <Dropdown.Popover className="w-60">
                   <div className="border-b border-secondary px-4 py-3">

@@ -9,7 +9,7 @@ export const lessonFiveContent = {
   stageLabel: 'Етап I · Звук',
   title: 'Що відбувається від щипка до того, як ми чуємо звук?',
   estimatedTime: '8–12 хв',
-  progressStops: ['Задача', 'Вище', 'Нижче', 'Той самий звук', 'Шлях', 'Підсумок'],
+  stepLabels: { intro: 'Задача', higher: 'Вище', lower: 'Нижче', timbre: 'Той самий звук', path: 'Шлях', complete: 'Підсумок' },
   preferences: lessonTwoContent.preferences,
   // The same lab the learner met in Lesson 3, down to the three rules its wrong-direction
   // hint quotes: the check has to look like the lab where this skill was learned.

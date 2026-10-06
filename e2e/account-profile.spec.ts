@@ -33,6 +33,10 @@ test("restores an authenticated session and updates profile and avatar accessibl
 
   await page.goto(`${applicationOrigin}/account`);
   await expect(page.getByRole("heading", { name: "Профіль @Player.One" })).toBeVisible();
+  // Below `sm` the name is hidden, but the chevron stays so the avatar still reads as a menu.
+  const accountTrigger = page.getByRole("button", { name: "Меню акаунта @Player.One" });
+  await expect(accountTrigger.getByText("@Player.One")).toBeHidden();
+  await expect(accountTrigger.locator("svg")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Приватність і резервні копії" })).toBeVisible();
   const cedarAvatar = page.getByRole("radio", { name: "Кедр" });
   const oceanAvatar = page.getByRole("radio", { name: "Океан" });
@@ -71,7 +75,11 @@ test("supports guest registration, logout, and login", async ({ page }) => {
 
   // The header account menu opens the account page and signs out.
   const accountMenu = page.getByRole("button", { name: "Меню акаунта @Player.One" });
+  // The trigger reads as a menu: it carries the name and reports whether it is open.
+  await expect(accountMenu).toContainText("Player.One");
+  await expect(accountMenu).toHaveAttribute("aria-expanded", "false");
   await accountMenu.click();
+  await expect(accountMenu).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("menuitem", { name: "Акаунт" }).click();
   await expect(page).toHaveURL(`${applicationOrigin}/account`);
   await accountMenu.press("Enter");
@@ -280,18 +288,23 @@ test("saves lesson preferences on the account, and reverts and announces a faile
   await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveAttribute("aria-pressed", "false");
   expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false, theme: "system" }]);
 
+  // The audio preference is offered where the sound happens, so the string step carries the switch.
+  await page.getByRole("button", { name: "Почати дослід" }).click();
+  const audio = page.getByRole("button", { name: "Увімкнути звук" });
+  await expect(audio).toHaveAttribute("aria-pressed", "false");
+
   const notice = page.getByText("Не вдалося зберегти налаштування, тому повернули попереднє. Спробуй ще раз.");
   await expect(notice).toHaveCount(0);
   reject = true;
-  await page.getByRole("button", { name: "Звук: вимкнено" }).click();
+  await audio.click();
   await expect(notice).toBeVisible();
-  await expect(page.getByRole("button", { name: "Звук: вимкнено" })).toHaveAttribute("aria-pressed", "false");
+  await expect(audio).toHaveAttribute("aria-pressed", "false");
   expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false, theme: "system" }, { audioEnabled: true, prefersStatic: false, theme: "system" }]);
 
   // The next accepted change clears the notice.
   reject = false;
-  await page.getByRole("button", { name: "Звук: вимкнено" }).click();
-  await expect(page.getByRole("button", { name: "Звук: увімкнено" })).toHaveAttribute("aria-pressed", "true");
+  await audio.click();
+  await expect(page.getByRole("button", { name: "Вимкнути звук" })).toHaveAttribute("aria-pressed", "true");
   await expect(notice).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });

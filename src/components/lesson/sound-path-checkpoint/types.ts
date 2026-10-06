@@ -13,6 +13,8 @@ interface CheckpointChoice {
 interface SoundPathCheckpointContent {
   question: string;
   cards: readonly CheckpointCard[];
+  // The order the unplaced cards are offered in; a permutation of `cards`, so the
+  // already placed first link is filtered out rather than offered.
   initialOrder: readonly string[];
   breakHints: readonly string[];
   controlQuestion: string;
@@ -31,4 +33,3 @@ export interface SoundPathCheckpointProps {
   onComplete: () => void;
 }
 
-export type SequenceResult = 'idle' | 'incorrect' | 'correct' | 'explained';
