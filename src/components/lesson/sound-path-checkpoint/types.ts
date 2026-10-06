@@ -17,6 +17,10 @@ interface SoundPathCheckpointContent {
   breakHints: readonly string[];
   controlQuestion: string;
   controlChoices: readonly CheckpointChoice[];
+  // Which control choice passes the checkpoint, and the line that says it is passed:
+  // every lesson that rebuilds the path names its own.
+  correctChoiceId: string;
+  passed: string;
   summary: string;
   application: string;
 }
