@@ -33,8 +33,10 @@ test("restores an authenticated session and updates profile and avatar accessibl
 
   await page.goto(`${applicationOrigin}/account`);
   await expect(page.getByRole("heading", { name: "Профіль @Player.One" })).toBeVisible();
-  // Below `sm` the trigger is the avatar alone: the name and the chevron are hidden.
-  await expect(page.getByRole("button", { name: "Меню акаунта @Player.One" }).getByText("@Player.One")).toBeHidden();
+  // Below `sm` the name is hidden, but the chevron stays so the avatar still reads as a menu.
+  const accountTrigger = page.getByRole("button", { name: "Меню акаунта @Player.One" });
+  await expect(accountTrigger.getByText("@Player.One")).toBeHidden();
+  await expect(accountTrigger.locator("svg")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Приватність і резервні копії" })).toBeVisible();
   const cedarAvatar = page.getByRole("radio", { name: "Кедр" });
   const oceanAvatar = page.getByRole("radio", { name: "Океан" });
