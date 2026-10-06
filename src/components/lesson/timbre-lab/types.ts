@@ -5,7 +5,7 @@ import type { EnvelopeWords, OvertoneLevel, OvertoneMultiple, TimbrePresetId, Ti
 import type { LessonTwoAudio } from '@/hooks/use-lesson-two-audio/types';
 
 // One mode per screen; later screens of the lesson add their own.
-export type TimbreLabMode = 'overtones' | 'spectrum' | 'envelope';
+export type TimbreLabMode = 'overtones' | 'spectrum' | 'envelope' | 'full';
 
 export interface TimbreLabModeConfig {
   multiples: readonly OvertoneMultiple[];
@@ -34,6 +34,9 @@ export interface TimbreLabContent {
   // The consequence of every change, announced without moving the focus. The words
   // are per screen: a wave is only called an overtone once the screen has named it.
   status: { overtone: string; samePitch: string };
+  // Only the checkpoint lets the pitch itself be chosen; every other screen fixes it,
+  // so that nothing there can move the pitch while a question is about the timbre.
+  fundamental?: { label: string; status: string };
   // Each screen shows only the drawings and controls its own question is about.
   waveLabel?: string;
   spectrum?: SpectrumBarsContent;

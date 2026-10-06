@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight } from '@untitledui/icons';
+import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
@@ -8,17 +8,20 @@ import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
 import { SpectrumBars } from '@/components/lesson/spectrum-bars/spectrum-bars';
 import { StringHypotheses } from '@/components/lesson/string-hypotheses/string-hypotheses';
+import { StringHypothesesSummary } from '@/components/lesson/string-hypotheses-summary/string-hypotheses-summary';
 import { StringModesDiagram } from '@/components/lesson/string-modes-diagram/string-modes-diagram';
+import { TimbreCheckpoint } from '@/components/lesson/timbre-checkpoint/timbre-checkpoint';
 import { TimbreLab } from '@/components/lesson/timbre-lab/timbre-lab';
 import { TimbreSoundComparison } from '@/components/lesson/timbre-sound-comparison/timbre-sound-comparison';
 import { TimbreWave } from '@/components/lesson/timbre-wave/timbre-wave';
-import { timbrePresets } from '@/data/lessons/stage-01-lesson-04-model/constants';
+import { playbackGain, timbrePresets } from '@/data/lessons/stage-01-lesson-04-model/constants';
+import { toPartialsSound } from '@/data/lessons/stage-01-lesson-04-model/utils/partials';
 import { lessonFourContent } from '@/data/lessons/stage-01-lesson-04/constants';
 import { stopByStep } from '@/pages/lesson-four-page/constants';
 import { useLessonFourPage } from '@/pages/lesson-four-page/hooks/use-lesson-four-page';
 
 export function LessonFourPage() {
-  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen, shapeOpen, answerShapePrediction, overtonesOpen, answerOvertonesPrediction, overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed, answerSpectrum, isSpectrumAnswered, isSpectrumVerified, envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen, envelopeLabOpen, answerEnvelopePrediction, envelopeStart, audioMessage } = useLessonFourPage();
+  const { route, progress, checkpoint, complete, passCheckpoint, finishLesson, finishStatus, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen, shapeOpen, answerShapePrediction, overtonesOpen, answerOvertonesPrediction, overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed, answerSpectrum, isSpectrumAnswered, isSpectrumVerified, envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen, envelopeLabOpen, answerEnvelopePrediction, envelopeStart, audioMessage } = useLessonFourPage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonFourContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
@@ -170,6 +173,50 @@ export function LessonFourPage() {
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
         <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('spectrum')}>{envelope.backLabel}</Button>
+        {isCompleted('envelope') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('checkpoint')}>{envelope.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'checkpoint' && <div className="space-y-5">
+      <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
+        <TimbreCheckpoint content={checkpoint} lab={checkpoint.lab} words={waveWords} envelopeWords={envelopeWords} audio={audio} passed={progress.checkpointPassed} onPass={passCheckpoint} />
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('envelope')}>{checkpoint.backLabel}</Button>
+        {progress.checkpointPassed && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{checkpoint.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'complete' && <div className="space-y-5">
+      <LessonStep title={complete.title} shouldFocus={focusedStep === 'complete'}>
+        <div className="space-y-6">
+          <section aria-labelledby="lesson-four-rules" className="space-y-3">
+            <h3 id="lesson-four-rules" className="font-semibold text-primary">{complete.rulesTitle}</h3>
+            <ul className="space-y-2 text-secondary">
+              {complete.rules.map((rule) => <li key={rule} className="flex gap-2"><CheckCircle className="mt-0.5 size-5 shrink-0 text-success-600" aria-hidden="true" />{rule}</li>)}
+            </ul>
+          </section>
+          <StringHypothesesSummary intro={intro} content={complete} selected={descriptions} own={ownDescription} />
+          {progress.completedAt === null && <Button size="lg" onClick={finishLesson}>{complete.finishLabel}</Button>}
+          <div ref={finishStatus} tabIndex={-1} role="status" data-testid="finish-status" className="space-y-3 outline-none">
+            {progress.completedAt !== null && <>
+              <p className="font-semibold text-primary">{complete.finished}</p>
+              <p className="text-secondary">{complete.feedback}</p>
+            </>}
+          </div>
+          {progress.completedAt !== null && <section aria-labelledby="lesson-four-bridge" className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
+            <h3 id="lesson-four-bridge" className="font-semibold text-primary">{complete.bridgeTitle}</h3>
+            <p className="mt-2 text-lg font-medium text-primary">{complete.bridge}</p>
+            <p className="mt-2 text-sm text-tertiary">{complete.bridgeNote}</p>
+            {audio.enabled && <div className="mt-4 flex flex-wrap gap-3">
+              {complete.bridgeSounds.map((item) => <Button key={item.id} color="secondary" size="lg" onClick={() => audio.playPartials(toPartialsSound(item.sound), playbackGain)}>{item.label}</Button>)}
+            </div>}
+          </section>}
+        </div>
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('checkpoint')}>{complete.backLabel}</Button>
+        {progress.completedAt !== null && <Button size="lg" href="/course">{complete.backToCourse}</Button>}
       </div>
     </div>}
   </LessonShell>;

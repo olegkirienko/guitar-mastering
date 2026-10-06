@@ -1,6 +1,7 @@
 import { RefreshCcw01 } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { EnvelopeCurve } from '@/components/lesson/envelope-curve/envelope-curve';
+import { LevelSelector } from '@/components/lesson/level-selector/level-selector';
 import { OvertoneMixer } from '@/components/lesson/overtone-mixer/overtone-mixer';
 import { SpectrumBars } from '@/components/lesson/spectrum-bars/spectrum-bars';
 import { EnvelopeControls } from '@/components/lesson/timbre-lab/components/envelope-controls/envelope-controls';
@@ -8,14 +9,15 @@ import { labModes } from '@/components/lesson/timbre-lab/constants';
 import { useTimbreLab } from '@/components/lesson/timbre-lab/hooks/use-timbre-lab';
 import type { TimbreLabProps } from '@/components/lesson/timbre-lab/types';
 import { TimbreWave } from '@/components/lesson/timbre-wave/timbre-wave';
-import { playbackGain } from '@/data/lessons/stage-01-lesson-04-model/constants';
+import { fundamentals, playbackGain } from '@/data/lessons/stage-01-lesson-04-model/constants';
 import { toPartialsSound } from '@/data/lessons/stage-01-lesson-04-model/utils/partials';
+import { parseFundamental } from '@/data/lessons/stage-01-lesson-04-model/utils/sound';
 
 // One sound the learner builds. The lab is controlled: the screen owns the sound,
 // so it can tell what the learner has already tried.
 export function TimbreLab({ mode, content, words, envelopeWords, sound, start, onChange, audio }: TimbreLabProps) {
   const config = labModes[mode];
-  const { titleId, announcement, chooseLevel, chooseAttack, chooseDecay, choosePreset, reset } = useTimbreLab({ content, sound, start, onChange });
+  const { titleId, announcement, chooseLevel, chooseFundamental, chooseAttack, chooseDecay, choosePreset, reset } = useTimbreLab({ content, sound, start, onChange });
   const levels = config.levels.map((level) => ({ id: level, label: content.levels[level] }));
   const presets = content.presets;
   return <section aria-labelledby={titleId} className="space-y-5 rounded-lg border border-secondary bg-primary p-4 sm:p-5">
@@ -23,6 +25,13 @@ export function TimbreLab({ mode, content, words, envelopeWords, sound, start, o
       <h3 id={titleId} className="font-semibold text-primary">{content.title}</h3>
       <p className="mt-1 text-sm text-tertiary">{content.note}</p>
     </div>
+
+    {content.fundamental && <LevelSelector
+      label={content.fundamental.label}
+      levels={fundamentals.map((value) => ({ id: String(value), label: `${value} Гц` }))}
+      value={String(sound.fundamental)}
+      onChange={(id) => chooseFundamental(parseFundamental(id))}
+    />}
 
     <OvertoneMixer content={content.mixer} multiples={config.multiples} levels={levels} sound={sound} onChange={config.lockedOvertones ? undefined : chooseLevel} />
 
