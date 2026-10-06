@@ -13,7 +13,10 @@ export function useLessonFivePage() {
   const { progress, setProgress, loaded, loadFailed, sync, retrySync } = useLessonFiveProgress();
   const { preferences: lessonPreferences, preferencesSaveFailed, updatePreferences } = useAuth();
   const [focusedStep, setFocusedStep] = useState<LessonFiveStepId | null>(null);
-  const { intro, preferences } = lessonFiveContent;
+  // Session-only: the prediction of each task opens its lab, and is never saved.
+  const [higherPredicted, setHigherPredicted] = useState(false);
+  const [lowerPredicted, setLowerPredicted] = useState(false);
+  const { intro, higher, lower, lab, preferences } = lessonFiveContent;
   const { route, goTo: openStep } = useLessonRoute('05', lessonFiveProgressAdapter, { progress, loaded, loadFailed, retrySync, setProgress });
   const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const isCompleted = (step: LessonFiveStepId) => progress.completedStepIds.includes(step);
@@ -48,5 +51,5 @@ export function useLessonFivePage() {
       ? preferences.audioBlocked
       : null;
 
-  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, intro, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, audioMessage };
+  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, intro, higher, lower, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, higherOpen: higherPredicted || isCompleted('higher'), answerHigherPrediction: () => setHigherPredicted(true), solveHigher: () => completeStep('higher'), lowerOpen: lowerPredicted || isCompleted('lower'), answerLowerPrediction: () => setLowerPredicted(true), solveLower: () => completeStep('lower'), audioMessage };
 }
