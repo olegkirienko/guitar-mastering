@@ -81,4 +81,44 @@ describe('progress sync core', () => {
     ]);
     expect(fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).baseRevision)).toEqual([3, 8]);
   });
+  it('stops the queue only after the save in flight has settled, and takes no more work', async () => {
+    let release!: () => void;
+    const inFlight = new Promise<void>((resolve) => { release = resolve; });
+    let settled = false;
+    const save = vi.fn(async (request) => {
+      await inFlight;
+      settled = true;
+      return { lessonId: 'stage-01-lesson-01', ...request, revision: 1, updatedAt: '2026-09-16T00:00:00.000Z' };
+    });
+    const queue = new ProgressSyncQueue(save, 1, 1);
+    queue.enqueue(progress('string'));
+
+    const stopped = queue.stop();
+    // Work queued or retried after the stop never reaches the server.
+    queue.enqueue(progress('air'));
+    queue.retry();
+    release();
+    await stopped;
+    expect(settled).toBe(true);
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0]?.[0]).toMatchObject({ progress: { currentStepId: 'string' } });
+  });
+
+  it('resets a lesson through its own endpoint and answers with what is left', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ items: [{ lessonId: 'lesson-one' }] }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(createProgressApi().reset('lesson two')).resolves.toEqual([{ lessonId: 'lesson-one' }]);
+    const [input, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(input).toBe('/api/v1/progress/lesson%20two/reset');
+    expect(init.method).toBe('POST');
+  });
+
+  it('reports a refused reset through the shared error type', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: { code: 'UNKNOWN_LESSON', message: 'Lesson is not available.' } }), {
+      status: 404, headers: { 'content-type': 'application/json' },
+    })));
+    await expect(createProgressApi().reset('lesson-nope')).rejects.toMatchObject({ code: 'UNKNOWN_LESSON' });
+  });
 });

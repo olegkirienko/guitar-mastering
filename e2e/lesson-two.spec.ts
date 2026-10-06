@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { applicationOrigin, json, lessonOneCompleted, lessonOneId, lessonTwoId, mockAccount } from "./support/mock-account";
+import { applicationOrigin, json, lessonOneCompleted, lessonOneId, lessonThreeId, lessonTwoId, mockAccount } from "./support/mock-account";
 
 // Lesson 2 opens once Lesson 1 is completed.
 async function signIn(page: Page, lessonTwo?: Parameters<typeof mockAccount>[1][string], preferences?: Parameters<typeof mockAccount>[2]) {
@@ -480,4 +480,60 @@ test("repairs corrupt server progress and keeps a valid completion", async ({ pa
   });
   await completed.goto(`${applicationOrigin}/lessons/02`);
   await expect(completed.getByText("Урок завершено.")).toBeVisible();
+});
+
+test("restarts the lesson from the sidebar after a confirmation, and clears the lessons after it", async ({ page }) => {
+  const account = await mockAccount(page, {
+    [lessonOneId]: lessonOneCompleted,
+    [lessonTwoId]: { currentStepId: "repeats", completedStepIds: ["intro", "string"] },
+    [lessonThreeId]: { currentStepId: "length", completedStepIds: ["intro"] },
+  });
+  await page.goto(`${applicationOrigin}/lessons/02`);
+  await expect(page.getByRole("heading", { name: "Передбач і перевір" })).toBeVisible();
+
+  // Escape leaves the lesson exactly as it was.
+  const restart = page.getByRole("button", { name: "Розпочати урок заново" });
+  await restart.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(restart).toBeFocused();
+  expect(account.progress(lessonTwoId)?.currentStepId).toBe("repeats");
+
+  // Cancelling leaves it alone too.
+  await restart.click();
+  await page.getByRole("button", { name: "Скасувати" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(account.progress(lessonTwoId)?.currentStepId).toBe("repeats");
+
+  await restart.click();
+  await page.getByRole("button", { name: "Скинути прогрес" }).click();
+  await expect(page).toHaveURL(`${applicationOrigin}/lessons/02/intro`);
+  await expect(page.getByText("Крок 1 із 8")).toBeVisible();
+  await expect.poll(() => account.progress(lessonTwoId)).toBeUndefined();
+  expect(account.progress(lessonThreeId)).toBeUndefined();
+  expect(account.progress(lessonOneId)).toBeDefined();
+
+  // The lesson after it is locked again on the course page.
+  await page.goto(`${applicationOrigin}/course`);
+  await expect(page.getByRole("link", { name: "Урок 3", exact: false })).toHaveCount(0);
+});
+
+test("keeps the lesson usable when the reset fails, and says so inside the dialog", async ({ page }) => {
+  const account = await seedStep(page, "repeats", ["intro", "string"]);
+  await page.route("**/api/v1/progress/*/reset", (route) => json(route, 503, {
+    error: { code: "PROGRESS_UNAVAILABLE", message: "Progress is temporarily unavailable." },
+  }));
+  await page.goto(`${applicationOrigin}/lessons/02`);
+
+  await page.getByRole("button", { name: "Розпочати урок заново" }).click();
+  await page.getByRole("button", { name: "Скинути прогрес" }).click();
+  await expect(page.getByText("Не вдалося скинути прогрес. Спробуй ще раз.")).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Скасувати" }).click();
+
+  // The lesson still saves after a failed reset.
+  await expect(page.getByRole("heading", { name: "Передбач і перевір" })).toBeVisible();
+  await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці B");
+  expect(account.progress(lessonTwoId)?.currentStepId).toBe("repeats");
 });

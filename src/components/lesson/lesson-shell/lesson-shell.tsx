@@ -1,3 +1,4 @@
+import { LessonRestart } from '@/components/lesson/lesson-restart/lesson-restart';
 import type { LessonShellProps } from '@/components/lesson/lesson-shell/types';
 import { LessonStepList } from '@/components/lesson/lesson-step-list/lesson-step-list';
 import { deriveStepProgress } from '@/components/lesson/lesson-shell/utils/step-progress';
@@ -5,14 +6,17 @@ import { cx } from '@/utils/cx';
 import { ArrowLeft, ChevronDown } from '@untitledui/icons';
 import { Link } from 'react-router';
 
-export function LessonShell({ stageLabel, title, estimatedTime, stepLabels, steps, currentStepId, children }: LessonShellProps) {
+export function LessonShell({ stageLabel, title, estimatedTime, stepLabels, steps, currentStepId, onRestart, children }: LessonShellProps) {
   const { index, total, caption } = deriveStepProgress(steps, currentStepId, stepLabels);
 
   return <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
     <Link to="/course" className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-semibold text-tertiary outline-focus-ring transition duration-100 ease-linear hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2"><ArrowLeft className="size-4" />Усі уроки</Link>
     <div className="mt-9 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10">
       <nav aria-label="Кроки уроку" className="hidden lg:block">
-        <div className="sticky top-24 rounded-2xl border border-secondary bg-secondary p-3"><LessonStepList steps={steps} currentStepId={currentStepId} label="Кроки уроку" /></div>
+        <div className="sticky top-24 rounded-2xl border border-secondary bg-secondary p-3">
+          <LessonStepList steps={steps} currentStepId={currentStepId} label="Кроки уроку" />
+          <div className="mt-3 border-t border-secondary pt-3"><LessonRestart onConfirm={onRestart} /></div>
+        </div>
       </nav>
       <div className="min-w-0 max-w-4xl">
         <header className="border-b border-secondary pb-7">
@@ -28,7 +32,10 @@ export function LessonShell({ stageLabel, title, estimatedTime, stepLabels, step
             <span>Кроки уроку · {index + 1} із {total}</span>
             <ChevronDown className="size-4 transition duration-100 ease-linear group-open:rotate-180" aria-hidden="true" />
           </summary>
-          <nav aria-label="Кроки уроку" className="border-t border-secondary p-2"><LessonStepList steps={steps} currentStepId={currentStepId} label="Кроки уроку" /></nav>
+          <nav aria-label="Кроки уроку" className="border-t border-secondary p-2">
+            <LessonStepList steps={steps} currentStepId={currentStepId} label="Кроки уроку" />
+            <div className="mt-2 border-t border-secondary px-1 pt-3 pb-1"><LessonRestart onConfirm={onRestart} /></div>
+          </nav>
         </details>
         <div className="mt-8">{children}</div>
       </div>

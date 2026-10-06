@@ -19,9 +19,9 @@ import { primaryButton } from '@/pages/lesson-two-page/constants';
 import { useLessonTwoPage } from '@/pages/lesson-two-page/hooks/use-lesson-two-page';
 
 export function LessonTwoPage() {
-  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, preferredPath, stringReady, setStringReady, focusedStep, reflection, setReflection, finishStatus, intro, string, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
+  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, preferredPath, stringReady, setStringReady, focusedStep, reflection, setReflection, finishStatus, intro, string, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonTwoContent} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonTwoContent} steps={route.steps} currentStepId={route.stepId} onRestart={restartLesson}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.invitation} shouldFocus={focusedStep === 'intro'}>
       <ol className="flex flex-wrap items-center gap-2 text-sm text-secondary" aria-label="Що ми вже знаємо з уроку 1">

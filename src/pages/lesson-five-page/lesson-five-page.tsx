@@ -15,9 +15,9 @@ import { lessonFiveContent } from '@/data/lessons/stage-01-lesson-05/constants';
 import { useLessonFivePage } from '@/pages/lesson-five-page/hooks/use-lesson-five-page';
 
 export function LessonFivePage() {
-  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, complete, lab, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
+  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, complete, lab, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonFiveContent} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonFiveContent} steps={route.steps} currentStepId={route.stepId} onRestart={restartLesson}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.reminder} shouldFocus={focusedStep === 'intro'}>
       <div className="space-y-6">

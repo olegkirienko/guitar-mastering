@@ -123,5 +123,22 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
     else setBootstrapAttempt((attempt) => attempt + 1);
   }, []);
 
-  return { progress, setProgress, loaded, loadFailed, sync, retrySync };
+  // Clears this lesson and every lesson after it. The queue stops first, so no save is in flight
+  // when the delete runs; afterwards the bootstrap reads the lesson again and builds a fresh queue.
+  const reset = useCallback(async () => {
+    const userId = userIdRef.current;
+    const revision = queueRef.current?.snapshot.revision ?? 0;
+    await queueRef.current?.stop();
+    queueRef.current = null;
+    try {
+      await apiRef.current.reset(adapter.lessonId);
+    } catch (error) {
+      // Nothing was cleared, so the lesson keeps its progress and saves again through a fresh queue.
+      if (userId && userIdRef.current === userId) createQueue(userId, revision);
+      throw error;
+    }
+    setBootstrapAttempt((attempt) => attempt + 1);
+  }, [adapter, createQueue]);
+
+  return { progress, setProgress, loaded, loadFailed, sync, retrySync, reset };
 }

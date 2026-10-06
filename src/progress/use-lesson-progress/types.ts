@@ -10,4 +10,6 @@ export type LessonProgressController<Local> = {
   loadFailed: boolean;
   sync: SyncSnapshot;
   retrySync(): void;
+  // Clears this lesson and every lesson after it, then reloads this one; rejects when the reset fails.
+  reset(): Promise<void>;
 };

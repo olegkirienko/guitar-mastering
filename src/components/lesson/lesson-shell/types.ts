@@ -8,5 +8,7 @@ export interface LessonShellProps {
   stepLabels: Record<string, string>;
   steps: readonly LessonStepLink[];
   currentStepId: string;
+  // Clears this lesson and every lesson after it, then returns to the first step.
+  onRestart: () => Promise<void>;
   children: React.ReactNode;
 }

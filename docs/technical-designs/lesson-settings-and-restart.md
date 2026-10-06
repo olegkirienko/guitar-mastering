@@ -139,11 +139,15 @@ POST /api/v1/progress/:lessonId/reset  →  200 { items: LessonProgressItem[] }
   1. `await queueRef.current?.stop()`, then drop `queueRef.current` so
      `setProgress` cannot enqueue against the queue that is going away;
   2. await `api.reset(adapter.lessonId)`;
-  3. bump `bootstrapAttempt` in both the success and the failure path, so the
-     existing effect re-reads the lesson from the server and builds a fresh
-     queue; on success that read is `PROGRESS_NOT_FOUND`, which the effect
-     already turns into default progress at revision 0;
-  4. rethrow the failure so the dialog can report it.
+  3. on success bump `bootstrapAttempt`, so the existing effect re-reads the
+     lesson from the server and builds a fresh queue; that read is
+     `PROGRESS_NOT_FOUND`, which the effect already turns into default progress
+     at revision 0;
+  4. on failure build a queue again from the revision captured before the stop,
+     and rethrow so the dialog can report it. A bootstrap on this path would
+     reset the local progress to the default for a frame, which sends the route
+     guard to the first step and tears the open dialog down, even though the
+     server still holds the lesson.
   Awaiting `stop()` is what makes the reset safe: no save can be in flight when
   the delete runs, so none can re-create the row afterwards. A guard on the
   revision would not be enough on its own, because a first save for a lesson

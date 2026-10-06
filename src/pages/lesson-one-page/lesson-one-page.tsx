@@ -14,9 +14,9 @@ import type { LessonOneStepId } from '@/data/lessons/stage-01-lesson-01/types';
 import { useLessonOnePage } from '@/pages/lesson-one-page/hooks/use-lesson-one-page';
 
 export function LessonOnePage() {
-  const { route, goTo, progress, setProgress, sync, retrySync, preferencesSaveFailed, audioEnabled, setAudioEnabled, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
+  const { restartLesson, route, goTo, progress, setProgress, sync, retrySync, preferencesSaveFailed, audioEnabled, setAudioEnabled, shouldFocusIntro, setShouldFocusIntro, shouldFocusString, setShouldFocusString, shouldFocusAir, setShouldFocusAir, shouldFocusCheckpoint, setShouldFocusCheckpoint, shouldFocusComplete, setShouldFocusComplete, reflection, setReflection, explainedAloud, setExplainedAloud, isStringStep, isAirStep, isCheckpointStep, isCompleteStep, staticMode, begin, openAirLab, openCheckpoint, openCompletion, finishLesson } = useLessonOnePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonOneContent} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonOneContent} steps={route.steps} currentStepId={route.stepId} onRestart={restartLesson}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     {!isStringStep && !isAirStep && !isCheckpointStep && !isCompleteStep ? <LessonStep title={lessonOneContent.intro.title} intro={lessonOneContent.intro.invitation} shouldFocus={shouldFocusIntro}>
       <div className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5"><p className="text-lg font-medium text-primary">{lessonOneContent.intro.question}</p><p className="mt-3 text-sm leading-6 text-secondary">{lessonOneContent.intro.reassurance}</p></div>

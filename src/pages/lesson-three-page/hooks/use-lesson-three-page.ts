@@ -8,7 +8,7 @@ import { lessonThreeProgressAdapter } from '@/progress/lesson-three/lesson-three
 import { useLessonThreeProgress } from '@/progress/use-lesson-three-progress';
 
 export function useLessonThreePage() {
-  const { progress, setProgress, loaded, loadFailed, sync, retrySync } = useLessonThreeProgress();
+  const { progress, setProgress, loaded, loadFailed, sync, retrySync, reset } = useLessonThreeProgress();
   const { preferences: lessonPreferences, preferencesSaveFailed, updatePreferences } = useAuth();
   const [focusedStep, setFocusedStep] = useState<LessonThreeStepId | null>(null);
   // Session-only guesses from `intro`; the completion screen compares them with the experiments.
@@ -84,5 +84,11 @@ export function useLessonThreePage() {
       ? preferences.audioBlocked
       : null;
 
-  return { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen: tensionAnswered || isCompleted('tension'), answerTension: () => setTensionAnswered(true), densityOpen: densityAnswered || isCompleted('density'), answerDensity: () => setDensityAnswered(true), audioMessage };
+  const restartLesson = useCallback(async () => {
+    await reset();
+    setFocusedStep('intro');
+    openStep('intro');
+  }, [reset, openStep]);
+
+  return { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen: tensionAnswered || isCompleted('tension'), answerTension: () => setTensionAnswered(true), densityOpen: densityAnswered || isCompleted('density'), answerDensity: () => setDensityAnswered(true), audioMessage };
 }

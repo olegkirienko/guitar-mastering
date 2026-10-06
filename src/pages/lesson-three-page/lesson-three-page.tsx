@@ -19,9 +19,9 @@ import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants'
 import { useLessonThreePage } from '@/pages/lesson-three-page/hooks/use-lesson-three-page';
 
 export function LessonThreePage() {
-  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
+  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonThreeContent} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonThreeContent} steps={route.steps} currentStepId={route.stepId} onRestart={restartLesson}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.reminder} shouldFocus={focusedStep === 'intro'}>
       <div className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
