@@ -280,18 +280,23 @@ test("saves lesson preferences on the account, and reverts and announces a faile
   await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveAttribute("aria-pressed", "false");
   expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false, theme: "system" }]);
 
+  // The audio preference is offered where the sound happens, so the string step carries the switch.
+  await page.getByRole("button", { name: "Почати дослід" }).click();
+  const audio = page.getByRole("button", { name: "Увімкнути звук" });
+  await expect(audio).toHaveAttribute("aria-pressed", "false");
+
   const notice = page.getByText("Не вдалося зберегти налаштування, тому повернули попереднє. Спробуй ще раз.");
   await expect(notice).toHaveCount(0);
   reject = true;
-  await page.getByRole("button", { name: "Звук: вимкнено" }).click();
+  await audio.click();
   await expect(notice).toBeVisible();
-  await expect(page.getByRole("button", { name: "Звук: вимкнено" })).toHaveAttribute("aria-pressed", "false");
+  await expect(audio).toHaveAttribute("aria-pressed", "false");
   expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false, theme: "system" }, { audioEnabled: true, prefersStatic: false, theme: "system" }]);
 
   // The next accepted change clears the notice.
   reject = false;
-  await page.getByRole("button", { name: "Звук: вимкнено" }).click();
-  await expect(page.getByRole("button", { name: "Звук: увімкнено" })).toHaveAttribute("aria-pressed", "true");
+  await audio.click();
+  await expect(page.getByRole("button", { name: "Вимкнути звук" })).toHaveAttribute("aria-pressed", "true");
   await expect(notice).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });

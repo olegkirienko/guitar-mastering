@@ -1,9 +1,10 @@
-import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
+import { CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
 import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
+import { LessonStepNav } from '@/components/lesson/lesson-step-nav/lesson-step-nav';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
 import { SoundPathCheckpoint } from '@/components/lesson/sound-path-checkpoint/sound-path-checkpoint';
@@ -41,7 +42,7 @@ export function LessonFivePage() {
           <RealWorldExperiment title={intro.guitar.title} withGuitar={intro.guitar.withGuitar} withoutGuitar={intro.guitar.withoutGuitar} safetyNote={intro.guitar.safety} />
           {audio.enabled && <Button color="secondary" size="lg" onClick={playIntroPluck}>{intro.listenLabel}</Button>}
         </div>
-        <Button size="lg" iconTrailing={ArrowRight} onClick={startTasks}>{intro.startLabel}</Button>
+        <LessonStepNav next={{ label: intro.startLabel, onClick: startTasks }} />
       </div>
     </LessonStep>}
 
@@ -53,10 +54,7 @@ export function LessonFivePage() {
           {isCompleted('higher') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{higher.pattern}</p>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('intro')}>{higher.backLabel}</Button>
-        {isCompleted('higher') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('lower')}>{higher.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: higher.backLabel, onClick: () => goTo('intro') }} next={isCompleted('higher') ? { label: higher.nextLabel, onClick: () => goTo('lower') } : undefined} />
     </div>}
 
     {visibleStep === 'lower' && <div className="space-y-5">
@@ -67,10 +65,7 @@ export function LessonFivePage() {
           {isCompleted('lower') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{lower.pattern}</p>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('higher')}>{lower.backLabel}</Button>
-        {isCompleted('lower') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('timbre')}>{lower.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: lower.backLabel, onClick: () => goTo('higher') }} next={isCompleted('lower') ? { label: lower.nextLabel, onClick: () => goTo('timbre') } : undefined} />
     </div>}
 
     {visibleStep === 'timbre' && <div className="space-y-5">
@@ -88,10 +83,7 @@ export function LessonFivePage() {
           {isCompleted('timbre') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{timbre.summary}</p>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('lower')}>{timbre.backLabel}</Button>
-        {isCompleted('timbre') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('path')}>{timbre.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: timbre.backLabel, onClick: () => goTo('lower') }} next={isCompleted('timbre') ? { label: timbre.nextLabel, onClick: () => goTo('path') } : undefined} />
     </div>}
 
     {visibleStep === 'path' && <div className="space-y-5">
@@ -105,10 +97,7 @@ export function LessonFivePage() {
           {isCompleted('path') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{path.conclusion}</p>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('timbre')}>{path.backLabel}</Button>
-        {isCompleted('path') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{path.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: path.backLabel, onClick: () => goTo('timbre') }} next={isCompleted('path') ? { label: path.nextLabel, onClick: () => goTo('complete') } : undefined} />
     </div>}
 
     {visibleStep === 'complete' && <div className="space-y-5">
@@ -145,7 +134,7 @@ export function LessonFivePage() {
         </div>
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('path')}>{complete.backLabel}</Button>
+        <LessonStepNav back={{ label: complete.backLabel, onClick: () => goTo('path') }} />
         {progress.completedAt !== null && <Button size="lg" href="/course">{complete.backToCourse}</Button>}
       </div>
     </div>}

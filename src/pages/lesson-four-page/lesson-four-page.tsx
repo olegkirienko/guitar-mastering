@@ -1,9 +1,10 @@
-import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
+import { CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
 import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
+import { LessonStepNav } from '@/components/lesson/lesson-step-nav/lesson-step-nav';
 import { LessonStep } from '@/components/lesson/lesson-step/lesson-step';
 import { RealWorldExperiment } from '@/components/lesson/real-world-experiment/real-world-experiment';
 import { SpectrumBars } from '@/components/lesson/spectrum-bars/spectrum-bars';
@@ -44,7 +45,7 @@ export function LessonFourPage() {
         {introOpen && <>
           <p className="rounded-lg bg-secondary p-4 font-medium text-primary">{intro.answer}</p>
           <StringHypotheses content={intro} selected={descriptions} onToggle={toggleDescription} own={ownDescription} onOwnChange={setOwnDescription} />
-          <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('shape')}>{intro.startLabel}</Button>
+          <LessonStepNav next={{ label: intro.startLabel, onClick: () => goTo('shape') }} />
         </>}
       </div>
     </LessonStep>}
@@ -73,10 +74,7 @@ export function LessonFourPage() {
           </div>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('intro')}>{shape.backLabel}</Button>
-        {isCompleted('shape') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('overtones')}>{shape.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: shape.backLabel, onClick: () => goTo('intro') }} next={isCompleted('shape') ? { label: shape.nextLabel, onClick: () => goTo('overtones') } : undefined} />
     </div>}
 
     {visibleStep === 'overtones' && <div className="space-y-5">
@@ -99,10 +97,7 @@ export function LessonFourPage() {
           </div>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('shape')}>{overtones.backLabel}</Button>
-        {isCompleted('overtones') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('spectrum')}>{overtones.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: overtones.backLabel, onClick: () => goTo('shape') }} next={isCompleted('overtones') ? { label: overtones.nextLabel, onClick: () => goTo('spectrum') } : undefined} />
     </div>}
 
     {visibleStep === 'spectrum' && <div className="space-y-5">
@@ -140,10 +135,7 @@ export function LessonFourPage() {
           </details>
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('overtones')}>{spectrum.backLabel}</Button>
-        {isCompleted('spectrum') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('envelope')}>{spectrum.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: spectrum.backLabel, onClick: () => goTo('overtones') }} next={isCompleted('spectrum') ? { label: spectrum.nextLabel, onClick: () => goTo('envelope') } : undefined} />
     </div>}
 
     {visibleStep === 'envelope' && <div className="space-y-5">
@@ -170,20 +162,14 @@ export function LessonFourPage() {
           </div>}
         </div>
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('spectrum')}>{envelope.backLabel}</Button>
-        {isCompleted('envelope') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('checkpoint')}>{envelope.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: envelope.backLabel, onClick: () => goTo('spectrum') }} next={isCompleted('envelope') ? { label: envelope.nextLabel, onClick: () => goTo('checkpoint') } : undefined} />
     </div>}
 
     {visibleStep === 'checkpoint' && <div className="space-y-5">
       <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
         <TimbreCheckpoint content={checkpoint} lab={checkpoint.lab} words={waveWords} envelopeWords={envelopeWords} audio={audio} passed={progress.checkpointPassed} onPass={passCheckpoint} />
       </LessonStep>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('envelope')}>{checkpoint.backLabel}</Button>
-        {progress.checkpointPassed && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{checkpoint.nextLabel}</Button>}
-      </div>
+      <LessonStepNav back={{ label: checkpoint.backLabel, onClick: () => goTo('envelope') }} next={progress.checkpointPassed ? { label: checkpoint.nextLabel, onClick: () => goTo('complete') } : undefined} />
     </div>}
 
     {visibleStep === 'complete' && <div className="space-y-5">
@@ -214,7 +200,7 @@ export function LessonFourPage() {
         </div>
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">
-        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('checkpoint')}>{complete.backLabel}</Button>
+        <LessonStepNav back={{ label: complete.backLabel, onClick: () => goTo('checkpoint') }} />
         {progress.completedAt !== null && <Button size="lg" href="/course">{complete.backToCourse}</Button>}
       </div>
     </div>}
