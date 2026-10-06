@@ -98,7 +98,13 @@ export function createApp({ pool, distDirectory, deploymentVersion, logger = app
     ]);
     app.use((request, response, next) => {
       const allowed = authMethods.get(request.path)
-        ?? (request.path === "/api/v1/progress" ? "GET" : /^\/api\/v1\/progress\/[^/]+$/.test(request.path) ? "GET, PUT" : undefined);
+        ?? (request.path === "/api/v1/progress"
+          ? "GET"
+          : /^\/api\/v1\/progress\/[^/]+$/.test(request.path)
+            ? "GET, PUT"
+            : /^\/api\/v1\/progress\/[^/]+\/reset$/.test(request.path)
+              ? "POST"
+              : undefined);
       if (!allowed || request.method === allowed) return next();
       if (allowed.includes(request.method)) return next();
       sendApiError(response, 405, "METHOD_NOT_ALLOWED", "Method not allowed.", response.locals.requestId as string, { headers: { Allow: allowed } });

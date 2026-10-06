@@ -78,3 +78,57 @@ describe("progress service validation", () => {
     expect(() => new ProgressCatalog(definition)).toThrow(TypeError);
   });
 });
+
+describe("progress reset", () => {
+  const catalog = new ProgressCatalog({
+    "lesson-one": { schemaVersion: 1, contentVersion: 1, stepIds: ["start"] },
+    "lesson-two": { schemaVersion: 1, contentVersion: 1, stepIds: ["start"] },
+    "lesson-three": { schemaVersion: 1, contentVersion: 1, stepIds: ["start"] },
+  });
+
+  function service(query: ReturnType<typeof vi.fn>, session = vi.fn(async () => ({ id: "user-1" }))) {
+    return new ProgressService({ query } as never, { session } as unknown as AuthService, catalog);
+  }
+
+  it("deletes the lesson and the ones after it, for that user only", async () => {
+    const query = vi.fn(async () => ({ rows: [] }));
+    await service(query).reset("token", "lesson-two");
+    const [deleteSql, deleteParameters] = query.mock.calls[0] as unknown as [string, unknown[]];
+    expect(deleteSql).toContain("DELETE FROM lesson_progress");
+    expect(deleteSql).toContain("user_id = $1");
+    expect(deleteParameters).toEqual(["user-1", ["lesson-two", "lesson-three"]]);
+  });
+
+  it("answers with the progress that is left", async () => {
+    const row = {
+      lesson_id: "lesson-one", schema_version: 1, content_version: 1, revision: 2,
+      updated_at: new Date("2026-10-06T00:00:00.000Z"),
+      progress: { currentStepId: "start", completedStepIds: [], checkpointPassed: false, completedAt: null },
+    };
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [row] });
+    await expect(service(query).reset("token", "lesson-two")).resolves.toMatchObject([{ lessonId: "lesson-one", revision: 2 }]);
+  });
+
+  it("rejects an unknown lesson before authentication or SQL", async () => {
+    const query = vi.fn();
+    const session = vi.fn();
+    await expect(service(query, session).reset("token", "lesson-four")).rejects.toMatchObject({ status: 404, code: "UNKNOWN_LESSON" });
+    expect(session).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("rejects a request without a session before SQL", async () => {
+    const query = vi.fn();
+    const service = new ProgressService({ query } as never, { session: vi.fn(async () => null) } as unknown as AuthService, catalog);
+    await expect(service.reset("token", "lesson-two")).rejects.toMatchObject({ status: 401, code: "UNAUTHENTICATED" });
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("deletes nothing but still answers when the lesson has no stored progress", async () => {
+    const query = vi.fn(async () => ({ rows: [] }));
+    await expect(service(query).reset("token", "lesson-three")).resolves.toEqual([]);
+    expect((query.mock.calls[0] as unknown as [string, unknown[]])[1]).toEqual(["user-1", ["lesson-three"]]);
+  });
+});

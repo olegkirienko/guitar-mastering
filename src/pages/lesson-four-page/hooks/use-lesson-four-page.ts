@@ -19,7 +19,7 @@ const overtonesRequired = labModes.overtones.multiples;
 const envelopeStart = lessonFourContent.envelope.comparison.sounds[0].sound;
 
 export function useLessonFourPage() {
-  const { progress, setProgress, loaded, loadFailed, sync, retrySync } = useLessonFourProgress();
+  const { progress, setProgress, loaded, loadFailed, sync, retrySync, reset } = useLessonFourProgress();
   const { preferences: lessonPreferences, preferencesSaveFailed, updatePreferences } = useAuth();
   const [focusedStep, setFocusedStep] = useState<LessonFourStepId | null>(null);
   // Session-only descriptions from `intro`; the completion screen compares them with the experiments.
@@ -154,5 +154,11 @@ export function useLessonFourPage() {
       ? preferences.audioBlocked
       : null;
 
-  return { route, progress, checkpoint, complete, passCheckpoint, finishLesson, finishStatus, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), overtonesOpen: overtonesPredicted || isCompleted('overtones'), answerOvertonesPrediction: () => setOvertonesPredicted(true), overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed: spectrumTouched || isCompleted('spectrum'), answerSpectrum, isSpectrumAnswered: (id: string) => spectrumAnswered.includes(id), isSpectrumVerified: (id: string) => spectrumVerified.includes(id), envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen: envelopeAnswered || isCompleted('envelope'), envelopeLabOpen: envelopePredicted || isCompleted('envelope'), answerEnvelopePrediction: () => setEnvelopePredicted(true), envelopeStart, audioMessage };
+  const restartLesson = useCallback(async () => {
+    await reset();
+    setFocusedStep('intro');
+    openStep('intro');
+  }, [reset, openStep]);
+
+  return { restartLesson, route, progress, checkpoint, complete, passCheckpoint, finishLesson, finishStatus, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), overtonesOpen: overtonesPredicted || isCompleted('overtones'), answerOvertonesPrediction: () => setOvertonesPredicted(true), overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed: spectrumTouched || isCompleted('spectrum'), answerSpectrum, isSpectrumAnswered: (id: string) => spectrumAnswered.includes(id), isSpectrumVerified: (id: string) => spectrumVerified.includes(id), envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen: envelopeAnswered || isCompleted('envelope'), envelopeLabOpen: envelopePredicted || isCompleted('envelope'), answerEnvelopePrediction: () => setEnvelopePredicted(true), envelopeStart, audioMessage };
 }

@@ -236,7 +236,7 @@ test("offers listening only once audio is on and plays one sound at a time", asy
   const account = await mockAccount(page, opened, { audioEnabled: true });
   await page.goto(`${applicationOrigin}/lessons/04/intro`);
   await expect(page.getByRole("button", { name: "Послухати" })).toHaveCount(3);
-  await page.getByRole("button", { name: "Звук: увімкнено" }).click();
+  await page.getByRole("button", { name: "Вимкнути звук" }).click();
   await expect(page.getByRole("button", { name: "Послухати" })).toHaveCount(0);
   await expect.poll(() => account.preferences().audioEnabled).toBe(false);
 });

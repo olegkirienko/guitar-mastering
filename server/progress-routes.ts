@@ -15,6 +15,9 @@ export function createProgressRouter(progress: ProgressService, secureCookies: b
   router.put("/progress/:lessonId", async (request, response) => {
     response.json({ item: await progress.put(readSessionCookie(request, secureCookies), request.params.lessonId!, request.body) });
   });
+  router.post("/progress/:lessonId/reset", async (request, response) => {
+    response.json({ items: await progress.reset(readSessionCookie(request, secureCookies), request.params.lessonId!) });
+  });
   router.use((error: unknown, _request: Request, response: Response, next: NextFunction) => {
     const requestId = response.locals.requestId as string;
     if (error instanceof ProgressError) {

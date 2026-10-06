@@ -133,13 +133,16 @@ export class ProgressService {
     return user.id;
   }
 
-  async list(token?: string): Promise<LessonProgressItem[]> {
-    const userId = await this.userId(token);
+  private async listFor(userId: string): Promise<LessonProgressItem[]> {
     const result = await this.pool.query<ProgressRow>(`
       SELECT lesson_id, schema_version, content_version, progress, revision, updated_at
       FROM lesson_progress WHERE user_id = $1 ORDER BY lesson_id
     `, [userId]);
     return result.rows.map(itemFromRow);
+  }
+
+  async list(token?: string): Promise<LessonProgressItem[]> {
+    return this.listFor(await this.userId(token));
   }
 
   async get(token: string | undefined, lessonId: string): Promise<LessonProgressItem> {
@@ -151,6 +154,16 @@ export class ProgressService {
     `, [userId, lessonId]);
     if (!result.rows[0]) throw new ProgressError(404, "PROGRESS_NOT_FOUND", "Progress was not found.");
     return itemFromRow(result.rows[0]);
+  }
+
+  // Clears the lesson and every lesson after it, so the learner starts this one over.
+  async reset(token: string | undefined, lessonId: string): Promise<LessonProgressItem[]> {
+    this.catalogEntry(lessonId);
+    const userId = await this.userId(token);
+    await this.pool.query(`
+      DELETE FROM lesson_progress WHERE user_id = $1 AND lesson_id = ANY($2)
+    `, [userId, this.catalog.idsFrom(lessonId)]);
+    return this.listFor(userId);
   }
 
   async put(token: string | undefined, lessonId: string, body: unknown): Promise<LessonProgressItem> {

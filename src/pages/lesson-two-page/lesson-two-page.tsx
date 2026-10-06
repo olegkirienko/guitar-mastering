@@ -6,6 +6,7 @@ import { FrequencyComparison } from '@/components/lesson/frequency-comparison/fr
 import { FrequencyPitchCheckpoint } from '@/components/lesson/frequency-pitch-checkpoint/frequency-pitch-checkpoint';
 import { FrequencyPitchLab } from '@/components/lesson/frequency-pitch-lab/frequency-pitch-lab';
 import { GuitarApplication } from '@/components/lesson/guitar-application/guitar-application';
+import { LessonAudioToggle } from '@/components/lesson/lesson-audio-toggle/lesson-audio-toggle';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
 import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
@@ -18,28 +19,10 @@ import { primaryButton } from '@/pages/lesson-two-page/constants';
 import { useLessonTwoPage } from '@/pages/lesson-two-page/hooks/use-lesson-two-page';
 
 export function LessonTwoPage() {
-  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, toggleStatic, preferredPath, stringReady, setStringReady, focusedStep, prefersReducedMotion, reflection, setReflection, finishStatus, intro, string, preferences, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
+  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, preferredPath, stringReady, setStringReady, focusedStep, reflection, setReflection, finishStatus, intro, string, repeats, frequency, loudness, guitar, checkpoint, complete, visibleStep, staticMode, isCompleted, audio, completeStep, goTo, begin, toggleAudio, completeRepeats, completeFrequency, completeLoudness, completeGuitar, passCheckpoint, finishLesson, audioMessage } = useLessonTwoPage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonTwoContent} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonTwoContent} steps={route.steps} currentStepId={route.stepId} onRestart={restartLesson}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
-    <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3 sm:grid-cols-2">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 text-sm leading-6 text-tertiary">
-          <p className="font-semibold text-primary">{preferences.motionTitle}</p>
-          <p>{prefersReducedMotion ? preferences.motionSystem : preferences.motionManual}</p>
-        </div>
-        <Button color="secondary" size="lg" isDisabled={prefersReducedMotion} aria-pressed={staticMode} onClick={toggleStatic}>{prefersReducedMotion ? preferences.motionSystemLabel : staticMode ? preferences.motionStaticLabel : preferences.motionAnimatedLabel}</Button>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 text-sm leading-6 text-tertiary">
-          <p className="font-semibold text-primary">{preferences.audioTitle}</p>
-          <p>{preferences.audioNote}</p>
-        </div>
-        <Button color="secondary" size="lg" aria-pressed={audioEnabled} onClick={toggleAudio}>{audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}</Button>
-      </div>
-      <div aria-live="polite" className="text-sm text-secondary sm:col-span-2">{audioMessage && <p>{audioMessage}</p>}</div>
-    </div>
-
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.invitation} shouldFocus={focusedStep === 'intro'}>
       <ol className="flex flex-wrap items-center gap-2 text-sm text-secondary" aria-label="Що ми вже знаємо з уроку 1">
         {intro.chain.map((link, index) => <li key={link} className="flex items-center gap-2">
@@ -61,6 +44,7 @@ export function LessonTwoPage() {
     {visibleStep === 'string' && <div className="space-y-5">
       <LessonStep title={string.title} intro={string.instruction} shouldFocus={focusedStep === 'string'}>
         <SameStringPitchExperience content={string} preferredPath={preferredPath} audio={audio} onReady={() => setStringReady(true)} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
         {(stringReady || isCompleted('string')) && <div className="mt-6">
           <ChoiceQuestion
             question={string.question}
@@ -76,6 +60,7 @@ export function LessonTwoPage() {
     {visibleStep === 'repeats' && <div className="space-y-5">
       <LessonStep title={repeats.title} intro={repeats.instruction} shouldFocus={focusedStep === 'repeats'}>
         <FrequencyComparison content={repeats} staticMode={staticMode} audio={audio} onComplete={completeRepeats} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
       </LessonStep>
       <LessonStepNav back={{ label: repeats.backLabel, onClick: () => goTo('string') }} next={isCompleted('repeats') ? { label: repeats.nextLabel, onClick: () => goTo('frequency') } : undefined} />
     </div>}
@@ -83,6 +68,7 @@ export function LessonTwoPage() {
     {visibleStep === 'frequency' && <div className="space-y-5">
       <LessonStep title={frequency.title} intro={frequency.instruction} shouldFocus={focusedStep === 'frequency'}>
         <FrequencyPitchLab content={frequency} audio={audio} onComplete={completeFrequency} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
       </LessonStep>
       <LessonStepNav back={{ label: frequency.backLabel, onClick: () => goTo('repeats') }} next={isCompleted('frequency') ? { label: frequency.nextLabel, onClick: () => goTo('loudness') } : undefined} />
     </div>}
@@ -90,6 +76,7 @@ export function LessonTwoPage() {
     {visibleStep === 'loudness' && <div className="space-y-5">
       <LessonStep title={loudness.title} intro={loudness.instruction} shouldFocus={focusedStep === 'loudness'}>
         <PitchLoudnessComparison content={loudness} audio={audio} onComplete={completeLoudness} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
       </LessonStep>
       <LessonStepNav back={{ label: loudness.backLabel, onClick: () => goTo('frequency') }} next={isCompleted('loudness') ? { label: loudness.nextLabel, onClick: () => goTo('guitar') } : undefined} />
     </div>}
@@ -97,6 +84,7 @@ export function LessonTwoPage() {
     {visibleStep === 'guitar' && <div className="space-y-5">
       <LessonStep title={guitar.title} intro={guitar.instruction} shouldFocus={focusedStep === 'guitar'}>
         <GuitarApplication content={guitar} preferredPath={preferredPath} audio={audio} completed={isCompleted('guitar')} onComplete={completeGuitar} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
       </LessonStep>
       <LessonStepNav back={{ label: guitar.backLabel, onClick: () => goTo('loudness') }} next={isCompleted('guitar') ? { label: guitar.nextLabel, onClick: () => goTo('checkpoint') } : undefined} />
     </div>}

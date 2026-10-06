@@ -11,7 +11,7 @@ import { normalizeLessonFiveProgress } from '@/progress/lesson-five/utils/parse-
 import { useLessonFiveProgress } from '@/progress/use-lesson-five-progress';
 
 export function useLessonFivePage() {
-  const { progress, setProgress, loaded, loadFailed, sync, retrySync } = useLessonFiveProgress();
+  const { progress, setProgress, loaded, loadFailed, sync, retrySync, reset } = useLessonFiveProgress();
   const { preferences: lessonPreferences, preferencesSaveFailed, updatePreferences } = useAuth();
   const [focusedStep, setFocusedStep] = useState<LessonFiveStepId | null>(null);
   // Session-only: the prediction of each task opens its lab, and is never saved.
@@ -105,5 +105,11 @@ export function useLessonFivePage() {
       ? preferences.audioBlocked
       : null;
 
-  return { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, intro, higher, lower, complete, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen: higherPredicted || isCompleted('higher'), answerHigherPrediction: () => setHigherPredicted(true), solveHigher: () => completeStep('higher'), lowerOpen: lowerPredicted || isCompleted('lower'), answerLowerPrediction: () => setLowerPredicted(true), solveLower: () => completeStep('lower'), timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen: pathChainDone || isCompleted('path'), audioMessage };
+  const restartLesson = useCallback(async () => {
+    await reset();
+    setFocusedStep('intro');
+    openStep('intro');
+  }, [reset, openStep]);
+
+  return { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, intro, higher, lower, complete, lab, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen: higherPredicted || isCompleted('higher'), answerHigherPrediction: () => setHigherPredicted(true), solveHigher: () => completeStep('higher'), lowerOpen: lowerPredicted || isCompleted('lower'), answerLowerPrediction: () => setLowerPredicted(true), solveLower: () => completeStep('lower'), timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen: pathChainDone || isCompleted('path'), audioMessage };
 }

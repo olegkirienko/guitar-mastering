@@ -64,5 +64,30 @@ describe("progress HTTP boundary", () => {
     const unsupported = await fetch(`${origin}/api/v1/progress/stage-01-lesson-01`, { method: "DELETE" });
     expect(unsupported.status).toBe(405);
     expect(unsupported.headers.get("allow")).toBe("GET, PUT");
+
+    const resetByGet = await fetch(`${origin}/api/v1/progress/stage-01-lesson-01/reset`);
+    expect(resetByGet.status).toBe(405);
+    expect(resetByGet.headers.get("allow")).toBe("POST");
+  });
+
+  it("resets a lesson through the session cookie and answers with what is left", async () => {
+    const reset = vi.fn(async () => []);
+    const origin = await start({ reset } as unknown as ProgressService);
+    const response = await fetch(`${origin}/api/v1/progress/stage-01-lesson-02/reset`, {
+      method: "POST", headers: { origin: "https://guitar.example", "content-type": "application/json" }, body: "{}",
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ items: [] });
+    expect(reset).toHaveBeenCalledWith(undefined, "stage-01-lesson-02");
+  });
+
+  it("maps a reset of an unknown lesson to the shared error envelope", async () => {
+    const reset = vi.fn(async () => { throw new ProgressError(404, "UNKNOWN_LESSON", "Lesson is not available."); });
+    const origin = await start({ reset } as unknown as ProgressService);
+    const response = await fetch(`${origin}/api/v1/progress/nope/reset`, {
+      method: "POST", headers: { origin: "https://guitar.example", "content-type": "application/json" }, body: "{}",
+    });
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: { code: "UNKNOWN_LESSON" } });
   });
 });

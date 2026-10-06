@@ -5,6 +5,7 @@ import { ProgressApiError, createProgressApi } from '@/progress/core/utils/progr
 import { ProgressSyncQueue } from '@/progress/core/utils/progress-sync-queue';
 import { idleSync } from '@/progress/use-lesson-progress/constants';
 import type { LessonProgressController } from '@/progress/use-lesson-progress/types';
+import { resetLessonProgress } from '@/progress/use-lesson-progress/utils/reset-lesson-progress';
 
 // Lesson progress lives on the server and in React state only; nothing is kept in browser storage.
 export function useLessonProgress<StepId extends string, Local extends ProgressValue<StepId>>(
@@ -123,5 +124,20 @@ export function useLessonProgress<StepId extends string, Local extends ProgressV
     else setBootstrapAttempt((attempt) => attempt + 1);
   }, []);
 
-  return { progress, setProgress, loaded, loadFailed, sync, retrySync };
+  // Clears this lesson and every lesson after it; afterwards the bootstrap reads the lesson again
+  // and builds a fresh queue. The stopped queue is dropped here, and enqueueing on it is a no-op.
+  const reset = useCallback(async () => {
+    const userId = userIdRef.current;
+    const queue = queueRef.current;
+    queueRef.current = null;
+    await resetLessonProgress({
+      queue,
+      clear: () => apiRef.current.reset(adapter.lessonId),
+      rebuild: (revision) => (userId && userIdRef.current === userId ? createQueue(userId, revision) : null),
+      progress: () => adapter.toSynced(progressRef.current),
+    });
+    setBootstrapAttempt((attempt) => attempt + 1);
+  }, [adapter, createQueue]);
+
+  return { progress, setProgress, loaded, loadFailed, sync, retrySync, reset };
 }

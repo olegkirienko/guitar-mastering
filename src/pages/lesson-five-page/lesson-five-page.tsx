@@ -1,6 +1,7 @@
 import { CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
+import { LessonAudioToggle } from '@/components/lesson/lesson-audio-toggle/lesson-audio-toggle';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
 import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
@@ -14,21 +15,10 @@ import { lessonFiveContent } from '@/data/lessons/stage-01-lesson-05/constants';
 import { useLessonFivePage } from '@/pages/lesson-five-page/hooks/use-lesson-five-page';
 
 export function LessonFivePage() {
-  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, complete, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
+  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, complete, lab, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonFiveContent} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonFiveContent} steps={route.steps} currentStepId={route.stepId} onRestart={restartLesson}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
-    <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 text-sm leading-6 text-tertiary">
-          <p className="font-semibold text-primary">{preferences.audioTitle}</p>
-          <p>{preferences.audioNote}</p>
-        </div>
-        <Button color="secondary" size="lg" aria-pressed={audioEnabled} onClick={toggleAudio}>{audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}</Button>
-      </div>
-      <div aria-live="polite" className="text-sm text-secondary">{audioMessage && <p>{audioMessage}</p>}</div>
-    </div>
-
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.reminder} shouldFocus={focusedStep === 'intro'}>
       <div className="space-y-6">
         <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 text-lg font-medium text-primary">{intro.question}</p>
@@ -41,6 +31,7 @@ export function LessonFivePage() {
         <div className="space-y-3">
           <RealWorldExperiment title={intro.guitar.title} withGuitar={intro.guitar.withGuitar} withoutGuitar={intro.guitar.withoutGuitar} safetyNote={intro.guitar.safety} />
           {audio.enabled && <Button color="secondary" size="lg" onClick={playIntroPluck}>{intro.listenLabel}</Button>}
+          <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
         </div>
         <LessonStepNav next={{ label: intro.startLabel, onClick: startTasks }} />
       </div>
@@ -51,6 +42,7 @@ export function LessonFivePage() {
         <div className="space-y-6">
           <ChoiceQuestion question={higher.prediction.question} choices={higher.prediction.choices} correctChoiceId={higher.prediction.correctChoiceId} mode="prediction" onCheck={answerHigherPrediction} />
           {higherOpen && <StringFrequencyLab content={lab} task={higher.task} audio={audio} completed={isCompleted('higher')} onComplete={solveHigher} />}
+          <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
           {isCompleted('higher') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{higher.pattern}</p>}
         </div>
       </LessonStep>
@@ -62,6 +54,7 @@ export function LessonFivePage() {
         <div className="space-y-6">
           <ChoiceQuestion question={lower.prediction.question} choices={lower.prediction.choices} correctChoiceId={lower.prediction.correctChoiceId} mode="prediction" onCheck={answerLowerPrediction} />
           {lowerOpen && <StringFrequencyLab content={lab} task={lower.task} audio={audio} completed={isCompleted('lower')} onComplete={solveLower} />}
+          <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
           {isCompleted('lower') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{lower.pattern}</p>}
         </div>
       </LessonStep>
@@ -74,6 +67,7 @@ export function LessonFivePage() {
           <RealWorldExperiment title={timbre.guitar.title} withGuitar={timbre.guitar.withGuitar} withoutGuitar={timbre.guitar.withoutGuitar} safetyNote={timbre.guitar.safety} />
           <div className="space-y-3">
             <TimbreSoundComparison content={timbre.comparison} audio={audio} />
+            <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
             <p className="text-sm text-tertiary">{timbre.comparisonNote}</p>
           </div>
           <section aria-labelledby="timbre-questions-title" className="space-y-6">
@@ -131,6 +125,7 @@ export function LessonFivePage() {
               {complete.bridgeSounds.map((item) => <Button key={item.id} color="secondary" size="lg" onClick={() => playBridge(item.frequency)}>{item.label}</Button>)}
             </div>}
           </section>}
+          <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
         </div>
       </LessonStep>
       <div className="flex flex-wrap items-center gap-3">

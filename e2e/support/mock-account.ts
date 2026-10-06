@@ -70,6 +70,14 @@ export async function mockAccount(page: Page, seed: Record<string, Partial<Progr
   await page.route("**/api/v1/progress**", (route) => {
     const { pathname } = new URL(route.request().url());
     if (pathname === "/api/v1/progress") return json(route, 200, { items: [...items.values()] });
+    const resetting = /^\/api\/v1\/progress\/[^/]+\/reset$/.test(pathname);
+    if (resetting) {
+      const target = decodeURIComponent(pathname.slice("/api/v1/progress/".length, -"/reset".length));
+      // The seeded lesson IDs sort in course order, which is the order the server resets in.
+      const ids = [...items.keys()].filter((id) => id >= target);
+      for (const id of ids) items.delete(id);
+      return json(route, 200, { items: [...items.values()] });
+    }
     const lessonId = decodeURIComponent(pathname.replace("/api/v1/progress/", ""));
     const current = items.get(lessonId);
     if (route.request().method() === "GET") {

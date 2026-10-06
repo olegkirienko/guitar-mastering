@@ -160,8 +160,8 @@ test("ignores legacy local copies and opens the lesson from server progress only
   await page.goto(`${applicationOrigin}/lessons/01`);
   await expect(page).toHaveURL(`${applicationOrigin}/lessons/01/string`);
   await expect(page.getByRole("heading", { name: "Зустріч зі струною" })).toBeVisible();
-  await expect(page.getByText("Прогрес зберігається в акаунті.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveAttribute("aria-pressed", "false");
+  // A lesson that saves normally says nothing about saving.
+  await expect(page.getByText("Прогрес ще не збережено.", { exact: false })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Дослідити рух у повітрі" })).toHaveCount(0);
   expect(writes).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -206,7 +206,7 @@ test("merges an optimistic conflict before retrying a step open", async ({ page 
   await page.goto(`${applicationOrigin}/lessons/01/string`);
   await expect(page.getByRole("heading", { name: "Зустріч зі струною" })).toBeVisible();
   await expect.poll(() => writes).toBe(2);
-  await expect(page.getByText("Прогрес зберігається в акаунті.")).toBeVisible();
+  await expect(page.getByText("Прогрес ще не збережено.", { exact: false })).toHaveCount(0);
 });
 
 test("shows pending and error states and retries the latest unsaved progress", async ({ page }) => {
@@ -237,9 +237,7 @@ test("shows pending and error states and retries the latest unsaved progress", a
   });
 
   await page.goto(`${applicationOrigin}/lessons/01`);
-  await expect(page.getByText("Прогрес зберігається в акаунті.")).toBeVisible();
   await page.getByRole("button", { name: "Почати дослід" }).click();
-  await expect(page.getByText("Зберігаємо прогрес в акаунті…")).toBeVisible();
   releaseFirstSave();
   await expect(page.getByText("Прогрес ще не збережено.", { exact: false })).toBeVisible();
   // The lesson stays usable in memory while the save is pending a retry.
@@ -247,7 +245,7 @@ test("shows pending and error states and retries the latest unsaved progress", a
   const retry = page.getByRole("button", { name: "Спробувати зберегти ще раз" });
   await retry.focus();
   await retry.press("Enter");
-  await expect(page.getByText("Прогрес зберігається в акаунті.")).toBeVisible();
+  await expect(page.getByText("Прогрес ще не збережено.", { exact: false })).toHaveCount(0);
   expect(writes).toBe(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
@@ -270,25 +268,34 @@ test("shows the unavailable screen when lesson progress cannot load and retries 
 });
 
 test("saves lesson preferences on the account, and reverts and announces a failed save", async ({ page }) => {
-  await mockSession(page, { ...user, preferences: { audioEnabled: false, prefersStatic: true, theme: "system" } });
+  // The session serves what was accepted, so a reload carries the saved preferences over.
+  let preferences = { audioEnabled: false, prefersStatic: true, theme: "system" };
+  await page.route("**/api/v1/session", (route) => json(route, 200, { user: { ...user, preferences } }));
   await mockCourseList(page);
   await page.route("**/api/v1/progress/stage-01-lesson-01", (route) => json(route, 404, { error: { code: "PROGRESS_NOT_FOUND", message: "Прогрес не знайдено." } }));
   const saved: unknown[] = [];
   let reject = false;
   await page.route("**/api/v1/preferences", (route) => {
-    saved.push(route.request().postDataJSON());
+    const body = route.request().postDataJSON() as typeof preferences;
+    saved.push(body);
     if (reject) return json(route, 500, { error: { code: "INTERNAL_ERROR", message: "Помилка." } });
-    return json(route, 200, { preferences: route.request().postDataJSON() });
+    preferences = body;
+    return json(route, 200, { preferences });
   });
 
-  await page.goto(`${applicationOrigin}/lessons/01/intro`);
-  const motion = page.getByRole("button", { name: "Показувати рух" });
-  await expect(motion).toHaveAttribute("aria-pressed", "true");
-  await motion.click();
-  await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveAttribute("aria-pressed", "false");
+  // The lesson switches live on the account page, in one place, and not on a lesson step.
+  await page.goto(`${applicationOrigin}/account`);
+  const motion = page.getByRole("switch", { name: "Показувати досліди покадрово" });
+  await expect(motion).toBeChecked();
+  await motion.focus();
+  await motion.press("Space");
+  await expect(motion).not.toBeChecked();
+  await expect(page.getByRole("switch", { name: "Звук у дослідах" })).not.toBeChecked();
   expect(saved).toEqual([{ audioEnabled: false, prefersStatic: false, theme: "system" }]);
 
-  // The audio preference is offered where the sound happens, so the string step carries the switch.
+  // The sound switch is also offered where the sound happens, so the string step carries one.
+  await page.goto(`${applicationOrigin}/lessons/01/intro`);
+  await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveCount(0);
   await page.getByRole("button", { name: "Почати дослід" }).click();
   const audio = page.getByRole("button", { name: "Увімкнути звук" });
   await expect(audio).toHaveAttribute("aria-pressed", "false");
@@ -307,6 +314,19 @@ test("saves lesson preferences on the account, and reverts and announces a faile
   await expect(page.getByRole("button", { name: "Вимкнути звук" })).toHaveAttribute("aria-pressed", "true");
   await expect(notice).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
+});
+
+test("locks the motion switch while the system asks for reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await mockSession(page, { ...user, preferences: { audioEnabled: false, prefersStatic: false, theme: "system" } });
+  await mockCourseList(page);
+  await page.route("**/api/v1/preferences", (route) => json(route, 500, { error: { code: "UNEXPECTED", message: "No write expected." } }));
+
+  await page.goto(`${applicationOrigin}/account`);
+  const motion = page.getByRole("switch", { name: "Показувати досліди покадрово" });
+  await expect(motion).toBeChecked();
+  await expect(motion).toBeDisabled();
+  await expect(page.getByText("Системне налаштування зменшеного руху активне:", { exact: false })).toBeVisible();
 });
 
 test("shows only the signed-in account's server progress after switching accounts", async ({ page }) => {

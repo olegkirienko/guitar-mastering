@@ -1,6 +1,7 @@
 import { CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
+import { LessonAudioToggle } from '@/components/lesson/lesson-audio-toggle/lesson-audio-toggle';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
 import { LessonRouteFallback } from '@/components/lesson/lesson-route-fallback/lesson-route-fallback';
 import { LessonShell } from '@/components/lesson/lesson-shell/lesson-shell';
@@ -18,21 +19,10 @@ import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants'
 import { useLessonThreePage } from '@/pages/lesson-three-page/hooks/use-lesson-three-page';
 
 export function LessonThreePage() {
-  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
+  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonThreeContent} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonThreeContent} steps={route.steps} currentStepId={route.stepId} onRestart={restartLesson}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
-    <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 text-sm leading-6 text-tertiary">
-          <p className="font-semibold text-primary">{preferences.audioTitle}</p>
-          <p>{preferences.audioNote}</p>
-        </div>
-        <Button color="secondary" size="lg" aria-pressed={audioEnabled} onClick={toggleAudio}>{audioEnabled ? preferences.audioOnLabel : preferences.audioOffLabel}</Button>
-      </div>
-      <div aria-live="polite" className="text-sm text-secondary">{audioMessage && <p>{audioMessage}</p>}</div>
-    </div>
-
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.reminder} shouldFocus={focusedStep === 'intro'}>
       <div className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
         <p className="text-lg font-medium text-primary">{intro.question}</p>
@@ -51,6 +41,7 @@ export function LessonThreePage() {
           <RealWorldExperiment title={length.guitar.title} withGuitar={length.guitar.withGuitar} withoutGuitar={length.guitar.withoutGuitar} safetyNote={length.guitar.safety} />
           <SameStringDiagram caption={length.diagram.caption} openLabel={length.diagram.openLabel} pressedLabel={length.diagram.pressedLabel} highlightVibrating />
           <StringFactorExperiment factor="length" prediction={length.prediction} content={length.experiment} audio={audio} completed={isCompleted('length')} onComplete={completeLength} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
         </div>
       </LessonStep>
       <LessonStepNav back={{ label: length.backLabel, onClick: () => goTo('intro') }} next={isCompleted('length') ? { label: length.nextLabel, onClick: () => goTo('tension') } : undefined} />
@@ -64,6 +55,7 @@ export function LessonThreePage() {
           {tensionOpen && <>
             <RealWorldExperiment title={tension.guitar.title} withGuitar={tension.guitar.withGuitar} withoutGuitar={tension.guitar.withoutGuitar} safetyNote={tension.guitar.safety} />
             <StringFactorExperiment factor="tension" prediction={tension.prediction} content={tension.experiment} audio={audio} completed={isCompleted('tension')} onComplete={completeTension} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
           </>}
         </div>
       </LessonStep>
@@ -87,6 +79,7 @@ export function LessonThreePage() {
               <p>{density.fairComparison.synonym}</p>
             </section>
             <StringFactorExperiment factor="density" prediction={density.prediction} content={density.experiment} audio={audio} completed={isCompleted('density')} onComplete={completeDensity} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
           </>}
         </div>
       </LessonStep>
@@ -97,6 +90,7 @@ export function LessonThreePage() {
       <LessonStep title={model.title} intro={model.instruction} shouldFocus={focusedStep === 'model'}>
         <div className="space-y-6">
           <StringFrequencyLab content={model.lab} predictions={model.predictions} audio={audio} completed={isCompleted('model')} onComplete={completeModel} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
           <details className="rounded-lg border border-secondary bg-primary p-4 text-secondary">
             <summary className="min-h-11 cursor-pointer content-center font-semibold text-primary">{model.deeper.summary}</summary>
             <p className="mt-3 text-lg font-semibold text-primary">{model.deeper.formula}</p>
@@ -112,6 +106,7 @@ export function LessonThreePage() {
     {visibleStep === 'checkpoint' && <div className="space-y-5">
       <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
         <StringFrequencyCheckpoint content={checkpoint} lab={model.lab} audio={audio} passed={progress.checkpointPassed} onPass={passCheckpoint} />
+        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
       </LessonStep>
       <LessonStepNav back={{ label: checkpoint.backLabel, onClick: () => goTo('model') }} next={progress.checkpointPassed ? { label: checkpoint.nextLabel, onClick: () => goTo('complete') } : undefined} />
     </div>}
