@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { labModes } from '../src/components/lesson/timbre-lab/constants.ts';
 import { peakGainCap } from '../src/data/lessons/stage-01-lesson-02-model/constants.ts';
 import { safeGain } from '../src/data/lessons/stage-01-lesson-02-model/utils/lab.ts';
-import { attackLevels, attackSeconds, decayDurationSeconds, decayLevels, maxSoundDuration, playbackGain, timbrePresets } from '../src/data/lessons/stage-01-lesson-04-model/constants.ts';
+import { attackLevels, attackSeconds, checkpointStarts, decayDurationSeconds, decayLevels, fundamentals, maxSoundDuration, playbackGain, timbrePresets } from '../src/data/lessons/stage-01-lesson-04-model/constants.ts';
 import type { TimbreSound } from '../src/data/lessons/stage-01-lesson-04-model/types.ts';
-import { matchesOvertones } from '../src/data/lessons/stage-01-lesson-04-model/utils/checkpoint.ts';
+import { checkPair, checkpointPassed, matchesOvertones, sameTimbre } from '../src/data/lessons/stage-01-lesson-04-model/utils/checkpoint.ts';
 import { envelopeDescription, envelopePoints, envelopeValue, soundDuration } from '../src/data/lessons/stage-01-lesson-04-model/utils/envelope.ts';
 import { partialStrengths, toPartialsSound } from '../src/data/lessons/stage-01-lesson-04-model/utils/partials.ts';
-import { partialLabel, withOvertone } from '../src/data/lessons/stage-01-lesson-04-model/utils/sound.ts';
+import { parseFundamental, partialLabel, withOvertone } from '../src/data/lessons/stage-01-lesson-04-model/utils/sound.ts';
 import { visualRepeats, waveCurves, waveDescription, waveValue } from '../src/data/lessons/stage-01-lesson-04-model/utils/wave.ts';
 import { lessonFourContent } from '../src/data/lessons/stage-01-lesson-04/constants.ts';
 import { renderPartials } from '../src/hooks/use-lesson-two-audio/utils/render-partials.ts';
@@ -239,5 +239,49 @@ describe('Lesson 4 envelope screen', () => {
     for (const text of beforeTheName) expect(text).not.toMatch(/атак|згасан/i);
     expect(envelope.term).toMatch(/атакою/);
     expect(envelope.term).toMatch(/згасанням/);
+  });
+});
+
+describe('checkpoint pair', () => {
+  const { a, b } = checkpointStarts;
+
+  it('starts at the opposite of the goal: one timbre, two pitches', () => {
+    expect(a.fundamental).not.toBe(b.fundamental);
+    expect(sameTimbre(a, b)).toBe(true);
+    expect(checkPair(a, b)).toBe('differentPitch');
+  });
+
+  it('names the pitches as the problem before the timbre', () => {
+    const bright: TimbreSound = { ...a, fundamental: b.fundamental, overtones: { 2: 'strong', 3: 'strong', 4: 'weak', 5: 'off' } };
+    expect(checkPair(a, bright)).toBe('differentPitch');
+  });
+
+  it('is solved by one pitch and any difference in the timbre', () => {
+    expect(checkPair(a, { ...a, overtones: { ...a.overtones, 2: 'strong' } })).toBe('solved');
+    expect(checkPair(a, { ...a, attack: 'slow' })).toBe('solved');
+    expect(checkPair(a, { ...a, decay: 'short' })).toBe('solved');
+  });
+
+  it('rejects two copies of the same sound', () => {
+    expect(checkPair(a, { ...a })).toBe('sameTimbre');
+    expect(checkPair(timbrePresets.pluck, timbrePresets.pluck)).toBe('sameTimbre');
+  });
+
+  it('passes only with the task solved and every question answered', () => {
+    const questions = lessonFourContent.checkpoint.questions.map((question) => question.id);
+    expect(checkpointPassed(true, questions, questions)).toBe(true);
+    expect(checkpointPassed(false, questions, questions)).toBe(false);
+    expect(checkpointPassed(true, questions.slice(1), questions)).toBe(false);
+  });
+
+  it('offers the three pitches the lab can play, and parses them back', () => {
+    for (const value of fundamentals) expect(parseFundamental(String(value))).toBe(value);
+    expect(parseFundamental('нічого')).toBe(fundamentals[0]);
+  });
+
+  it('opens every control on the checkpoint screen', () => {
+    expect(labModes.full.lockedOvertones).toBe(false);
+    expect(labModes.full.multiples).toEqual([2, 3, 4, 5]);
+    expect(lessonFourContent.checkpoint.lab.fundamental.label).toBeTruthy();
   });
 });

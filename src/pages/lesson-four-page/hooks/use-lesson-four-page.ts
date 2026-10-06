@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { labModes } from '@/components/lesson/timbre-lab/constants';
 import { overtoneMultiples, timbrePresets } from '@/data/lessons/stage-01-lesson-04-model/constants';
 import type { OvertoneMultiple, TimbreSound } from '@/data/lessons/stage-01-lesson-04-model/types';
@@ -44,10 +44,19 @@ export function useLessonFourPage() {
   const [envelopePredicted, setEnvelopePredicted] = useState(false);
   const [attackChanged, setAttackChanged] = useState(false);
   const [decayChanged, setDecayChanged] = useState(false);
-  const { intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords } = lessonFourContent;
+  const [focusFinishStatus, setFocusFinishStatus] = useState(false);
+  const finishStatus = useRef<HTMLDivElement>(null);
+  const { intro, shape, overtones, spectrum, envelope, checkpoint, complete, preferences, waveWords, envelopeWords } = lessonFourContent;
   const { route, goTo: openStep } = useLessonRoute('04', lessonFourProgressAdapter, { progress, loaded, loadFailed, retrySync, setProgress });
   const visibleStep = route.kind === 'ready' ? route.stepId : progress.currentStepId;
   const isCompleted = (step: LessonFourStepId) => progress.completedStepIds.includes(step);
+
+  // «Завершити урок» disappears once pressed, so focus moves to the result.
+  useEffect(() => {
+    if (!focusFinishStatus) return;
+    setFocusFinishStatus(false);
+    finishStatus.current?.focus();
+  }, [focusFinishStatus]);
 
   const setAudioEnabled = useCallback((enabled: boolean) => {
     if (lessonPreferences.audioEnabled !== enabled) void updatePreferences({ audioEnabled: enabled });
@@ -124,11 +133,26 @@ export function useLessonFourPage() {
     finishEnvelope(envelopeAnswered, attack, decay);
   };
 
+  const passCheckpoint = useCallback(() => setProgress((current) => ({
+    ...current,
+    checkpointPassed: true,
+    completedStepIds: Array.from(new Set<LessonFourStepId>([...current.completedStepIds, 'checkpoint'])),
+  })), [setProgress]);
+
+  const finishLesson = () => {
+    setFocusFinishStatus(true);
+    setProgress((current) => ({
+      ...current,
+      completedAt: current.completedAt ?? new Date().toISOString(),
+      completedStepIds: Array.from(new Set<LessonFourStepId>([...current.completedStepIds, 'complete'])),
+    }));
+  };
+
   const audioMessage = audio.status === 'unavailable'
     ? preferences.audioUnavailable
     : audio.status === 'blocked'
       ? preferences.audioBlocked
       : null;
 
-  return { route, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), overtonesOpen: overtonesPredicted || isCompleted('overtones'), answerOvertonesPrediction: () => setOvertonesPredicted(true), overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed: spectrumTouched || isCompleted('spectrum'), answerSpectrum, isSpectrumAnswered: (id: string) => spectrumAnswered.includes(id), isSpectrumVerified: (id: string) => spectrumVerified.includes(id), envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen: envelopeAnswered || isCompleted('envelope'), envelopeLabOpen: envelopePredicted || isCompleted('envelope'), answerEnvelopePrediction: () => setEnvelopePredicted(true), envelopeStart, audioMessage };
+  return { route, progress, checkpoint, complete, passCheckpoint, finishLesson, finishStatus, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen: introAnswered || isCompleted('intro'), shapeOpen: shapePredicted || isCompleted('shape'), answerShapePrediction: () => setShapePredicted(true), overtonesOpen: overtonesPredicted || isCompleted('overtones'), answerOvertonesPrediction: () => setOvertonesPredicted(true), overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed: spectrumTouched || isCompleted('spectrum'), answerSpectrum, isSpectrumAnswered: (id: string) => spectrumAnswered.includes(id), isSpectrumVerified: (id: string) => spectrumVerified.includes(id), envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen: envelopeAnswered || isCompleted('envelope'), envelopeLabOpen: envelopePredicted || isCompleted('envelope'), answerEnvelopePrediction: () => setEnvelopePredicted(true), envelopeStart, audioMessage };
 }

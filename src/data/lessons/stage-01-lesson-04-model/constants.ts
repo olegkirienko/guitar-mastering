@@ -1,4 +1,4 @@
-import type { AttackLevel, DecayLevel, Fundamental, OvertoneLevel, OvertoneMultiple, TimbrePresetId, TimbreSound } from '@/data/lessons/stage-01-lesson-04-model/types';
+import type { AttackLevel, DecayLevel, Fundamental, OvertoneLevel, OvertoneMultiple, PairSoundId, TimbrePresetId, TimbreSound } from '@/data/lessons/stage-01-lesson-04-model/types';
 
 export const fundamentals: readonly Fundamental[] = [220, 330, 440];
 
@@ -28,6 +28,13 @@ export const timbrePresets: Record<TimbrePresetId, TimbreSound> = {
   pure: { fundamental: 220, overtones: silentOvertones, attack: 'fast', decay: 'held' },
   pluck: { fundamental: 220, overtones: { 2: 'strong', 3: 'weak', 4: 'weak', 5: 'weak' }, attack: 'instant', decay: 'long' },
   bright: { fundamental: 220, overtones: { 2: 'strong', 3: 'strong', 4: 'strong', 5: 'strong' }, attack: 'fast', decay: 'held' },
+};
+
+// The checkpoint starts at the opposite of its goal: one timbre, two pitches. Nothing
+// is already solved, and both halves of the task have to be moved.
+export const checkpointStarts: Record<PairSoundId, TimbreSound> = {
+  a: timbrePresets.pure,
+  b: { ...timbrePresets.pure, fundamental: 330 },
 };
 
 // Every rendered sound is normalized, so one gain covers them all; Lesson 2 played its plucks at the same level.
