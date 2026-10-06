@@ -50,10 +50,13 @@ created.
 
 ## 2. Step navigation primitive
 
-**Problem.** Twenty-eight next/back pairs are written inline across the five
-lesson pages. The forward button is always rendered first, the back button is
-`color="link-gray" size="md"` next to a `size="lg"` primary, so the two sit on
-one line with different heights and no shared baseline.
+**Problem.** Every step of the five lesson pages writes its next/back pair
+inline; `grep -ro 'iconTrailing={ArrowRight}' src/pages/lesson-*` and the same
+grep for `iconLeading={ArrowLeft}` each return twenty-eight hits today, so the
+count is what those two greps report, not a separate claim. The forward button
+is always rendered first, the back button is `color="link-gray" size="md"` next
+to a `size="lg"` primary, so the two sit on one line with different heights and
+no shared baseline.
 
 **Design.** A new primitive `src/components/lesson/lesson-step-nav/` with
 `lesson-step-nav.tsx` and `types.ts`:
@@ -112,19 +115,32 @@ contract, but the ordering task becomes a forward chain build:
 1. The first card is placed for the learner and shown as link 1 of the chain,
    with its number and illustration. The lesson has already established it.
 2. One question at a time, «Що відбувається далі?», lists the cards that are not
-   yet in the chain, in the order given by `initialOrder` (deterministic — no
-   `Math.random`, so the e2e specs stay stable).
+   yet in the chain, in the order given by `initialOrder` minus the ids already
+   attached. Because `initialOrder` is a permutation of all cards, it contains
+   `cards[0]`; that id is the pre-placed link of step 1 and is therefore never
+   offered. The order is deterministic — no `Math.random`, so the e2e specs stay
+   stable.
 3. A correct pick attaches the card as the next link, announces it through the
    existing `aria-live` region and moves to the next question.
 4. A wrong pick does not attach anything. It shows `breakHints[position]` — the
    hint array already reads as one nudge per link — and the learner picks again.
-   After two wrong picks on the same link, «Показати й пояснити» attaches the
-   correct card with the summary line, exactly as the current second-attempt
-   escape does.
+   After two wrong picks on the same link, the existing «Показати й пояснити»
+   button appears; it keeps its label, but it now attaches only the one correct
+   card for the current link instead of revealing the whole order, and the
+   `attempts` counter resets for the next link.
 5. When the last link attaches, the chain is shown whole with the existing
    `content.summary`, and the control question (`ChoiceQuestion` with
    `controlQuestion` / `controlChoices` / `correctChoiceId`) decides the pass,
    unchanged.
+
+Focus after every attach, whether it came from a correct pick or from
+«Показати й пояснити», moves to the next question's group label; when the last
+link attaches it moves to the summary heading instead.
+
+A learner who returns with `initiallyPassed` does not answer again: the chain
+starts complete (`chain` is `cards.map(card => card.id)`), `attempts` is `0`,
+`explained` is `false`, and the summary and the control question are shown in
+their passed state, matching what `initiallyPassed` does today.
 
 This matches the lesson flow in `CLAUDE.md`: each link is a prediction, the
 answer is checked at once, and the feedback is local to the link the learner got
@@ -220,10 +236,15 @@ checkpoint return with no stored state to repair.
   list, including the clamp for an unknown step id; `LessonStepNav` renders back
   before next and omits either when absent; the chain builder attaches on a
   correct pick, refuses and hints on a wrong one, and reveals after two wrong
-  picks; `useCoursePage` groups lessons into stage views with the right counts.
+  picks; the first question does not offer `cards[0]`, even though `initialOrder`
+  contains it; with `initiallyPassed` the initial state is the complete chain
+  with the summary and no open question; `useCoursePage` groups lessons into
+  stage views with the right counts.
 - Browser (`corepack pnpm test:browser`): `lesson-one.spec.ts` loses the intro
   audio toggle and the «Раніше» / «Перевірити порядок» steps and gains the chain
-  picks; `lesson-five.spec.ts` updates its task 4 the same way;
+  picks, and asserts that focus lands on the next question after an attach and on
+  the summary after the last link; `lesson-five.spec.ts` updates its task 4 the
+  same way;
   `account-profile.spec.ts` is unchanged and proves the menu still signs out;
   the course flow asserts the stage heading. A walk through lesson 1 asserts
   that the indicator number matches the highlighted step on every step.
@@ -239,11 +260,15 @@ Acceptance: on every step of every lesson the number beside the bar equals the
 highlighted step in the list and in the mobile summary; unit tests cover the
 derivation; `corepack pnpm build` is green.
 
-**Slice 2 — navigation.** Scope: `lesson-step-nav` primitive, all twenty-eight
-pairs in the five pages, remove the intro audio toggle (§3).
-Acceptance: every step shows back then next in one centred row; conditional next
-buttons still appear only when the step is complete; back still restores focus to
-the previous step's heading; the intro shows one primary button.
+**Slice 2 — navigation.** Scope: `lesson-step-nav` primitive, every inline pair
+in the five pages, remove the intro audio toggle (§3).
+Acceptance: no inline next/back pair remains in `src/pages/lesson-*` —
+`grep -r 'iconTrailing={ArrowRight}\|iconLeading={ArrowLeft}' src/pages/lesson-*`
+returns nothing, and the only matches left in `src/pages` are the course and
+home pages, which this design does not touch; every step shows back then next in
+one centred row; conditional next buttons still appear only when the step is
+complete; back still restores focus to the previous step's heading; the intro
+shows one primary button.
 
 **Slice 3 — sound path.** Scope: the new chain mechanic in
 `sound-path-checkpoint`, lesson 1 card and hint wording, both e2e specs.
