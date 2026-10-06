@@ -33,6 +33,8 @@ test("restores an authenticated session and updates profile and avatar accessibl
 
   await page.goto(`${applicationOrigin}/account`);
   await expect(page.getByRole("heading", { name: "Профіль @Player.One" })).toBeVisible();
+  // Below `sm` the trigger is the avatar alone: the name and the chevron are hidden.
+  await expect(page.getByRole("button", { name: "Меню акаунта @Player.One" }).getByText("@Player.One")).toBeHidden();
   await expect(page.getByRole("heading", { name: "Приватність і резервні копії" })).toBeVisible();
   const cedarAvatar = page.getByRole("radio", { name: "Кедр" });
   const oceanAvatar = page.getByRole("radio", { name: "Океан" });
@@ -71,7 +73,11 @@ test("supports guest registration, logout, and login", async ({ page }) => {
 
   // The header account menu opens the account page and signs out.
   const accountMenu = page.getByRole("button", { name: "Меню акаунта @Player.One" });
+  // The trigger reads as a menu: it carries the name and reports whether it is open.
+  await expect(accountMenu).toContainText("Player.One");
+  await expect(accountMenu).toHaveAttribute("aria-expanded", "false");
   await accountMenu.click();
+  await expect(accountMenu).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("menuitem", { name: "Акаунт" }).click();
   await expect(page).toHaveURL(`${applicationOrigin}/account`);
   await accountMenu.press("Enter");
