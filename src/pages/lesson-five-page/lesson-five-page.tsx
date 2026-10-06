@@ -10,13 +10,12 @@ import { SoundPathCheckpoint } from '@/components/lesson/sound-path-checkpoint/s
 import { StringFrequencyLab } from '@/components/lesson/string-frequency-lab/string-frequency-lab';
 import { TimbreSoundComparison } from '@/components/lesson/timbre-sound-comparison/timbre-sound-comparison';
 import { lessonFiveContent } from '@/data/lessons/stage-01-lesson-05/constants';
-import { stopByStep } from '@/pages/lesson-five-page/constants';
 import { useLessonFivePage } from '@/pages/lesson-five-page/hooks/use-lesson-five-page';
 
 export function LessonFivePage() {
   const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, complete, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonFiveContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonFiveContent} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">

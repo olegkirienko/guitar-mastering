@@ -4,8 +4,8 @@ export interface LessonShellProps {
   stageLabel: string;
   title: string;
   estimatedTime: string;
-  progressStops: readonly string[];
-  currentStop: number;
+  // One short caption per step id; the step title is used when a key is missing.
+  stepLabels: Record<string, string>;
   steps: readonly LessonStepLink[];
   currentStepId: string;
   children: React.ReactNode;

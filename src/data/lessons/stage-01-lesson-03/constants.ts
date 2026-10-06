@@ -31,7 +31,7 @@ export const lessonThreeContent = {
   stageLabel: 'Етап I · Звук',
   title: 'Від чого залежить частота струни?',
   estimatedTime: '10–14 хв',
-  progressStops: ['Здогадки', 'Довжина', 'Туго', 'Вага', 'Модель', 'Перевірка'],
+  stepLabels: { intro: 'Здогадки', length: 'Довжина', tension: 'Туго', density: 'Вага', model: 'Модель', checkpoint: 'Перевірка', complete: 'Підсумок' },
   // The audio switch and its messages are the same as in Lesson 2.
   preferences: lessonTwoContent.preferences,
   intro: {

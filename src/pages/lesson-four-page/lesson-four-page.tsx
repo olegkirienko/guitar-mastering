@@ -17,13 +17,12 @@ import { TimbreWave } from '@/components/lesson/timbre-wave/timbre-wave';
 import { playbackGain, timbrePresets } from '@/data/lessons/stage-01-lesson-04-model/constants';
 import { toPartialsSound } from '@/data/lessons/stage-01-lesson-04-model/utils/partials';
 import { lessonFourContent } from '@/data/lessons/stage-01-lesson-04/constants';
-import { stopByStep } from '@/pages/lesson-four-page/constants';
 import { useLessonFourPage } from '@/pages/lesson-four-page/hooks/use-lesson-four-page';
 
 export function LessonFourPage() {
   const { route, progress, checkpoint, complete, passCheckpoint, finishLesson, finishStatus, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, descriptions, toggleDescription, ownDescription, setOwnDescription, intro, shape, overtones, spectrum, envelope, preferences, waveWords, envelopeWords, visibleStep, isCompleted, audio, goTo, toggleAudio, answerIntro, answerShapeCount, introOpen, shapeOpen, answerShapePrediction, overtonesOpen, answerOvertonesPrediction, overtonesSound, changeOvertonesSound, spectrumSound, changeSpectrumSound, spectrumNamed, answerSpectrum, isSpectrumAnswered, isSpectrumVerified, envelopeSound, changeEnvelopeSound, answerEnvelope, envelopeOpen, envelopeLabOpen, answerEnvelopePrediction, envelopeStart, audioMessage } = useLessonFourPage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonFourContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonFourContent} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">

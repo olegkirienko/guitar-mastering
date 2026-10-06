@@ -3,7 +3,7 @@ export const lessonOneContent = {
   stageLabel: 'Етап I · Звук',
   title: 'Що таке звук?',
   estimatedTime: '8–12 хв',
-  progressStops: ['Струна', 'Зупинка', 'Рух', 'Повітря', 'Шлях звуку'],
+  stepLabels: { intro: 'Питання', string: 'Струна', air: 'Повітря', checkpoint: 'Шлях звуку', complete: 'Підсумок' },
   intro: {
     title: 'Почнімо з досліду',
     invitation: 'Смикнемо струну й простежимо, що станеться аж до вуха.',

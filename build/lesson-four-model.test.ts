@@ -207,9 +207,9 @@ describe('Lesson 4 envelope screen', () => {
 
   it('keeps every step title in plain words, because the step list is visible from the first screen', () => {
     const titles = [lessonFourContent.intro, lessonFourContent.shape, lessonFourContent.overtones, lessonFourContent.spectrum, envelope, lessonFourContent.checkpoint, lessonFourContent.complete].map((step) => step.title);
-    for (const text of [...titles, ...lessonFourContent.progressStops]) expect(text).not.toMatch(/тембр|обертон|спектр|атак|згасан/i);
-    // The stop and the title of the same step say the same thing.
-    expect(lessonFourContent.progressStops[2]).toBe(lessonFourContent.overtones.title);
+    for (const text of [...titles, ...Object.values(lessonFourContent.stepLabels)]) expect(text).not.toMatch(/тембр|обертон|спектр|атак|згасан/i);
+    // The label and the title of the same step say the same thing.
+    expect(lessonFourContent.stepLabels.overtones).toBe(lessonFourContent.overtones.title);
   });
 
   it('describes the shape of every drawn wave without the multiples the `shape` screen has not earned', () => {

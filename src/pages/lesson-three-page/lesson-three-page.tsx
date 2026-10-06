@@ -14,13 +14,12 @@ import { StringPair } from '@/components/lesson/string-pair/string-pair';
 import { StringHypotheses } from '@/components/lesson/string-hypotheses/string-hypotheses';
 import { StringHypothesesSummary } from '@/components/lesson/string-hypotheses-summary/string-hypotheses-summary';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
-import { stopByStep } from '@/pages/lesson-three-page/constants';
 import { useLessonThreePage } from '@/pages/lesson-three-page/hooks/use-lesson-three-page';
 
 export function LessonThreePage() {
   const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, hypotheses, toggleHypothesis, ownHypothesis, setOwnHypothesis, finishStatus, intro, length, tension, density, model, checkpoint, complete, preferences, visibleStep, isCompleted, audio, goTo, begin, toggleAudio, completeLength, completeTension, completeDensity, completeModel, passCheckpoint, finishLesson, tensionOpen, answerTension, densityOpen, answerDensity, audioMessage } = useLessonThreePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
-  return <LessonShell {...lessonThreeContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
+  return <LessonShell {...lessonThreeContent} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
     <div className="mb-5 grid gap-3 rounded-lg border border-secondary bg-secondary px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">

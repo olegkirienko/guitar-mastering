@@ -35,7 +35,7 @@ export const lessonFourContent = {
   estimatedTime: '10–14 хв',
   // The step list and the progress stops are visible from the first screen, so they
   // stay in the plain words of the lesson: no term before the screen that earns it.
-  progressStops: ['Описи', 'Малюнок', 'Хвилі всередині хвилі', 'Склад звуку', 'Початок і кінець', 'Перевірка'],
+  stepLabels: { intro: 'Описи', shape: 'Малюнок', overtones: 'Хвилі всередині хвилі', spectrum: 'Склад звуку', envelope: 'Початок і кінець', checkpoint: 'Перевірка', complete: 'Підсумок' },
   // The audio switch and its messages are the same as in Lesson 2.
   preferences: lessonTwoContent.preferences,
   // Text alternative of every drawn wave; the model fills in the numbers.
