@@ -42,7 +42,7 @@ export function LessonFivePage() {
         <div className="space-y-6">
           <ChoiceQuestion question={higher.prediction.question} choices={higher.prediction.choices} correctChoiceId={higher.prediction.correctChoiceId} mode="prediction" onCheck={answerHigherPrediction} />
           {higherOpen && <StringFrequencyLab content={lab} task={higher.task} audio={audio} completed={isCompleted('higher')} onComplete={solveHigher} />}
-        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
+          <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
           {isCompleted('higher') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{higher.pattern}</p>}
         </div>
       </LessonStep>
@@ -54,7 +54,7 @@ export function LessonFivePage() {
         <div className="space-y-6">
           <ChoiceQuestion question={lower.prediction.question} choices={lower.prediction.choices} correctChoiceId={lower.prediction.correctChoiceId} mode="prediction" onCheck={answerLowerPrediction} />
           {lowerOpen && <StringFrequencyLab content={lab} task={lower.task} audio={audio} completed={isCompleted('lower')} onComplete={solveLower} />}
-        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
+          <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
           {isCompleted('lower') && <p className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 font-medium text-primary">{lower.pattern}</p>}
         </div>
       </LessonStep>
@@ -67,7 +67,7 @@ export function LessonFivePage() {
           <RealWorldExperiment title={timbre.guitar.title} withGuitar={timbre.guitar.withGuitar} withoutGuitar={timbre.guitar.withoutGuitar} safetyNote={timbre.guitar.safety} />
           <div className="space-y-3">
             <TimbreSoundComparison content={timbre.comparison} audio={audio} />
-        <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
+            <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />
             <p className="text-sm text-tertiary">{timbre.comparisonNote}</p>
           </div>
           <section aria-labelledby="timbre-questions-title" className="space-y-6">

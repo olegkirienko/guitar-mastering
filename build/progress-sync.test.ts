@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createProgressApi } from '../src/progress/core/utils/progress-api.ts';
 import { mergeProgress } from '../src/progress/core/utils/merge-progress.ts';
 import { ProgressSyncQueue } from '../src/progress/core/utils/progress-sync-queue.ts';
+import { resetLessonProgress } from '../src/progress/use-lesson-progress/utils/reset-lesson-progress.ts';
 import { type ProgressValue } from '../src/progress/core/types.ts';
 
 type Step = 'intro' | 'string' | 'air' | 'checkpoint' | 'complete';
@@ -120,5 +121,63 @@ describe('progress sync core', () => {
       status: 404, headers: { 'content-type': 'application/json' },
     })));
     await expect(createProgressApi().reset('lesson-nope')).rejects.toMatchObject({ code: 'UNKNOWN_LESSON' });
+  });
+
+  it('clears the lesson only after the save in flight has settled', async () => {
+    let release!: () => void;
+    const inFlight = new Promise<void>((resolve) => { release = resolve; });
+    const calls: string[] = [];
+    const save = vi.fn(async (request) => {
+      await inFlight;
+      calls.push('save');
+      return { lessonId: 'stage-01-lesson-01', ...request, revision: 6, updatedAt: '2026-10-06T00:00:00.000Z' };
+    });
+    const queue = new ProgressSyncQueue(save, 1, 1, 5);
+    queue.enqueue(progress('string', ['intro']));
+    const rebuild = vi.fn(() => null);
+
+    const reset = resetLessonProgress({
+      queue,
+      clear: async () => { calls.push('clear'); },
+      rebuild,
+      progress: () => progress('string', ['intro']),
+    });
+    release();
+    await reset;
+
+    expect(calls).toEqual(['save', 'clear']);
+    expect(rebuild).not.toHaveBeenCalled();
+  });
+
+  it('keeps the lesson savable when the clear fails, from the revision the stopped queue reached', async () => {
+    let release!: () => void;
+    const inFlight = new Promise<void>((resolve) => { release = resolve; });
+    const save = vi.fn(async (request) => {
+      await inFlight;
+      return { lessonId: 'stage-01-lesson-01', ...request, revision: 6, updatedAt: '2026-10-06T00:00:00.000Z' };
+    });
+    const queue = new ProgressSyncQueue(save, 1, 1, 5);
+    queue.enqueue(progress('string', ['intro']));
+    const resumed = vi.fn(async (request) => ({ lessonId: 'stage-01-lesson-01', ...request, revision: 7, updatedAt: '2026-10-06T00:00:01.000Z' }));
+    const revisions: number[] = [];
+
+    const reset = resetLessonProgress({
+      queue,
+      clear: async () => { throw new Error('offline'); },
+      rebuild: (revision) => {
+        revisions.push(revision);
+        return new ProgressSyncQueue(resumed, 1, 1, revision);
+      },
+      progress: () => progress('air', ['intro', 'string']),
+    });
+    // An edit made while the reset runs is dropped by the stop, so the fresh queue has to take it again.
+    queue.enqueue(progress('air', ['intro', 'string']));
+    release();
+
+    await expect(reset).rejects.toThrow('offline');
+    // The save in flight raised the revision to 6; starting the fresh queue at 5 would cost a conflict.
+    expect(revisions).toEqual([6]);
+    await vi.waitFor(() => expect(resumed).toHaveBeenCalledTimes(1));
+    expect(resumed.mock.calls[0]?.[0]).toMatchObject({ progress: { currentStepId: 'air' }, baseRevision: 6 });
   });
 });
