@@ -36,9 +36,10 @@ async function openCheckpoint(page: Page) {
   await page.getByRole("button", { name: "Зібрати шлях звуку" }).click();
 }
 
-async function moveLater(page: Page, label: string, times: number) {
-  const button = page.getByRole("button", { name: `Перемістити «${label}» пізніше` });
-  for (let index = 0; index < times; index += 1) await button.click();
+const chainLinks = ["Струну смикнули — вона коливається", "Коливання штовхають сусіднє повітря", "Зміна у повітрі біжить як звукова хвиля", "Хвиля досягає вуха", "Ми сприймаємо звук"];
+
+async function attach(page: Page, label: string) {
+  await page.getByRole("button", { name: label }).click();
 }
 
 test("virtual string: pluck, pause, resume, and stop with state labels", async ({ page }) => {
@@ -150,23 +151,37 @@ test("propagation lab: timed run, pause, and stopping the source with reduced mo
   await expect(page.getByRole("button", { name: "Відтворити" })).toBeVisible();
 });
 
-test("sound-path checkpoint: wrong order, reorder, check, control question", async ({ page }) => {
+test("sound-path checkpoint: the first link is placed, a wrong pick hints, and the chain builds forward", async ({ page }) => {
   await openCheckpoint(page);
-  const items = page.getByRole("listitem").filter({ has: page.getByRole("button", { name: "Раніше" }) });
-  await expect(items.first()).toContainText("Хвиля досягає вуха");
-  await expect(page.getByRole("button", { name: /Перемістити «.*» раніше/ }).first()).toBeDisabled();
+  const chain = page.getByRole("list", { name: "Зібраний ланцюг" }).getByRole("listitem");
+  await expect(chain).toHaveCount(1);
+  await expect(chain.first()).toContainText(chainLinks[0]);
 
-  await page.getByRole("button", { name: "Перевірити порядок" }).click();
-  await expect(page.getByText("Знайдено перший розрив.")).toBeVisible();
+  // The placed link is never offered; the rest follow `initialOrder`.
+  await expect(page.getByRole("button", { name: chainLinks[0] })).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "Що відбувається далі?" }).getByRole("button")).toHaveText([chainLinks[3], chainLinks[4], chainLinks[1], chainLinks[2]]);
+
+  await attach(page, chainLinks[3]);
+  // The hint is local to the link being attached, not to the whole order.
+  const feedback = page.getByRole("status").filter({ hasText: "Ще не ця ланка." });
+  await expect(feedback).toBeVisible();
+  await expect(feedback).toContainText("Що саме штовхає струна одразу після того, як почала коливатися?");
   await expect(page.getByRole("button", { name: "Показати й пояснити" })).toHaveCount(0);
+  await expect(chain).toHaveCount(1);
 
-  await moveLater(page, "Хвиля досягає вуха", 4);
-  await expect(page.getByText("Знайдено перший розрив.")).toHaveCount(0);
-  await moveLater(page, "Ми сприймаємо звук", 3);
-  await expect(items.first()).toContainText("Струну смикнули");
-  await page.getByRole("button", { name: "Перевірити порядок" }).click();
-  await expect(page.getByText("Причинний порядок відновлено.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Перевірити порядок" })).toHaveCount(0);
+  await attach(page, chainLinks[1]);
+  await expect(feedback).toHaveCount(0);
+  await expect(chain).toHaveCount(2);
+  // Focus moves to the next question, not back to the top of the step.
+  await expect(page.getByRole("heading", { name: "Що відбувається далі?" })).toBeFocused();
+
+  for (const label of chainLinks.slice(2)) await attach(page, label);
+  await expect(chain).toHaveCount(5);
+  await expect(chain).toHaveText(chainLinks.map((label) => new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))));
+  const summary = page.getByText("Причинний порядок відновлено.");
+  await expect(summary).toBeVisible();
+  await expect(summary).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Що відбувається далі?" })).toHaveCount(0);
 
   await page.getByRole("radio", { name: "Сама струна" }).check();
   await page.getByRole("button", { name: "Перевірити", exact: true }).click();
@@ -178,12 +193,21 @@ test("sound-path checkpoint: wrong order, reorder, check, control question", asy
   await expect(page.getByRole("button", { name: "Перейти до підсумку" })).toBeVisible();
 });
 
-test("sound-path checkpoint: the answer is revealed after two failed checks", async ({ page }) => {
+test("sound-path checkpoint: the link is revealed after two wrong picks on it", async ({ page }) => {
   await openCheckpoint(page);
-  await page.getByRole("button", { name: "Перевірити порядок" }).click();
-  await page.getByRole("button", { name: "Перевірити порядок" }).click();
+  await attach(page, chainLinks[3]);
+  await expect(page.getByRole("button", { name: "Показати й пояснити" })).toHaveCount(0);
+  await attach(page, chainLinks[4]);
   await page.getByRole("button", { name: "Показати й пояснити" }).click();
+
+  // The reveal attaches only the link it explained, and the question moves on.
+  const chain = page.getByRole("list", { name: "Зібраний ланцюг" }).getByRole("listitem");
+  await expect(chain).toHaveCount(2);
+  await expect(chain.nth(1)).toContainText(chainLinks[1]);
+  await expect(page.getByRole("heading", { name: "Що відбувається далі?" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Показати й пояснити" })).toHaveCount(0);
+
+  for (const label of chainLinks.slice(2)) await attach(page, label);
   await expect(page.getByText("Ось причинний порядок.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Перевірити порядок" })).toHaveCount(0);
   await expect(page.getByText("Що поширюється від гітари до вуха?")).toBeVisible();
 });
