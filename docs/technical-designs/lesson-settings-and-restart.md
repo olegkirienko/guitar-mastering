@@ -74,6 +74,14 @@ in `VirtualGuitarString` (`virtual-guitar-string.tsx:54`).
 - Lesson 1 keeps its control inside `VirtualGuitarString` and does not gain a
   second one.
 
+**The motion setting lives only on the account page**, with no lesson-side
+control and no link to one. Unlike sound, it is chosen once and then holds for
+every experiment, the experiments stay fully usable in either mode, and the
+system's reduced-motion setting already overrides it without anyone switching
+anything. The account page is one click away in the header menu, and the new
+value applies to the lesson as soon as the learner returns, because `staticMode`
+is read from `preferences` on every render.
+
 ## 2. The progress panel keeps only what the learner must act on
 
 **Problem.** `LessonProgressPanel` always prints a status line: «Зберігаємо
@@ -122,20 +130,26 @@ POST /api/v1/progress/:lessonId/reset  →  200 { items: LessonProgressItem[] }
 
 - `createProgressApi` gains `reset(lessonId): Promise<ProgressItem[]>`, which
   posts to the route and maps failures to `ProgressApiError` like `save` does.
-- `useLessonProgress` gains `reset(): Promise<void>` on its controller:
-  1. bump a `generationRef`, which the queue's `saveRemote` closure compares the
-     way it already compares `userIdRef` (`use-lesson-progress.ts:39`), so a
-     queued save is rejected before it reaches the network, and drop
-     `queueRef.current` so `setProgress` cannot enqueue a new one;
+- `ProgressSyncQueue` gains a `stopped` flag and `stop(): Promise<void>`.
+  `enqueue` and `retry` return early once stopped, `flush` keeps its current
+  promise in a field, and `stop()` resolves when that promise settles. Nothing
+  else about the queue changes.
+- `useLessonProgress` gains `reset(): Promise<void>` on its controller
+  (`src/progress/use-lesson-progress/use-lesson-progress.ts`):
+  1. `await queueRef.current?.stop()`, then drop `queueRef.current` so
+     `setProgress` cannot enqueue against the queue that is going away;
   2. await `api.reset(adapter.lessonId)`;
   3. bump `bootstrapAttempt` in both the success and the failure path, so the
      existing effect re-reads the lesson from the server and builds a fresh
      queue; on success that read is `PROGRESS_NOT_FOUND`, which the effect
      already turns into default progress at revision 0;
   4. rethrow the failure so the dialog can report it.
-  A save that is already in flight when the delete lands cannot resurrect the
-  row: it carries `baseRevision > 0`, so it updates no row and fails with
-  `REVISION_CONFLICT`. Only `baseRevision === 0` inserts.
+  Awaiting `stop()` is what makes the reset safe: no save can be in flight when
+  the delete runs, so none can re-create the row afterwards. A guard on the
+  revision would not be enough on its own, because a first save for a lesson
+  carries `baseRevision === 0` and inserts. The existing `userIdRef` check inside
+  `saveRemote` (`use-lesson-progress.ts:39`) stays as it is; it covers an account
+  change, not a reset.
 - The course page needs no change: `useCourseProgress` loads on mount, so
   returning to `/course` after a reset shows the later lessons locked again.
 
@@ -188,9 +202,11 @@ result of a confirmed reset.
 - `server/progress-routes.test.ts`: the route's status codes and the `Allow`
   header on a 405. `server/progress.integration.test.ts`: the delete against a
   real database, including a user whose rows must not be touched.
-- `src/progress/core/utils/progress-api` and `use-lesson-progress`: `reset`
-  re-bootstraps to default progress, a queued save after a reset does not reach
-  the network, and a failed reset rethrows and still leaves a working queue.
+- `ProgressSyncQueue.stop` resolves only after an in-flight save settles and
+  ignores work enqueued afterwards. `src/progress/core/utils/progress-api` and
+  `use-lesson-progress`: `reset` waits for the queue before it calls the API,
+  re-bootstraps to default progress, and a failed reset rethrows and still
+  leaves a working queue.
 - Component tests: `LessonPreferences` writes each preference and disables the
   motion toggle under reduced motion; `LessonProgressPanel` renders nothing when
   synced or pending and the retry when it errors; `LessonAudioToggle` reflects
@@ -217,8 +233,12 @@ result of a confirmed reset.
    later ones for the caller only, returns the remaining items, and answers 401,
    404 and 405 correctly.
 3. **Restart in the lesson.** The modal from the Untitled UI CLI,
-   `LessonRestart`, `useLessonProgress.reset`, the `LessonShell` prop, the five
-   pages wired, and the e2e. *Accepts when* a confirmed reset returns the lesson
+   `LessonRestart`, `ProgressSyncQueue.stop`, `useLessonProgress.reset` and
+   `reset` on `LessonProgressController`, the `LessonShell` prop, and the e2e.
+   The five `src/progress/use-lesson-*-progress.ts` wrappers need no change —
+   they return the controller unchanged — but the five
+   `src/pages/lesson-*-page/hooks/use-lesson-*-page.ts` hooks pass `reset`
+   through to their page. *Accepts when* a confirmed reset returns the lesson
    to step 1 and locks the later lessons, a cancelled one changes nothing, a
    failed one is reported inside the modal and leaves the lesson saving normally,
    and the modal traps focus, closes on `Esc`, and returns focus to the trigger.
