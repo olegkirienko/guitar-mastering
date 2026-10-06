@@ -63,4 +63,9 @@ export const productionProgressCatalog = new ProgressCatalog({
     contentVersion: 1,
     stepIds: ["intro", "shape", "overtones", "spectrum", "envelope", "checkpoint", "complete"],
   },
+  "stage-01-lesson-05": {
+    schemaVersion: 1,
+    contentVersion: 1,
+    stepIds: ["intro", "higher", "lower", "timbre", "path", "complete"],
+  },
 });

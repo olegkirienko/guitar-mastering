@@ -2,7 +2,9 @@ import { lessonOneContent } from '@/data/lessons/stage-01-lesson-01/constants';
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
 import { lessonFourContent } from '@/data/lessons/stage-01-lesson-04/constants';
+import { lessonFiveContent } from '@/data/lessons/stage-01-lesson-05/constants';
 import type { CourseLesson } from '@/progress/course/types';
+import { lessonFiveProgressAdapter } from '@/progress/lesson-five/lesson-five';
 import { lessonFourProgressAdapter } from '@/progress/lesson-four/lesson-four';
 import { lessonOneProgressAdapter } from '@/progress/lesson-one/lesson-one';
 import { lessonThreeProgressAdapter } from '@/progress/lesson-three/lesson-three';
@@ -84,5 +86,23 @@ export const courseLessons: readonly CourseLesson[] = [
       return lessonFourProgressAdapter.stepOrder.filter((step) => lessonFourProgressAdapter.isStepReachable(progress, step));
     },
     currentStep: (value) => lessonFourProgressAdapter.parse(value).currentStepId,
+  },
+  {
+    routeId: '05',
+    lessonId: lessonFiveProgressAdapter.lessonId,
+    title: lessonFiveContent.title,
+    steps: [
+      { id: 'intro', title: lessonFiveContent.intro.title },
+      { id: 'higher', title: lessonFiveContent.higher.title },
+      { id: 'lower', title: lessonFiveContent.lower.title },
+      { id: 'timbre', title: lessonFiveContent.timbre.title },
+      { id: 'path', title: lessonFiveContent.path.title },
+      { id: 'complete', title: lessonFiveContent.complete.title },
+    ],
+    reachableSteps: (value) => {
+      const progress = lessonFiveProgressAdapter.parse(value);
+      return lessonFiveProgressAdapter.stepOrder.filter((step) => lessonFiveProgressAdapter.isStepReachable(progress, step));
+    },
+    currentStep: (value) => lessonFiveProgressAdapter.parse(value).currentStepId,
   },
 ];
