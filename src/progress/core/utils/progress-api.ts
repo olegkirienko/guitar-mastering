@@ -28,6 +28,21 @@ export function createProgressApi<Value extends ProgressValue = ProgressValue>()
       const response = await fetch(`/api/v1/progress/${encodeURIComponent(lessonId)}`);
       return (await responseValue<Value, { item: ProgressItem<Value> }>(response)).item;
     },
+    // Clears the lesson and every lesson after it, and answers with what is left.
+    async reset(lessonId: string): Promise<ProgressItem<Value>[]> {
+      let response: Response;
+      try {
+        response = await fetch(`/api/v1/progress/${encodeURIComponent(lessonId)}/reset`, {
+          method: 'POST',
+          // The server rejects a mutating request without the JSON media type.
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+      } catch {
+        throw new ProgressApiError('NETWORK_ERROR', 'Не вдалося зв’язатися із сервером.');
+      }
+      return (await responseValue<Value, { items: ProgressItem<Value>[] }>(response)).items;
+    },
     async save(lessonId: string, value: SaveProgress<Value>): Promise<ProgressItem<Value>> {
       let response: Response;
       try {

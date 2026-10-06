@@ -40,6 +40,13 @@ export class ProgressCatalog {
   get(lessonId: string): ProgressCatalogEntry | undefined {
     return this.#entries.get(lessonId);
   }
+
+  // The lesson and every lesson after it, in course order. Lesson IDs carry no ordering of their own.
+  idsFrom(lessonId: string): string[] {
+    const ids = [...this.#entries.keys()];
+    const start = ids.indexOf(lessonId);
+    return start === -1 ? [] : ids.slice(start);
+  }
 }
 
 export const productionProgressCatalog = new ProgressCatalog({

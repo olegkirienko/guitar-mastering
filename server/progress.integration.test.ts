@@ -72,6 +72,30 @@ describePostgres("progress PostgreSQL acceptance", () => {
     })).rejects.toMatchObject({ code: "INVALID_PROGRESS" });
   });
 
+  it("resets a lesson and the ones after it, leaving earlier lessons and other accounts untouched", async () => {
+    const auth = new AuthService(pool, config, passwordOperations);
+    const first = await auth.register({ username: "Player.One", password: "correct horse guitar" }, "network-a");
+    const second = await auth.register({ username: "Player.Two", password: "correct horse guitar" }, "network-b");
+    const progress = new ProgressService(pool, auth);
+    for (const lessonId of ["stage-01-lesson-01", "stage-01-lesson-02", "stage-01-lesson-03"]) {
+      await progress.put(first.token, lessonId, payload(0));
+      await progress.put(second.token, lessonId, payload(0));
+    }
+
+    const left = await progress.reset(first.token, "stage-01-lesson-02");
+    expect(left.map((item) => item.lessonId)).toEqual(["stage-01-lesson-01"]);
+    await expect(progress.get(first.token, "stage-01-lesson-02")).rejects.toMatchObject({ code: "PROGRESS_NOT_FOUND" });
+    expect((await progress.list(second.token)).map((item) => item.lessonId))
+      .toEqual(["stage-01-lesson-01", "stage-01-lesson-02", "stage-01-lesson-03"]);
+
+    // A reset of a lesson with nothing stored changes nothing and still answers.
+    await expect(progress.reset(first.token, "stage-01-lesson-03")).resolves.toMatchObject([{ lessonId: "stage-01-lesson-01" }]);
+
+    // The lesson starts from revision 0 again, so the first save after a reset inserts.
+    const restarted = await progress.put(first.token, "stage-01-lesson-02", payload(0));
+    expect(restarted.revision).toBe(1);
+  });
+
   it("allows one optimistic writer and returns durable current data to the loser", async () => {
     const auth = new AuthService(pool, config, passwordOperations);
     const registered = await auth.register({ username: "Player.One", password: "correct horse guitar" }, "network-a");
