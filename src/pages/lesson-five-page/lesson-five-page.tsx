@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight } from '@untitledui/icons';
+import { ArrowLeft, ArrowRight, CheckCircle } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { ChoiceQuestion } from '@/components/lesson/choice-question/choice-question';
 import { LessonProgressPanel } from '@/components/lesson/lesson-progress-panel/lesson-progress-panel';
@@ -14,7 +14,7 @@ import { stopByStep } from '@/pages/lesson-five-page/constants';
 import { useLessonFivePage } from '@/pages/lesson-five-page/hooks/use-lesson-five-page';
 
 export function LessonFivePage() {
-  const { route, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
+  const { route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, intro, higher, lower, complete, lab, preferences, visibleStep, isCompleted, audio, goTo, toggleAudio, startTasks, playIntroPluck, finishStage, finishStatus, playBridge, higherOpen, answerHigherPrediction, solveHigher, lowerOpen, answerLowerPrediction, solveLower, timbre, path, answerTimbre, completePathChain, answerPath, pathQuestionsOpen, audioMessage } = useLessonFivePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   return <LessonShell {...lessonFiveContent} currentStop={stopByStep[visibleStep]} steps={route.steps} currentStepId={route.stepId}>
     <LessonProgressPanel sync={sync} retrySync={retrySync} preferencesSaveFailed={preferencesSaveFailed} />
@@ -109,6 +109,45 @@ export function LessonFivePage() {
       <div className="flex flex-wrap items-center gap-3">
         <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('timbre')}>{path.backLabel}</Button>
         {isCompleted('path') && <Button size="lg" iconTrailing={ArrowRight} onClick={() => goTo('complete')}>{path.nextLabel}</Button>}
+      </div>
+    </div>}
+
+    {visibleStep === 'complete' && <div className="space-y-5">
+      <LessonStep title={complete.title} shouldFocus={focusedStep === 'complete'}>
+        <div className="space-y-6">
+          <section aria-labelledby="lesson-five-chain" className="space-y-3 rounded-lg border border-secondary bg-primary p-5">
+            <h3 id="lesson-five-chain" className="font-semibold text-primary">{complete.chainTitle}</h3>
+            <p className="text-lg font-medium text-primary">{complete.chain}</p>
+            <ul className="space-y-2 text-secondary">
+              {complete.rules.map((rule) => <li key={rule} className="flex gap-2"><CheckCircle className="mt-0.5 size-5 shrink-0 text-success-600" aria-hidden="true" />{rule}</li>)}
+            </ul>
+          </section>
+          <section aria-labelledby="lesson-five-skills" className="space-y-3">
+            <h3 id="lesson-five-skills" className="font-semibold text-primary">{complete.skillsTitle}</h3>
+            <ul className="space-y-2 text-secondary">
+              {complete.skills.map((skill) => <li key={skill} className="flex gap-2"><CheckCircle className="mt-0.5 size-5 shrink-0 text-success-600" aria-hidden="true" />{skill}</li>)}
+            </ul>
+          </section>
+          {progress.completedAt === null && <Button size="lg" onClick={finishStage}>{complete.finishLabel}</Button>}
+          <div ref={finishStatus} tabIndex={-1} role="status" data-testid="finish-status" className="space-y-3 outline-none">
+            {progress.completedAt !== null && <>
+              <p className="font-semibold text-primary">{complete.finished}</p>
+              <p className="text-secondary">{complete.feedback}</p>
+            </>}
+          </div>
+          {progress.completedAt !== null && <section aria-labelledby="lesson-five-bridge" className="rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5">
+            <h3 id="lesson-five-bridge" className="font-semibold text-primary">{complete.bridgeTitle}</h3>
+            <p className="mt-2 text-lg font-medium text-primary">{complete.bridge}</p>
+            <p className="mt-2 text-sm text-tertiary">{complete.bridgeNote}</p>
+            {audio.enabled && <div className="mt-4 flex flex-wrap gap-3">
+              {complete.bridgeSounds.map((item) => <Button key={item.id} color="secondary" size="lg" onClick={() => playBridge(item.frequency)}>{item.label}</Button>)}
+            </div>}
+          </section>}
+        </div>
+      </LessonStep>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button color="link-gray" size="md" className="min-h-11" iconLeading={ArrowLeft} onClick={() => goTo('path')}>{complete.backLabel}</Button>
+        {progress.completedAt !== null && <Button size="lg" href="/course">{complete.backToCourse}</Button>}
       </div>
     </div>}
   </LessonShell>;
