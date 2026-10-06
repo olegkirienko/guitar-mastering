@@ -16,6 +16,7 @@ export const courseLessons: readonly CourseLesson[] = [
     routeId: '01',
     lessonId: lessonOneProgressAdapter.lessonId,
     title: lessonOneContent.title,
+    stageLabel: lessonOneContent.stageLabel,
     steps: [
       { id: 'intro', title: lessonOneContent.intro.title },
       { id: 'string', title: lessonOneContent.string.title },
@@ -33,6 +34,7 @@ export const courseLessons: readonly CourseLesson[] = [
     routeId: '02',
     lessonId: lessonTwoProgressAdapter.lessonId,
     title: lessonTwoContent.title,
+    stageLabel: lessonTwoContent.stageLabel,
     steps: [
       { id: 'intro', title: lessonTwoContent.intro.title },
       { id: 'string', title: lessonTwoContent.string.title },
@@ -53,6 +55,7 @@ export const courseLessons: readonly CourseLesson[] = [
     routeId: '03',
     lessonId: lessonThreeProgressAdapter.lessonId,
     title: lessonThreeContent.title,
+    stageLabel: lessonThreeContent.stageLabel,
     steps: [
       { id: 'intro', title: lessonThreeContent.intro.title },
       { id: 'length', title: lessonThreeContent.length.title },
@@ -72,6 +75,7 @@ export const courseLessons: readonly CourseLesson[] = [
     routeId: '04',
     lessonId: lessonFourProgressAdapter.lessonId,
     title: lessonFourContent.title,
+    stageLabel: lessonFourContent.stageLabel,
     steps: [
       { id: 'intro', title: lessonFourContent.intro.title },
       { id: 'shape', title: lessonFourContent.shape.title },
@@ -91,6 +95,7 @@ export const courseLessons: readonly CourseLesson[] = [
     routeId: '05',
     lessonId: lessonFiveProgressAdapter.lessonId,
     title: lessonFiveContent.title,
+    stageLabel: lessonFiveContent.stageLabel,
     steps: [
       { id: 'intro', title: lessonFiveContent.intro.title },
       { id: 'higher', title: lessonFiveContent.higher.title },
