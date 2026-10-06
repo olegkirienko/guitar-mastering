@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { applicationOrigin, json, lessonOneCompleted, lessonOneId, lessonTwoId, mockAccount } from "./support/mock-account";
 
 // Lesson 2 opens once Lesson 1 is completed.
-async function signIn(page: Page, lessonTwo?: Parameters<typeof mockAccount>[1][string]) {
-  return mockAccount(page, { [lessonOneId]: lessonOneCompleted, ...(lessonTwo ? { [lessonTwoId]: lessonTwo } : {}) });
+async function signIn(page: Page, lessonTwo?: Parameters<typeof mockAccount>[1][string], preferences?: Parameters<typeof mockAccount>[2]) {
+  return mockAccount(page, { [lessonOneId]: lessonOneCompleted, ...(lessonTwo ? { [lessonTwoId]: lessonTwo } : {}) }, preferences);
 }
 
 type Account = Awaited<ReturnType<typeof mockAccount>>;
@@ -100,8 +100,8 @@ test("links Lesson 2 from the home page while Lesson 1 still opens Lesson 1", as
   await expect(page).toHaveURL(/\/lessons\/01\/complete$/);
 });
 
-async function seedStep(page: Page, currentStepId: string, completedStepIds: string[]) {
-  return signIn(page, { currentStepId, completedStepIds });
+async function seedStep(page: Page, currentStepId: string, completedStepIds: string[], preferences?: Parameters<typeof mockAccount>[2]) {
+  return signIn(page, { currentStepId, completedStepIds }, preferences);
 }
 
 async function pressButton(page: Page, name: string) {
@@ -167,7 +167,7 @@ test("runs screen 2 step by step with reduced motion and the keyboard only", asy
 
   await expect(page.getByRole("heading", { name: "Передбач і перевір" })).toBeVisible();
   await expect(page.getByText("Крок 3 із 8")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Покадрово: системне" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Показувати покадрово" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Запустити обидві доріжки" })).toHaveCount(0);
 
   await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці B");
@@ -289,11 +289,11 @@ test("separates loudness from pitch on screen 4 without audio", async ({ page })
 
 test("explains missing and blocked audio and keeps the text path", async ({ page }) => {
   await page.addInitScript(() => { delete (window as unknown as { AudioContext?: unknown }).AudioContext; });
-  await signIn(page);
+  await seedStep(page, "string", ["intro"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
-  await pressButton(page, "Звук: вимкнено");
+  await pressButton(page, "Увімкнути звук");
   await expect(page.getByText("Звук недоступний у цьому браузері.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Звук: вимкнено" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("button", { name: "Увімкнути звук" })).toHaveAttribute("aria-pressed", "false");
 
   const blocked = await page.context().newPage();
   await blocked.addInitScript(() => {
@@ -304,22 +304,23 @@ test("explains missing and blocked audio and keeps the text path", async ({ page
     }
     (window as unknown as { AudioContext: unknown }).AudioContext = BlockedAudioContext;
   });
-  await signIn(blocked);
+  await seedStep(blocked, "string", ["intro"]);
   await blocked.goto(`${applicationOrigin}/lessons/02`);
-  await pressButton(blocked, "Звук: вимкнено");
+  await pressButton(blocked, "Увімкнути звук");
   await expect(blocked.getByText("Браузер не дозволив увімкнути звук.", { exact: false })).toBeVisible();
-  await pressButton(blocked, "Немає гітари — відкрити віртуальну струну");
+  // After a refusal the switch offers another attempt.
+  await expect(blocked.getByRole("button", { name: "Спробувати ввімкнути звук" })).toBeVisible();
+  // The text path of the experiment stays open without any sound.
   await expect(blocked.getByRole("heading", { name: "Одна струна — два звуки" })).toBeVisible();
 });
 
 test("plays capped tones one at a time and silences them when the tab is hidden", async ({ page }) => {
   await installFakeAudio(page);
-  await seedStep(page, "repeats", ["intro", "string"]);
+  await seedStep(page, "repeats", ["intro", "string"], { prefersStatic: true });
   await page.goto(`${applicationOrigin}/lessons/02`);
 
-  await pressButton(page, "Звук: вимкнено");
-  await expect(page.getByRole("button", { name: "Звук: увімкнено" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Показувати покадрово" }).click();
+  await pressButton(page, "Увімкнути звук");
+  await expect(page.getByRole("button", { name: "Вимкнути звук" })).toHaveAttribute("aria-pressed", "true");
   await answer(page, "Де повторів буде більше, поки час іде однаково?", "На доріжці A");
   await pressButton(page, "Показати підсумок");
   await expect(page.getByRole("button", { name: "Послухати A" })).toHaveCount(0);
@@ -349,7 +350,7 @@ test("offers listening in the lab only for a value that was predicted and checke
   await seedStep(page, "frequency", ["intro", "string", "repeats"]);
   await page.goto(`${applicationOrigin}/lessons/02`);
 
-  await pressButton(page, "Звук: вимкнено");
+  await pressButton(page, "Увімкнути звук");
   for (let row = 0; row < 3; row += 1) await pressButton(page, "Відкрити наступний рядок");
   const lab = page.getByRole("region", { name: "Змінюй частоту" });
   await expect(lab.getByRole("button", { name: "Послухати" })).toBeVisible();
@@ -371,10 +372,9 @@ async function moveCardTo(page: Page, card: string, direction: "Раніше" | 
 
 test("completes the whole lesson at 320 px with the keyboard only and no audio", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  const account = await signIn(page);
+  const account = await signIn(page, undefined, { prefersStatic: true });
   await page.goto(`${applicationOrigin}/lessons/02`);
 
-  await pressButton(page, "Показувати покадрово");
   await pressButton(page, "Немає гітари — відкрити віртуальну струну");
   await pressButton(page, "Смикнути відкриту");
   await pressButton(page, "Притиснути й смикнути");
