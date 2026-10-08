@@ -3,9 +3,11 @@ import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
 import { lessonThreeContent } from '@/data/lessons/stage-01-lesson-03/constants';
 import { lessonFourContent } from '@/data/lessons/stage-01-lesson-04/constants';
 import { lessonFiveContent } from '@/data/lessons/stage-01-lesson-05/constants';
+import { lessonSixContent } from '@/data/lessons/stage-02-lesson-01/constants';
 import type { CourseLesson } from '@/progress/course/types';
 import { lessonFiveProgressAdapter } from '@/progress/lesson-five/lesson-five';
 import { lessonFourProgressAdapter } from '@/progress/lesson-four/lesson-four';
+import { lessonSixProgressAdapter } from '@/progress/stage-02-lesson-01/stage-02-lesson-01';
 import { lessonOneProgressAdapter } from '@/progress/lesson-one/lesson-one';
 import { lessonThreeProgressAdapter } from '@/progress/lesson-three/lesson-three';
 import { lessonTwoProgressAdapter } from '@/progress/lesson-two/lesson-two';
@@ -109,5 +111,25 @@ export const courseLessons: readonly CourseLesson[] = [
       return lessonFiveProgressAdapter.stepOrder.filter((step) => lessonFiveProgressAdapter.isStepReachable(progress, step));
     },
     currentStep: (value) => lessonFiveProgressAdapter.parse(value).currentStepId,
+  },
+  {
+    routeId: '06',
+    lessonId: lessonSixProgressAdapter.lessonId,
+    title: lessonSixContent.title,
+    stageLabel: lessonSixContent.stageLabel,
+    steps: [
+      { id: 'intro', title: lessonSixContent.intro.title },
+      { id: 'same-name', title: lessonSixContent.sameName.title },
+      { id: 'doubler', title: lessonSixContent.doubler.title },
+      { id: 'octave', title: lessonSixContent.octave.title },
+      { id: 'guitar', title: lessonSixContent.guitar.title },
+      { id: 'checkpoint', title: lessonSixContent.checkpoint.title },
+      { id: 'complete', title: lessonSixContent.complete.title },
+    ],
+    reachableSteps: (value) => {
+      const progress = lessonSixProgressAdapter.parse(value);
+      return lessonSixProgressAdapter.stepOrder.filter((step) => lessonSixProgressAdapter.isStepReachable(progress, step));
+    },
+    currentStep: (value) => lessonSixProgressAdapter.parse(value).currentStepId,
   },
 ];

@@ -35,9 +35,10 @@ describe('groupByStage', () => {
     expect(groupByStage([])).toEqual([]);
   });
 
-  it('groups today\'s catalog into the one delivered stage', () => {
+  it('groups today\'s catalog into the delivered stages in course order', () => {
     const stages = groupByStage(courseLessons.map((lesson) => view(lesson.routeId, lesson.stageLabel, 'not-started')));
-    expect(stages).toHaveLength(1);
-    expect(stages[0]).toMatchObject({ label: 'Етап I · Звук', completed: 0, total: courseLessons.length });
+    expect(stages.map((stage) => stage.label)).toEqual(['Етап I · Звук', 'Етап II · Музична система']);
+    expect(stages.reduce((sum, stage) => sum + stage.total, 0)).toBe(courseLessons.length);
+    expect(stages.every((stage) => stage.completed === 0)).toBe(true);
   });
 });
