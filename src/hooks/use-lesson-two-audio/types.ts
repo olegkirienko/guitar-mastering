@@ -20,6 +20,8 @@ export interface LessonTwoAudio {
   enable(): Promise<boolean>;
   playTone(frequency: number, gain: number): void;
   playPluck(frequency: number, gain?: number): void;
+  // A tone that glides from one frequency to another with no steps in between.
+  playSweep(from: number, to: number, seconds: number, gain: number): void;
   playPartials(sound: PartialsSound, gain?: number): void;
   stop(): void;
 }
