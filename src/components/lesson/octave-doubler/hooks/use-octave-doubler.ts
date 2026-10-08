@@ -42,7 +42,8 @@ export function useOctaveDoubler({ content, audio, gain, onDone }: Pick<OctaveDo
     setTripled(null);
     setPrediction(null);
     setAnnouncement(content.changed(next));
-    finish(nextDoubled, nextHalved, listened || play(next));
+    const played = play(next);
+    finish(nextDoubled, nextHalved, listened || played);
   };
 
   const tryTriple = () => {

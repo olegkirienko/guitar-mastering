@@ -69,7 +69,7 @@ test("walks the octave lesson with the keyboard, without audio, with reduced mot
   // `same-name`: predict first; the cards appear after the answer, and with audio off the answer is enough.
   await expect(page).toHaveURL(`${applicationOrigin}/lessons/06/same-name`);
   await expect(page.getByRole("button", { name: /Послухати 220/ })).toHaveCount(0);
-  await answer(page, "Який із них інший?", "660 Гц");
+  await answer(page, "Який?", "660 Гц");
   await expect(page.getByText("Три з чотирьох — наче один звук на різній висоті", { exact: false })).toBeVisible();
   await press(page.getByRole("button", { name: "Далі", exact: true }));
 
