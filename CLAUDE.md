@@ -116,5 +116,9 @@ Every turn resends the whole conversation, so keep it small:
    `corepack pnpm evidence:delivery --sha <merged SHA>` and
    `corepack pnpm smoke:production <origin>`.
 6. **State** lives in the PR, including its review comments, and the design.
-   There is no other workflow state. Run one step per session (`/clear` between
-   steps) and stop with the prompt for the next step.
+   There is no other workflow state. A session may combine steps that do not
+   need separate context: design and its review dispatch; review fixes;
+   approval, merge, and delivery check. Start a new session (`/clear`) before
+   implementing a slice and whenever the context holds large diffs, long
+   files, or logs. The review is never run by the session that wrote the
+   change. Stop with the prompt for the next step.
