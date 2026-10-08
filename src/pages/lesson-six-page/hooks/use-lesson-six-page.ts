@@ -62,6 +62,15 @@ export function useLessonSixPage() {
   const sameNameDone = (sameNamePredicted || isCompleted('same-name'))
     && (!audio.enabled || sameNameFrequencies.every((frequency) => heard.includes(frequency)));
 
+  const passCheckpoint = useCallback(() => setProgress((current) => ({
+    ...current,
+    checkpointPassed: true,
+    completedStepIds: Array.from(new Set<LessonSixStepId>([...current.completedStepIds, 'checkpoint'])),
+  })), [setProgress]);
+  const finishDoubler = useCallback(() => completeStep('doubler'), [completeStep]);
+  // Only the right answer opens «Далі» on `octave`; a wrong one can be tried again.
+  const answerOctave = (_choiceId: string, isCorrect: boolean) => { if (isCorrect) completeStep('octave'); };
+
   const finishLesson = () => {
     setFocusFinishStatus(true);
     setProgress((current) => ({
@@ -88,6 +97,7 @@ export function useLessonSixPage() {
     focusedStep, visibleStep, isCompleted, audio, goTo, advance, toggleAudio, audioMessage, finishLesson, finishStatus,
     betweenFound, findBetween: () => setBetweenFound((current) => current + 1),
     answerSameName: () => setSameNamePredicted(true), sameNamePredicted: sameNamePredicted || isCompleted('same-name'),
+    passCheckpoint, finishDoubler, answerOctave,
     listen, isHeard: (frequency: number) => heard.includes(frequency), sameNameDone,
   };
 }
