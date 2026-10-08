@@ -4,6 +4,7 @@ import { lessonOneContent } from '../src/data/lessons/stage-01-lesson-01/constan
 import { lessonTwoContent } from '../src/data/lessons/stage-01-lesson-02/constants.ts';
 import { lessonThreeContent } from '../src/data/lessons/stage-01-lesson-03/constants.ts';
 import { lessonFourContent } from '../src/data/lessons/stage-01-lesson-04/constants.ts';
+import { lessonSixContent } from '../src/data/lessons/stage-02-lesson-01/constants.ts';
 import { lessonFiveContent } from '../src/data/lessons/stage-01-lesson-05/constants.ts';
 import { courseLessons } from '../src/progress/course/constants.ts';
 
@@ -20,6 +21,7 @@ const contentByRoute = {
   '03': lessonThreeContent,
   '04': lessonFourContent,
   '05': lessonFiveContent,
+  '06': lessonSixContent,
 };
 
 describe('deriveStepProgress', () => {

@@ -17,6 +17,7 @@ const two = 'stage-01-lesson-02';
 const three = 'stage-01-lesson-03';
 const four = 'stage-01-lesson-04';
 const five = 'stage-01-lesson-05';
+const six = 'stage-02-lesson-01';
 
 function item(lessonId: string, progress: Partial<ProgressValue>, updatedAt: string): ProgressItem {
   return {
@@ -54,6 +55,7 @@ describe('resolveResumePath', () => {
       item(three, { currentStepId: 'complete', completedAt: '2026-10-03T10:00:00.000Z' }, '2026-10-03T10:00:00.000Z'),
       item(four, { currentStepId: 'complete', completedAt: '2026-10-04T10:00:00.000Z' }, '2026-10-04T10:00:00.000Z'),
       item(five, { currentStepId: 'complete', completedAt: '2026-10-04T11:00:00.000Z' }, '2026-10-04T11:00:00.000Z'),
+      item(six, { currentStepId: 'complete', completedAt: '2026-10-04T09:00:00.000Z' }, '2026-10-04T09:00:00.000Z'),
     ];
     expect(resolveResumePath(items, courseLessons)).toBe('/lessons/01/string');
   });
@@ -170,6 +172,21 @@ describe('lesson gate', () => {
     expect(isLessonOpen('05', beforeFour)).toBe(false);
     expect(isLessonOpen('05', [...beforeFour, item(four, { currentStepId: 'checkpoint', checkpointPassed: true }, '2026-10-04T10:00:00.000Z')])).toBe(false);
     expect(isLessonOpen('05', [...beforeFour, done(four, '4')])).toBe(true);
+  });
+
+  it('keeps /lessons/06/* closed (redirect to /course) until Lesson 5 has completedAt', () => {
+    const done = (lessonId: string, day: string) => item(lessonId, { currentStepId: 'complete', completedAt: `2026-10-0${day}T10:00:00.000Z` }, `2026-10-0${day}T10:00:00.000Z`);
+    const beforeFive = [lessonOneDone, done(two, '2'), done(three, '3'), done(four, '4')];
+    expect(isLessonOpen('06', [])).toBe(false);
+    expect(isLessonOpen('06', beforeFive)).toBe(false);
+    expect(isLessonOpen('06', [...beforeFive, item(five, { currentStepId: 'path' }, '2026-10-05T10:00:00.000Z')])).toBe(false);
+    expect(isLessonOpen('06', [...beforeFive, done(five, '5')])).toBe(true);
+  });
+
+  it('lists Lesson 6 with the same step ids as the server catalog', () => {
+    const lesson = courseLessons.find((candidate) => candidate.routeId === '06');
+    expect(lesson?.lessonId).toBe('stage-02-lesson-01');
+    expect(lesson?.steps.map((step) => step.id)).toEqual([...productionProgressCatalog.get('stage-02-lesson-01')?.stepIds ?? []]);
   });
 
   it('opens the first lesson without progress and each next one after its predecessor', () => {
