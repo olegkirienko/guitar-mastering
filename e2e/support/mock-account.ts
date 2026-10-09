@@ -13,6 +13,7 @@ export const lessonFourId = "stage-01-lesson-04";
 export const lessonFiveId = "stage-01-lesson-05";
 export const lessonSixId = "stage-02-lesson-01";
 export const lessonSevenId = "stage-02-lesson-02";
+export const lessonEightId = "stage-02-lesson-03";
 
 type Progress = { currentStepId: string; completedStepIds: string[]; checkpointPassed: boolean; completedAt: string | null };
 type Preferences = typeof user.preferences;
@@ -51,6 +52,13 @@ export const lessonSixCompleted: Progress = {
   completedStepIds: ["intro", "same-name", "doubler", "octave", "guitar", "checkpoint", "complete"],
   checkpointPassed: true,
   completedAt: "2026-10-06T10:00:00.000Z",
+};
+
+export const lessonSevenCompleted: Progress = {
+  currentStepId: "complete",
+  completedStepIds: ["intro", "keys", "steps", "compare", "semitone", "deeper", "guitar", "checkpoint", "complete"],
+  checkpointPassed: true,
+  completedAt: "2026-10-07T10:00:00.000Z",
 };
 
 export const lessonFiveCompleted: Progress = {
