@@ -10,5 +10,8 @@ export interface KeyRowProps {
   // Keys drawn narrow and dark; the other keys are wide.
   narrowKeys?: readonly number[];
   // Text over a key's number, e.g. a revealed letter.
+  // A line break in a caption puts the next name on its own line.
   captions?: Readonly<Record<number, string>>;
+  // Keys found earlier: drawn with a dashed accent border, so the learner sees the trail.
+  trail?: readonly number[];
 }
