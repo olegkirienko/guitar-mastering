@@ -115,6 +115,16 @@ export function useLessonTwoAudio(
     }, gain, toneDurationSeconds);
   }, [play]);
 
+  const playSweep = useCallback((from: number, to: number, seconds: number, gain: number) => {
+    void play((activeContext) => {
+      const oscillator = activeContext.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(from, activeContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(to, activeContext.currentTime + seconds);
+      return oscillator;
+    }, gain, seconds);
+  }, [play]);
+
   const playPluck = useCallback((frequency: number, gain = 0.1) => {
     void play((activeContext) => {
       const buffer = activeContext.createBufferSource();
@@ -151,5 +161,5 @@ export function useLessonTwoAudio(
     if (!audioEnabled) stop();
   }, [audioEnabled, stop]);
 
-  return { enabled: audioEnabled, status, enable, playTone, playPluck, playPartials, stop };
+  return { enabled: audioEnabled, status, enable, playTone, playSweep, playPluck, playPartials, stop };
 }
