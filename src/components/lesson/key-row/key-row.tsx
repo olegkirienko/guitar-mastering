@@ -6,7 +6,7 @@ import { cx } from '@/utils/cx';
 
 export function KeyRow({ label, count, base, keyLabel, onPlay, highlighted = [] }: KeyRowProps) {
   const { buttons, onKeyDown } = useKeyRow(count);
-  return <div role="group" aria-label={label} className="grid grid-cols-7 gap-1 sm:grid-cols-13">
+  return <div role="group" aria-label={label} className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1 sm:grid-cols-13">
     {Array.from({ length: count }, (_, key) => {
       const narrow = narrowKeys.includes(key);
       return <button
