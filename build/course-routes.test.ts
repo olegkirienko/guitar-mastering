@@ -20,6 +20,7 @@ const five = 'stage-01-lesson-05';
 const six = 'stage-02-lesson-01';
 const seven = 'stage-02-lesson-02';
 const eight = 'stage-02-lesson-03';
+const nine = 'stage-02-lesson-04';
 
 function item(lessonId: string, progress: Partial<ProgressValue>, updatedAt: string): ProgressItem {
   return {
@@ -60,6 +61,7 @@ describe('resolveResumePath', () => {
       item(six, { currentStepId: 'complete', completedAt: '2026-10-04T09:00:00.000Z' }, '2026-10-04T09:00:00.000Z'),
       item(seven, { currentStepId: 'complete', completedAt: '2026-10-04T08:00:00.000Z' }, '2026-10-04T08:00:00.000Z'),
       item(eight, { currentStepId: 'complete', completedAt: '2026-10-04T07:00:00.000Z' }, '2026-10-04T07:00:00.000Z'),
+      item(nine, { currentStepId: 'complete', completedAt: '2026-10-04T06:00:00.000Z' }, '2026-10-04T06:00:00.000Z'),
     ];
     expect(resolveResumePath(items, courseLessons)).toBe('/lessons/01/string');
   });
@@ -232,5 +234,18 @@ describe('course catalog', () => {
     const lesson = courseLessons.find((candidate) => candidate.routeId === '08');
     expect(lesson?.lessonId).toBe(eight);
     expect(lesson?.steps.map((step) => step.id)).toEqual([...productionProgressCatalog.get(eight)?.stepIds ?? []]);
+  });
+
+  it('keeps /lessons/09/* closed until Lesson 8 has completedAt', () => {
+    const done = item(eight, { currentStepId: 'complete', completedAt: '2026-10-07T10:00:00.000Z' }, '2026-10-07T10:00:00.000Z');
+    expect(isLessonOpen('09', [])).toBe(false);
+    expect(isLessonOpen('09', [item(eight, { currentStepId: 'guitar' }, '2026-10-07T09:00:00.000Z')])).toBe(false);
+    expect(isLessonOpen('09', [done])).toBe(true);
+  });
+
+  it('lists Lesson 9 with the same step ids as the server catalog', () => {
+    const lesson = courseLessons.find((candidate) => candidate.routeId === '09');
+    expect(lesson?.lessonId).toBe(nine);
+    expect(lesson?.steps.map((step) => step.id)).toEqual([...productionProgressCatalog.get(nine)?.stepIds ?? []]);
   });
 });
