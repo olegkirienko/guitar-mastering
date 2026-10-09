@@ -5,6 +5,8 @@ export interface NoteNameTask {
   question: string;
   choices: readonly ChoiceQuestionChoice[];
   correctChoiceId: string;
+  // A white key shown on the keyboard above the question, without its letter.
+  highlightKey?: number;
 }
 
 export interface NoteNameCheckpointContent {
@@ -12,8 +14,16 @@ export interface NoteNameCheckpointContent {
   solved: string;
 }
 
+export interface NoteNameCheckpointKeys {
+  label: string;
+  base: number;
+  keyLabel: (key: number, frequency: string) => string;
+  onPlay: (key: number) => void;
+}
+
 export interface NoteNameCheckpointProps {
   content: NoteNameCheckpointContent;
+  keys: NoteNameCheckpointKeys;
   passed: boolean;
   onPass: () => void;
 }

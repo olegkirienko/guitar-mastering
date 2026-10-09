@@ -117,7 +117,8 @@ test("walks the note names lesson with the keyboard, without audio, at 320 px", 
 
   // `checkpoint`: all four tasks have to be solved before completion opens.
   await expect(next(page)).toHaveCount(0);
-  await answer(page, "Клавіша 7 біла", "G");
+  await expect(keyButton(page, 7)).toBeVisible();
+  await answer(page, "Яка літера в підсвіченої", "G");
   await answer(page, "лише один півтон", "E і F");
   await answer(page, "на 7 півтонів вище за C", "G");
   expect(saved(account).checkpointPassed).toBe(false);

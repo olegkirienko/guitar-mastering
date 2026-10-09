@@ -166,9 +166,10 @@ export const lessonEightContent = {
     tasks: [
       {
         id: 'name',
-        question: `Клавіша ${taskKey} біла. Яка в неї літера?`,
+        question: 'Яка літера в підсвіченої білої клавіші?',
         choices: letterChoices(taskKeyName, `Порахуй білі від C (клавіша ${keyOfName('C')}): ${noteNames.slice(0, noteNames.indexOf(taskKeyName) + 1).join(', ')}.`),
         correctChoiceId: taskKeyName,
+        highlightKey: taskKey,
       },
       {
         id: 'pair',

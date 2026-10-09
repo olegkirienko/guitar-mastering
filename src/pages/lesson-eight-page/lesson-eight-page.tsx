@@ -168,7 +168,7 @@ export function LessonEightPage() {
 
     {visibleStep === 'checkpoint' && <div className="space-y-5">
       <LessonStep title={checkpoint.title} intro={checkpoint.instruction} shouldFocus={focusedStep === 'checkpoint'}>
-        <NoteNameCheckpoint content={checkpoint} passed={progress.checkpointPassed} onPass={passCheckpoint} />
+        <NoteNameCheckpoint content={checkpoint} keys={{ label: keyRowLabel, base: baseFrequency, keyLabel: (key, frequency) => lessonEightContent.keyLabel(key, isWhiteKey(key) ? colors.white : colors.black, frequency, null), onPlay: pressKey }} passed={progress.checkpointPassed} onPass={passCheckpoint} />
       </LessonStep>
       <LessonStepNav back={{ label: checkpoint.backLabel, onClick: () => goTo('guitar') }} next={progress.checkpointPassed ? { label: checkpoint.nextLabel, onClick: () => goTo('complete') } : undefined} />
     </div>}
