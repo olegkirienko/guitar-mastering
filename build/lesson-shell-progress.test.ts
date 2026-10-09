@@ -8,6 +8,7 @@ import { lessonSixContent } from '../src/data/lessons/stage-02-lesson-01/constan
 import { lessonSevenContent } from '../src/data/lessons/stage-02-lesson-02/constants.ts';
 import { lessonEightContent } from '../src/data/lessons/stage-02-lesson-03/constants.ts';
 import { lessonNineContent } from '../src/data/lessons/stage-02-lesson-04/constants.ts';
+import { lessonTenContent } from '../src/data/lessons/stage-02-lesson-05/constants.ts';
 import { lessonFiveContent } from '../src/data/lessons/stage-01-lesson-05/constants.ts';
 import { courseLessons } from '../src/progress/course/constants.ts';
 
@@ -28,6 +29,7 @@ const contentByRoute = {
   '07': lessonSevenContent,
   '08': lessonEightContent,
   '09': lessonNineContent,
+  '10': lessonTenContent,
 };
 
 describe('deriveStepProgress', () => {

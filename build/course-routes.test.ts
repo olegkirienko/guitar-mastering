@@ -21,6 +21,7 @@ const six = 'stage-02-lesson-01';
 const seven = 'stage-02-lesson-02';
 const eight = 'stage-02-lesson-03';
 const nine = 'stage-02-lesson-04';
+const ten = 'stage-02-lesson-05';
 
 function item(lessonId: string, progress: Partial<ProgressValue>, updatedAt: string): ProgressItem {
   return {
@@ -62,6 +63,7 @@ describe('resolveResumePath', () => {
       item(seven, { currentStepId: 'complete', completedAt: '2026-10-04T08:00:00.000Z' }, '2026-10-04T08:00:00.000Z'),
       item(eight, { currentStepId: 'complete', completedAt: '2026-10-04T07:00:00.000Z' }, '2026-10-04T07:00:00.000Z'),
       item(nine, { currentStepId: 'complete', completedAt: '2026-10-04T06:00:00.000Z' }, '2026-10-04T06:00:00.000Z'),
+      item(ten, { currentStepId: 'complete', completedAt: '2026-10-04T05:00:00.000Z' }, '2026-10-04T05:00:00.000Z'),
     ];
     expect(resolveResumePath(items, courseLessons)).toBe('/lessons/01/string');
   });
@@ -247,5 +249,19 @@ describe('course catalog', () => {
     const lesson = courseLessons.find((candidate) => candidate.routeId === '09');
     expect(lesson?.lessonId).toBe(nine);
     expect(lesson?.steps.map((step) => step.id)).toEqual([...productionProgressCatalog.get(nine)?.stepIds ?? []]);
+  });
+
+  it('keeps /lessons/10/* closed until Lesson 9 has completedAt', () => {
+    const done = item(nine, { currentStepId: 'complete', completedAt: '2026-10-09T10:00:00.000Z' }, '2026-10-09T10:00:00.000Z');
+    expect(isLessonOpen('10', [])).toBe(false);
+    expect(isLessonOpen('10', [item(nine, { currentStepId: 'guitar' }, '2026-10-09T09:00:00.000Z')])).toBe(false);
+    expect(isLessonOpen('10', [done])).toBe(true);
+    expect(isLessonOpen('09', [done])).toBe(false);
+  });
+
+  it('lists Lesson 10 with the same step ids as the server catalog', () => {
+    const lesson = courseLessons.find((candidate) => candidate.routeId === '10');
+    expect(lesson?.lessonId).toBe(ten);
+    expect(lesson?.steps.map((step) => step.id)).toEqual([...productionProgressCatalog.get(ten)?.stepIds ?? []]);
   });
 });
