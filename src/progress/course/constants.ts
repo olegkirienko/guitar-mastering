@@ -5,11 +5,13 @@ import { lessonFourContent } from '@/data/lessons/stage-01-lesson-04/constants';
 import { lessonFiveContent } from '@/data/lessons/stage-01-lesson-05/constants';
 import { lessonSixContent } from '@/data/lessons/stage-02-lesson-01/constants';
 import { lessonSevenContent } from '@/data/lessons/stage-02-lesson-02/constants';
+import { lessonEightContent } from '@/data/lessons/stage-02-lesson-03/constants';
 import type { CourseLesson } from '@/progress/course/types';
 import { lessonFiveProgressAdapter } from '@/progress/lesson-five/lesson-five';
 import { lessonFourProgressAdapter } from '@/progress/lesson-four/lesson-four';
 import { lessonSixProgressAdapter } from '@/progress/stage-02-lesson-01/stage-02-lesson-01';
 import { lessonSevenProgressAdapter } from '@/progress/stage-02-lesson-02/stage-02-lesson-02';
+import { lessonEightProgressAdapter } from '@/progress/stage-02-lesson-03/stage-02-lesson-03';
 import { lessonOneProgressAdapter } from '@/progress/lesson-one/lesson-one';
 import { lessonThreeProgressAdapter } from '@/progress/lesson-three/lesson-three';
 import { lessonTwoProgressAdapter } from '@/progress/lesson-two/lesson-two';
@@ -155,5 +157,26 @@ export const courseLessons: readonly CourseLesson[] = [
       return lessonSevenProgressAdapter.stepOrder.filter((step) => lessonSevenProgressAdapter.isStepReachable(progress, step));
     },
     currentStep: (value) => lessonSevenProgressAdapter.parse(value).currentStepId,
+  },
+  {
+    routeId: '08',
+    lessonId: lessonEightProgressAdapter.lessonId,
+    title: lessonEightContent.title,
+    stageLabel: lessonEightContent.stageLabel,
+    steps: [
+      { id: 'intro', title: lessonEightContent.intro.title },
+      { id: 'look', title: lessonEightContent.look.title },
+      { id: 'pattern', title: lessonEightContent.pattern.title },
+      { id: 'names', title: lessonEightContent.names.title },
+      { id: 'anchor', title: lessonEightContent.anchor.title },
+      { id: 'guitar', title: lessonEightContent.guitar.title },
+      { id: 'checkpoint', title: lessonEightContent.checkpoint.title },
+      { id: 'complete', title: lessonEightContent.complete.title },
+    ],
+    reachableSteps: (value) => {
+      const progress = lessonEightProgressAdapter.parse(value);
+      return lessonEightProgressAdapter.stepOrder.filter((step) => lessonEightProgressAdapter.isStepReachable(progress, step));
+    },
+    currentStep: (value) => lessonEightProgressAdapter.parse(value).currentStepId,
   },
 ];
