@@ -100,4 +100,9 @@ export const productionProgressCatalog = new ProgressCatalog({
     contentVersion: 1,
     stepIds: ["intro", "octave", "count", "gaps", "walk", "guitar", "complete"],
   },
+  "stage-03-lesson-01": {
+    schemaVersion: 1,
+    contentVersion: 1,
+    stepIds: ["intro", "press", "twelve", "explorer", "guitar", "checkpoint", "complete"],
+  },
 });

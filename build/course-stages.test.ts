@@ -37,7 +37,7 @@ describe('groupByStage', () => {
 
   it('groups today\'s catalog into the delivered stages in course order', () => {
     const stages = groupByStage(courseLessons.map((lesson) => view(lesson.routeId, lesson.stageLabel, 'not-started')));
-    expect(stages.map((stage) => stage.label)).toEqual(['Етап I · Звук', 'Етап II · Музична система']);
+    expect(stages.map((stage) => stage.label)).toEqual(['Етап I · Звук', 'Етап II · Музична система', 'Етап III · Гриф']);
     expect(stages.reduce((sum, stage) => sum + stage.total, 0)).toBe(courseLessons.length);
     expect(stages.every((stage) => stage.completed === 0)).toBe(true);
   });
