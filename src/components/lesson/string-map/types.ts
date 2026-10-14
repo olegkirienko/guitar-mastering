@@ -3,6 +3,8 @@ export interface StringMapContent {
   label: string;
   stringButtons: string;
   fretPicker: string;
+  // «товста» / «тонка»: shown next to every string number.
+  weight: (number: number) => string;
 }
 
 export interface StringMapProps {

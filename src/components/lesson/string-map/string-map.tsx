@@ -34,10 +34,10 @@ export function StringMap({ content, revealed, selected = null, highlighted = []
         aria-label={describeString(number)}
         onClick={() => onSelectString(number)}
         className={cx(
-          'min-h-11 min-w-11 rounded-md border text-sm font-semibold tabular-nums outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2',
+          'min-h-11 min-w-11 rounded-md border px-0.5 text-sm font-semibold tabular-nums outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2',
           selected === number ? 'border-utility-brand-600 bg-utility-brand-600 text-white' : 'border-secondary bg-primary text-primary',
         )}
-      >{number}</button>)}
+      ><span aria-hidden="true">{number}</span><span aria-hidden="true" className="block text-xs font-normal">{content.weight(number)}</span></button>)}
     </div>}
     {selectableFrets.length > 0 && <div role="group" aria-label={content.fretPicker} className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1">
       {selectableFrets.map((item) => <button

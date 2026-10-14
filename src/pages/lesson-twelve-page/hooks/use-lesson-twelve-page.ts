@@ -87,6 +87,8 @@ export function useLessonTwelvePage() {
   const pressedFrequency = (number: number, atFret: number) => fretFrequency(stringByNumber(number).frequency, atFret);
   const playPair = (number: number, atFret: number) => playSequence([pressedFrequency(number, atFret), openStringAfter(number)?.frequency ?? 0]);
 
+  const playOctaves = () => playSequence([stringByNumber(6).frequency, stringByNumber(1).frequency]);
+
   const touchString = (number: number) => {
     setHeardStrings((current) => current.includes(number) ? current : [...current, number]);
     pluck(stringByNumber(number).frequency);
@@ -158,7 +160,7 @@ export function useLessonTwelvePage() {
   return {
     restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled: lessonPreferences.audioEnabled,
     focusedStep, visibleStep, isCompleted, audio, goTo, advance, toggleAudio, audioMessage, finishLesson, finishStatus,
-    pluck, playAll, stopAll, playPair, passCheckpoint, completeStep,
+    pluck, playAll, stopAll, playPair, playOctaves, passCheckpoint, completeStep,
 
     heardStrings, touchString, stringsPredicted: stringsPredicted || isCompleted('strings'), answerStringsPrediction: () => setStringsPredicted(true),
     submitOrder: () => setOrderSubmitted(true), stringsDone,

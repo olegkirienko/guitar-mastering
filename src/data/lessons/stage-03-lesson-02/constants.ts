@@ -2,7 +2,7 @@ import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
 import { lessonElevenContent } from '@/data/lessons/stage-03-lesson-01/constants';
 import { hertz } from '@/data/lessons/stage-03-lesson-01-model/utils/frets';
 import { openStrings } from '@/data/lessons/stage-03-lesson-02-model/constants';
-import { fretSteps, fretToNextString, linkedStrings, stringByNumber, totalSemitones } from '@/data/lessons/stage-03-lesson-02-model/utils/strings';
+import { fretSteps, fretToNextString, linkedStrings, totalSemitones } from '@/data/lessons/stage-03-lesson-02-model/utils/strings';
 
 // How many strings the learner must touch on `strings`, and the pairs found on `link`.
 export const requiredHeardStrings = 3;
@@ -29,12 +29,11 @@ export const lessonTwelveContent = {
     label: 'Шість струн гітари: 6-та знизу — найтовща, 1-ша зверху — найтонша',
     stringButtons: 'Вибір струни',
     fretPicker: 'Вибір лада',
-    thick: 'товста',
-    thin: 'тонка',
-    hidden: 'нота прихована',
+    // Strings 6–4 are the thick ones, 3–1 the thin ones: the number always comes with the word.
+    weight: (number: number) => (number >= 4 ? 'товста' : 'тонка'),
     describeString: (number: number, note: string | null, frequency: number | null) => note === null || frequency === null
-      ? `Струна ${number}`
-      : `Струна ${number}, нота ${note}, ${hertz(frequency)}`,
+      ? `Струна ${number}, ${number >= 4 ? 'товста' : 'тонка'}`
+      : `Струна ${number}, ${number >= 4 ? 'товста' : 'тонка'}, нота ${note}, ${hertz(frequency)}`,
     describeFret: (fret: number) => (fret === 0 ? 'відкрита' : `лад ${fret}`),
     pressed: (number: number, fret: number) => `Притиснуто: струна ${number}, ${fret === 0 ? 'відкрита' : `лад ${fret}`}`,
   },
@@ -73,7 +72,7 @@ export const lessonTwelveContent = {
     orderHelp: 'Кнопками «вище» й «нижче» зміни порядок. Послухай струни, якщо сумніваєшся.',
     up: 'Вище',
     down: 'Нижче',
-    orderItem: (number: number, position: number) => `${position}. Струна ${number}: ${number === 6 ? 'найтовща' : number === 1 ? 'найтонша' : stringByNumber(number).openNote}`,
+    orderItem: (number: number, position: number) => `${position}. Струна ${number}, ${number >= 4 ? 'товста' : 'тонка'}`,
     check: 'Перевірити порядок',
     right: 'Так: від найтовщої (6) до найтоншої (1) звук піднімається.',
     wrong: 'Не зовсім. Правильний порядок: 6, 5, 4, 3, 2, 1 — від найтовщої до найтоншої.',

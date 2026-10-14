@@ -35,4 +35,15 @@ describe('Lesson 12 content', () => {
       }
     }
   });
+
+  it('pairs every string number with a thick or thin word', () => {
+    const { map, strings } = lessonTwelveContent;
+    for (const number of [1, 2, 3, 4, 5, 6]) {
+      const word = number >= 4 ? 'товста' : 'тонка';
+      expect(map.weight(number)).toBe(word);
+      expect(map.describeString(number, null, null)).toContain(word);
+      expect(map.describeString(number, 'E', 82)).toContain(word);
+      expect(strings.orderItem(number, 1)).toContain(word);
+    }
+  });
 });
