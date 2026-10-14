@@ -1,6 +1,6 @@
 import type { FretBoardContent } from '@/components/lesson/fret-board/types';
 import type { ChoiceQuestionChoice } from '@/components/lesson/choice-question/types';
-import type { OpenString } from '@/data/lessons/stage-03-lesson-01-model/types';
+import type { FretNote, OpenString } from '@/data/lessons/stage-03-lesson-01-model/types';
 
 export type FretTaskId = 'note' | 'find' | 'twelve';
 
@@ -23,7 +23,7 @@ export interface FretCheckpointProps {
   board: FretBoardContent;
   openString: OpenString;
   noteFret: number;
-  findNote: string;
+  findNote: FretNote;
   describe: (fret: number) => string;
   passed: boolean;
   onPass: () => void;

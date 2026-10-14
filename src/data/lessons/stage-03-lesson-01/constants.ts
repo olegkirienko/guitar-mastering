@@ -1,5 +1,6 @@
 import { lessonTwoContent } from '@/data/lessons/stage-01-lesson-02/constants';
 import { lessonTenContent } from '@/data/lessons/stage-02-lesson-05/constants';
+import type { FretNote } from '@/data/lessons/stage-03-lesson-01-model/types';
 import { fifthString, sharpNames } from '@/data/lessons/stage-03-lesson-01-model/constants';
 import { fretFrequency, hertz, noteAtFret } from '@/data/lessons/stage-03-lesson-01-model/utils/frets';
 
@@ -13,7 +14,7 @@ export const guitarFrets: readonly number[] = [0, 1, 2, 3, 12];
 // Fixed tasks of the explorer's «predict» mode and of the checkpoint.
 export const predictFrets: readonly number[] = [3, 7, 10];
 export const checkpointNoteFret = 7;
-export const checkpointFindNote = 'D';
+export const checkpointFindNote: FretNote = 'D';
 
 const open = fifthString.frequency;
 const noteChoices = (correct: string, explain: (name: string) => string) => sharpNames.map((name) => ({ id: name, label: name, feedback: name === correct ? explain(name) : `Ні: ${explain(correct)}` }));

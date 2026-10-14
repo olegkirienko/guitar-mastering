@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ExplorerMode, FretExplorerProps } from '@/components/lesson/fret-explorer/types';
 import { lastFret } from '@/data/lessons/stage-03-lesson-01-model/constants';
+import { fretFrequency } from '@/data/lessons/stage-03-lesson-01-model/utils/frets';
 
 export function useFretExplorer({ predictFrets, onPlay, onSolved, openString }: Pick<FretExplorerProps, 'predictFrets' | 'onPlay' | 'onSolved' | 'openString'>) {
   // Session-only: nothing here is saved.
@@ -13,7 +14,7 @@ export function useFretExplorer({ predictFrets, onPlay, onSolved, openString }: 
   const selectFret = (next: number) => setFret(Math.min(lastFret, Math.max(0, Math.round(next))));
   const pressKey = (key: number) => {
     selectFret(key);
-    onPlay(openString.frequency * 2 ** (key / 12));
+    onPlay(fretFrequency(openString.frequency, key));
   };
   const answer = (isCorrect: boolean) => {
     if (!isCorrect) return;

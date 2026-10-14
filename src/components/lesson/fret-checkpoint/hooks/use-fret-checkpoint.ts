@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { FretCheckpointProps, FretTaskId } from '@/components/lesson/fret-checkpoint/types';
 import { fretsForNote, noteAtFret } from '@/data/lessons/stage-03-lesson-01-model/utils/frets';
-import type { FretNote } from '@/data/lessons/stage-03-lesson-01-model/types';
 
 const taskIds: readonly FretTaskId[] = ['note', 'find', 'twelve'];
 
@@ -26,7 +25,7 @@ export function useFretCheckpoint({ openString, findNote, onPass }: Pick<FretChe
   };
   // Fret 0 and fret 12 both hold the open note, so every fret that carries the note is right.
   const checkFret = () => {
-    const right = fretsForNote(openString.openKey, findNote as FretNote).includes(fret);
+    const right = fretsForNote(openString.openKey, findNote).includes(fret);
     setVerdict({ fret, right });
     if (right) solve('find');
   };
