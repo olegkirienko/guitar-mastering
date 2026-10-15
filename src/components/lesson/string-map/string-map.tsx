@@ -1,3 +1,4 @@
+import { useStringMap } from '@/components/lesson/string-map/hooks/use-string-map';
 import { halfStringWidth, mapHeight, mapWidth, nutX } from '@/components/lesson/string-map/constants';
 import type { StringMapProps } from '@/components/lesson/string-map/types';
 import { fretX, pressX, stringWidth, stringY } from '@/components/lesson/string-map/utils/geometry';
@@ -9,6 +10,7 @@ const frets = Array.from({ length: 12 }, (_, index) => index + 1);
 const stringNumbers = [...openStrings].map((item) => item.number).reverse();
 
 export function StringMap({ content, revealed, selected = null, highlighted = [], pressed = null, onSelectString, selectableFrets = [], fret = 0, onSelectFret, describeString, describeFret }: StringMapProps) {
+  const { stringButtons, fretButtons, onStringKeyDown, onFretKeyDown } = useStringMap(stringNumbers, selectableFrets, onSelectString, onSelectFret);
   const end = nutX + halfStringWidth * 2;
   return <div className="space-y-3">
     <svg role="img" aria-label={content.label} viewBox={`0 0 ${mapWidth} ${mapHeight}`} className="h-auto w-full text-tertiary">
@@ -29,10 +31,12 @@ export function StringMap({ content, revealed, selected = null, highlighted = []
     {onSelectString && <div role="group" aria-label={content.stringButtons} className="grid grid-cols-6 gap-1">
       {stringNumbers.map((number) => <button
         key={number}
+        ref={(node) => { stringButtons.current[number] = node; }}
         type="button"
         aria-pressed={selected === number}
         aria-label={describeString(number)}
         onClick={() => onSelectString(number)}
+        onKeyDown={(event) => onStringKeyDown(event, number)}
         className={cx(
           'min-h-11 min-w-11 rounded-md border px-0.5 text-sm font-semibold tabular-nums outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2',
           selected === number ? 'border-utility-brand-600 bg-utility-brand-600 text-white' : 'border-secondary bg-primary text-primary',
@@ -42,10 +46,12 @@ export function StringMap({ content, revealed, selected = null, highlighted = []
     {selectableFrets.length > 0 && <div role="group" aria-label={content.fretPicker} className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1">
       {selectableFrets.map((item) => <button
         key={item}
+        ref={(node) => { fretButtons.current[item] = node; }}
         type="button"
         aria-pressed={fret === item}
         aria-label={describeFret(item)}
         onClick={() => onSelectFret?.(item)}
+        onKeyDown={(event) => onFretKeyDown(event, item)}
         className={cx(
           'min-h-11 min-w-11 rounded-md border text-sm font-semibold tabular-nums outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2',
           fret === item ? 'border-utility-brand-600 bg-utility-brand-600 text-white' : 'border-secondary bg-primary text-primary',

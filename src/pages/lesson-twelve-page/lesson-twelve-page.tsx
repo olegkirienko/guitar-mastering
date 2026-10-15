@@ -24,7 +24,7 @@ const allNumbers = openStrings.map((item) => item.number);
 const panel = 'rounded-lg border border-utility-brand-200 bg-brand-primary_alt p-5 text-secondary';
 
 export function LessonTwelvePage() {
-  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, visibleStep, isCompleted, audio, goTo, advance, toggleAudio, audioMessage, finishLesson, finishStatus, playAll, stopAll, playPair, playOctaves, passCheckpoint, heardStrings, touchString, stringsPredicted, answerStringsPrediction, submitOrder, stringsDone, linkPredicted, answerLinkPrediction, pair, selectPair, fret, selectFret, comparison, compare, foundPairs, patternPredicted, answerPatternPrediction, lastChecked, checkLast, patternSolved, answerPattern } = useLessonTwelvePage();
+  const { restartLesson, route, progress, sync, retrySync, preferencesSaveFailed, audioEnabled, focusedStep, visibleStep, isCompleted, audio, goTo, advance, toggleAudio, audioMessage, finishLesson, finishStatus, playAll, stopAll, playPair, playOctaves, passCheckpoint, pluck, heardStrings, touchString, stringsPredicted, answerStringsPrediction, submitOrder, stringsDone, linkPredicted, answerLinkPrediction, pair, selectPair, fret, selectFret, comparison, compare, foundPairs, patternPredicted, answerPatternPrediction, lastChecked, checkLast, patternSolved, answerPattern } = useLessonTwelvePage();
   if (route.kind !== 'ready') return <LessonRouteFallback route={route} />;
   const toggle = <LessonAudioToggle audioEnabled={audioEnabled} blocked={audio.status === 'blocked'} message={audioMessage} onToggle={toggleAudio} />;
   const describeString = (number: number) => map.describeString(number, heardStrings.includes(number) ? stringByNumber(number).openNote : null, heardStrings.includes(number) ? stringByNumber(number).frequency : null);
@@ -36,7 +36,7 @@ export function LessonTwelvePage() {
     {visibleStep === 'intro' && <LessonStep title={intro.title} intro={intro.reminder} shouldFocus={focusedStep === 'intro'}>
       <div className="space-y-6">
         <p className="text-secondary">{intro.instruction}</p>
-        <StringMap content={mapContent} revealed={[]} describeString={(number) => map.describeString(number, null, null)} describeFret={map.describeFret} />
+        <StringMap content={mapContent} revealed={[]} onSelectString={(number) => pluck(stringByNumber(number).frequency)} describeString={(number) => map.describeString(number, null, null)} describeFret={map.describeFret} />
         {audio.enabled
           ? <div className="flex flex-wrap gap-3">
             <Button color="secondary" size="lg" onClick={playAll}>{intro.listenAll}</Button>

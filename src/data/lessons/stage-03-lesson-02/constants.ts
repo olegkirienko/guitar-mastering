@@ -15,7 +15,7 @@ export const correctOrder: readonly number[] = [...openStrings].map((item) => it
 
 const pairName = (number: number) => `${number}→${number - 1}`;
 const fretChoices = (correct: number, explain: (fret: number) => string) => [3, 4, 5, 7].map((fret) => ({ id: String(fret), label: `лад ${fret}`, feedback: fret === correct ? explain(fret) : `Ні: ${explain(correct)}` }));
-const noteChoices = ['A♯', 'B', 'C', 'A'].map((name) => ({ id: name, label: name, feedback: name === 'B' ? 'Так: від G до B — 4 півтони (G♯, A, A♯, B).' : 'Ні: від G до B — 4 півтони (G♯, A, A♯, B).' }));
+const noteChoices = ['F', 'B', 'C', 'A'].map((name) => ({ id: name, label: name, feedback: name === 'B' ? 'Так: від G до B — 4 півтони, тобто 4 лади.' : 'Ні: від G до B — 4 півтони, тобто 4 лади.' }));
 
 export const lessonTwelveContent = {
   id: 'stage-03-lesson-02',
